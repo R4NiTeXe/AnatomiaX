@@ -17,3 +17,11 @@ Format: GLB (binary glTF 2.0), 1 buffer, 1 scene
 Source: Visible Human Male, National Library of Medicine (38yo white male, 180.3 cm, 199 lb)
 
 Notes: Preserved original file unmodified at `3d-assets/male/source/hra-reference-organ-united-male-v1.5.glb`. Binary is kept outside Git and ignored via `.gitignore` (`3d-assets/male/source/*.glb`), reproducible at any time from the official source via `scripts/download-anatomy-assets/download.js` with SHA-256 verification. Not yet optimized, not yet integrated into React viewer. Contains 849 meshes, 86 materials, 0 textures, 0 animations, 1035 nodes, 2788 accessors. See inspection below.
+
+Inspection (2026-08-24, via @gltf-transform/cli and Node.js glTF JSON parsing; Blender not installed and not used):
+
+- Blender version: Not installed (Get-Command blender not found) — inspection via gltf-transform, not Blender
+- Object count: 1035 nodes
+- Mesh count: 849 meshes
+- Material count: 86 materials
+- Important findings: Single scene VH_M with bbox -0.52364,-0.91462,-0.16059 to 0.52295,0.91489,0.15563 (~1.05×1.83×0.32 m, height 1.83 m, centered at origin, Y up), 3863220 vertices, 4018087 triangles, vertex colors COLOR_0 present, no textures/images, ~5 BLEND materials (cornea/lens/conjunctiva) rest OPAQUE, contains skin (VH_M_skin 5.93 MB), bone/muscle/cartilage, cardiovascular (heart, artery 36, vein 48), nervous (brain, spinal 31 segments, eyes), digestive (liver, colon, mucosa), urinary (kidney, ureter), reproductive (genitalDuct), all high-value structures FOUND, separation GOOD via node hierarchy but PARTIAL via material (shared mats). See docs/architecture/male-anatomy-map.md for full map.
