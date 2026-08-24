@@ -1,52 +1,45 @@
-<header class="sticky top-0 z-40 w-full border-b border-base-300/50 bg-base-100/80 backdrop-blur">
+<header class="sticky top-0 z-40 w-full border-b border-base-300/40 bg-base-100/70 backdrop-blur">
   <div class="container-anatomia">
-    <div class="navbar px-0">
+    <div class="navbar min-h-[3.75rem] px-0">
       <div class="navbar-start">
         <div class="dropdown">
-          <label tabindex="0" class="btn btn-ghost lg:hidden" aria-label="Open menu">
+          <label tabindex="0" class="btn btn-ghost btn-sm lg:hidden" aria-label="Open menu">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h8m-8 6h16"
-              />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </label>
           <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content mt-3 w-72 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl"
+            class="menu menu-sm dropdown-content mt-3 w-64 rounded-xl border border-base-300 bg-base-100 p-2 shadow-xl"
           >
-            <li><a href="/">Home</a></li>
-            <li><a href="/about/">About</a></li>
-            <li><a href="/technology/">Technology</a></li>
+            <li><a href="/#explore">Explore</a></li>
             <li><a href="/medical-learning/">Medical Learning</a></li>
             <li><a href="/simulation/">Simulation</a></li>
-            <li><a href="/ai/">AI</a></li>
+            <li><a href="/ai/">AI Health</a></li>
             <li><a href="/clinical-cases/">Clinical Cases</a></li>
-            <li><a href="/safety/">Safety</a></li>
-            <li><a href="/contact/">Contact</a></li>
             <li class="mt-2 border-t border-base-300 pt-2">
               <a href="/contact/" class="justify-center">Login</a>
             </li>
             <li><a href="/contact/" class="btn btn-sm btn-primary mt-1 justify-center">Get Started</a></li>
           </ul>
         </div>
-        <a href="/" class="flex items-center gap-2 text-xl font-semibold tracking-tight">
-          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-content">
+        <a href="/" class="flex items-center gap-2 text-[1.15rem] font-semibold tracking-tight">
+          <span class="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-content">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="1.8"
-              class="h-5 w-5"
+              class="h-4 w-4"
               aria-hidden="true"
             >
               <path d="M12 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
@@ -60,13 +53,11 @@
       </div>
 
       <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal gap-1 px-1 text-sm">
-          <li><a href="/" class="font-medium">Home</a></li>
-          <li><a href="/about/">About</a></li>
-          <li><a href="/technology/">Technology</a></li>
+        <ul class="menu menu-horizontal gap-1 px-1 text-[0.9rem]">
+          <li><a href="/#explore" class="font-medium">Explore</a></li>
           <li><a href="/medical-learning/">Medical Learning</a></li>
           <li><a href="/simulation/">Simulation</a></li>
-          <li><a href="/ai/">AI</a></li>
+          <li><a href="/ai/">AI Health</a></li>
           <li><a href="/clinical-cases/">Clinical Cases</a></li>
         </ul>
       </div>
