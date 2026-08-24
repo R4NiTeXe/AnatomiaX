@@ -1,0 +1,17 @@
+{
+  "name": "@anatomiax/backend-ai-core",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Backend AI core - Gemini API + RAG + embeddings + safety layer",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  }
+}

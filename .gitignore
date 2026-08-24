@@ -1,0 +1,79 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Build outputs
+dist
+build
+out
+_site
+.11ty
+.next
+.nuxt
+.output
+
+# Coverage
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+data/db
+
+# Temporary files
+tmp
+temp
+.tmp
+.cache
+.parcel-cache
+.eslintcache
+.prettiercache
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# 3D assets large files (keep structure, ignore raw unoptimized if needed)
+# Uncomment if large assets should not be tracked:
+# 3d-assets/**/*.blend
+# 3d-assets/**/*.fbx
+# 3d-assets/**/*.obj
+
+# Misc
+*.pid
+*.seed
+*.pid.lock

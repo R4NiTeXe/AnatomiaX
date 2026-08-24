@@ -1,0 +1,25 @@
+{
+  "name": "anatomiax",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AnatomiaX - Interactive 3D human anatomy learning platform",
+  "workspaces": [
+    "frontend/marketing",
+    "frontend/web",
+    "frontend/admin",
+    "frontend/packages/*",
+    "backend/api",
+    "backend/packages/*"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

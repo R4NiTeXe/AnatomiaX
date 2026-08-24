@@ -1,0 +1,17 @@
+{
+  "name": "@anatomiax/marketing",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AnatomiaX marketing website - 11ty + Tailwind CSS + daisyUI",
+  "type": "module",
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^2.0.1",
+    "prettier": "^3.3.3"
+  }
+}
