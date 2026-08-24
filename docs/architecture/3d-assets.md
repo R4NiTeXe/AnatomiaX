@@ -89,6 +89,15 @@ Error state if loading fails (model not found, invalid GLB, network failure)
 - Prefer optimized GLB/GLTF; avoid uncompressed high-poly
 - Use `Suspense` + error boundaries so a missing asset never crashes the app
 
+## Approved candidate whole-body source
+
+NIH Human Reference Atlas (HRA) is the current candidate source for the first male and female whole-body models, subject to final verification and integration testing.
+
+- Male: `hra-reference-organ-united-male-v1.5.glb` — https://3d.nih.gov/entries/3DPX-021022 — PURL https://purl.humanatlas.io/ref-organ/united-male/v1.5 — CC-BY 4.0 — not yet downloaded
+- Female: `hra-reference-organ-united-female-v1.5.glb` — https://3d.nih.gov/entries/3DPX-020992 — PURL https://purl.humanatlas.io/ref-organ/united-female/v1.5 — CC-BY 4.0 — not yet downloaded
+
+See `docs/architecture/hra-source.md` for full research and `3d-assets/SOURCES.md` for source records.
+
 ## Future Extensions
 
 - Systems and organs can be added as new `AnatomyAsset` entries without changing the loader
