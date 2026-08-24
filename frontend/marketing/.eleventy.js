@@ -1,6 +1,5 @@
-export default function (eleventyConfig) {
-  eleventyConfig.addPassthroughCopy('src/assets');
-  eleventyConfig.addPassthroughCopy('src/styles');
+module.exports = function (eleventyConfig) {
+  eleventyConfig.addPassthroughCopy('public');
 
   return {
     dir: {
@@ -11,4 +10,4 @@ export default function (eleventyConfig) {
     markdownTemplateEngine: 'njk',
     htmlTemplateEngine: 'njk',
   };
-}
+};

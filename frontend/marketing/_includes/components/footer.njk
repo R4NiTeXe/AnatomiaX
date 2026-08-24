@@ -1,0 +1,80 @@
+<footer class="border-t border-base-300 bg-base-200">
+  <div class="container-anatomia py-12">
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+      <div class="space-y-4">
+        <a href="/" class="flex items-center gap-2 text-lg font-semibold">
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-content">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              class="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M12 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+              <path d="M12 11v8" />
+              <path d="M9 16a3 3 0 0 1 6 0" />
+              <path d="M8 8a4 4 0 0 1 8 0" />
+            </svg>
+          </span>
+          {{ site.name }}
+        </a>
+        <p class="max-w-xs text-sm leading-relaxed text-base-content/70">
+          Interactive 3D human anatomy and AI-assisted medical education for students, educators, and
+          lifelong learners.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-base-content">Explore</h2>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/" class="link link-hover">Home</a></li>
+          <li><a href="/about/" class="link link-hover">About</a></li>
+          <li><a href="/technology/" class="link link-hover">Technology</a></li>
+          <li><a href="/medical-learning/" class="link link-hover">Medical Learning</a></li>
+          <li><a href="/simulation/" class="link link-hover">Simulation</a></li>
+          <li><a href="/ai/" class="link link-hover">AI</a></li>
+          <li><a href="/clinical-cases/" class="link link-hover">Clinical Cases</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-base-content">Trust & Safety</h2>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/safety/" class="link link-hover">Safety & Disclaimer</a></li>
+          <li><a href="/safety/#educational-use" class="link link-hover">Educational Use</a></li>
+          <li><a href="/safety/#no-diagnosis" class="link link-hover">No Medical Diagnosis</a></li>
+          <li><a href="/contact/" class="link link-hover">Report a Concern</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-base-content">Contact</h2>
+        <ul class="space-y-2 text-sm text-base-content/70">
+          <li><a href="/contact/" class="link link-hover">Contact Us</a></li>
+          <li><a href="/contact/#support" class="link link-hover">Support</a></li>
+          <li>
+            <a href="mailto:{{ site.email }}" class="link link-hover">{{ site.email }}</a>
+            <span class="text-xs text-base-content/50"> — placeholder</span>
+          </li>
+        </ul>
+        <div class="mt-4 flex gap-2">
+          <a href="/contact/" class="btn btn-sm btn-outline">Login</a>
+          <a href="/contact/" class="btn btn-sm btn-primary">Get Started</a>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mt-10 flex flex-col gap-2 border-t border-base-300 pt-6 text-xs text-base-content/60 md:flex-row md:items-center md:justify-between"
+    >
+      <p>© <span id="year">2026</span> {{ site.name }}. All rights reserved.</p>
+      <p class="max-w-2xl">
+        Educational content only — not a substitute for professional medical advice, diagnosis, or
+        treatment.
+      </p>
+    </div>
+  </div>
+</footer>

@@ -1,7 +1,264 @@
 ---
-layout: base.njk
-title: AnatomiaX
+layout: layouts/base.njk
+title: "AnatomiaX — 3D Human Anatomy & AI Medical Learning"
+description: "Explore the human body through interactive 3D anatomy, medical learning, simulations, clinical cases, and AI-assisted health education."
 ---
 
-<h1>AnatomiaX</h1>
-<p>Marketing site placeholder — prepared for 11ty + Tailwind CSS + daisyUI + GSAP + Lenis + Barba.js.</p>
+<!-- Hero -->
+<section class="border-b border-base-300 bg-base-100">
+  <div class="container-anatomia py-16 sm:py-20 lg:py-28">
+    <div class="mx-auto max-w-3xl text-center">
+      <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <span class="h-2 w-2 rounded-full bg-primary"></span>
+        Medical education, reimagined
+      </div>
+      <h1 class="text-4xl font-bold tracking-tight text-base-content sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+        The Human Body,<br />
+        <span class="text-primary">Brought to Life.</span>
+      </h1>
+      <p class="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-base-content/70 sm:text-lg">
+        AnatomiaX is an interactive platform for exploring human anatomy in 3D, learning core medical
+        concepts, running guided simulations, and studying real-world clinical cases — supported by
+        responsible AI.
+      </p>
+      <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a href="/medical-learning/" class="btn btn-primary w-full sm:w-auto">Explore AnatomiaX</a>
+        <a href="/contact/" class="btn btn-outline w-full sm:w-auto">Get Started</a>
+      </div>
+      <p class="mt-4 text-xs text-base-content/50">No installation required. Works in your browser.</p>
+    </div>
+
+    <div class="mx-auto mt-12 max-w-5xl rounded-2xl border border-base-300 bg-base-200 p-3 sm:p-4">
+      <div
+        class="flex h-56 items-center justify-center rounded-xl border border-dashed border-base-300 bg-base-100 sm:h-72 lg:h-80"
+      >
+        <div class="text-center">
+          <p class="text-sm font-medium text-base-content/60">Interactive 3D Preview</p>
+          <p class="mt-1 text-xs text-base-content/40">Anatomy visualization placeholder</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- About -->
+<section class="border-b border-base-300 bg-base-100 py-16 sm:py-20">
+  <div class="container-anatomia">
+    <div class="mx-auto max-w-3xl text-center">
+      <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">What is AnatomiaX?</h2>
+      <p class="mt-4 text-sm leading-relaxed text-base-content/70 sm:text-base">
+        AnatomiaX brings together clear explanations, structured learning paths, and visual exploration.
+        Instead of memorizing flat diagrams, you study the body as a connected system — from organs and
+        vessels to physiological processes — with guidance designed for medical and health-science
+        learners.
+      </p>
+    </div>
+    <div class="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-3">
+      <div class="rounded-xl border border-base-300 bg-base-200 p-5">
+        <p class="text-sm font-semibold">Built for learning</p>
+        <p class="mt-1 text-sm leading-relaxed text-base-content/60">
+          Curriculum-aligned anatomy and physiology, written in plain, precise language.
+        </p>
+      </div>
+      <div class="rounded-xl border border-base-300 bg-base-200 p-5">
+        <p class="text-sm font-semibold">Visual-first</p>
+        <p class="mt-1 text-sm leading-relaxed text-base-content/60">
+          3D and simulation to help you see spatial relationships and function.
+        </p>
+      </div>
+      <div class="rounded-xl border border-base-300 bg-base-200 p-5">
+        <p class="text-sm font-semibold">Responsibly guided</p>
+        <p class="mt-1 text-sm leading-relaxed text-base-content/60">
+          Educational AI with a safety layer — never a replacement for professional care.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main features -->
+<section class="border-b border-base-300 bg-base-200 py-16 sm:py-20">
+  <div class="container-anatomia">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">A complete learning environment</h2>
+      <p class="mt-3 text-sm leading-relaxed text-base-content/60">
+        Six core areas, designed to work together from first principles to clinical reasoning.
+      </p>
+    </div>
+
+    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <article class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+          <h3 class="card-title text-base">3D Human</h3>
+          <p class="text-sm leading-relaxed text-base-content/60">
+            Explore layered anatomy by system and region. Isolate structures, compare views, and
+            understand spatial relationships.
+          </p>
+          <div class="card-actions mt-2">
+            <a href="/technology/" class="link link-primary text-sm">Learn more →</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+          <h3 class="card-title text-base">AI Health</h3>
+          <p class="text-sm leading-relaxed text-base-content/60">
+            Ask anatomy and health-education questions with retrieval-augmented answers and clear
+            safety boundaries.
+          </p>
+          <div class="card-actions mt-2">
+            <a href="/ai/" class="link link-primary text-sm">Learn more →</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+          <h3 class="card-title text-base">Medical Lab</h3>
+          <p class="text-sm leading-relaxed text-base-content/60">
+            Study anatomy, physiology, and pathology with structured lessons and referenced source
+            material.
+          </p>
+          <div class="card-actions mt-2">
+            <a href="/medical-learning/" class="link link-primary text-sm">Learn more →</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+          <h3 class="card-title text-base">Simulation Lab</h3>
+          <p class="text-sm leading-relaxed text-base-content/60">
+            Run guided simulations of core processes to see how changes in one system affect the
+            whole.
+          </p>
+          <div class="card-actions mt-2">
+            <a href="/simulation/" class="link link-primary text-sm">Learn more →</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+          <h3 class="card-title text-base">Clinical Cases</h3>
+          <p class="text-sm leading-relaxed text-base-content/60">
+            Apply knowledge to case-based scenarios with clinical context, not memorization alone.
+          </p>
+          <div class="card-actions mt-2">
+            <a href="/clinical-cases/" class="link link-primary text-sm">Learn more →</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body p-6">
+          <h3 class="card-title text-base">Learn</h3>
+          <p class="text-sm leading-relaxed text-base-content/60">
+            Track progress with focused pathways for exams, rotations, and lifelong review.
+          </p>
+          <div class="card-actions mt-2">
+            <a href="/medical-learning/" class="link link-primary text-sm">Learn more →</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Medical student section -->
+<section class="border-b border-base-300 bg-base-100 py-16 sm:py-20">
+  <div class="container-anatomia">
+    <div class="grid gap-10 lg:grid-cols-2 lg:items-center">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Designed for anatomy and medical learning
+        </h2>
+        <p class="mt-4 text-sm leading-relaxed text-base-content/70">
+          Whether you are preparing for anatomy exams, reviewing for clinical rotations, or teaching
+          the next cohort, AnatomiaX provides accurate, source-referenced content and practical
+          tools — without replacing textbooks, lab, or mentorship.
+        </p>
+        <ul class="mt-6 space-y-2 text-sm text-base-content/70">
+          <li class="flex gap-2">
+            <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
+            ><span>System-based anatomy with clinical correlations</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
+            ><span>Physiology and pathology connections for deeper understanding</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
+            ><span>Case practice to build reasoning, not just recall</span>
+          </li>
+        </ul>
+        <div class="mt-6">
+          <a href="/medical-learning/" class="btn btn-outline btn-sm">Explore Medical Learning</a>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-base-300 bg-base-200 p-6">
+        <h3 class="text-sm font-semibold">For students & educators</h3>
+        <div class="mt-4 space-y-3">
+          <div class="rounded-xl bg-base-100 p-4">
+            <p class="text-sm font-medium">Study pathways</p>
+            <p class="mt-1 text-xs leading-relaxed text-base-content/60">
+              Focused sequences for thorax, abdomen, neuroanatomy, and more.
+            </p>
+          </div>
+          <div class="rounded-xl bg-base-100 p-4">
+            <p class="text-sm font-medium">Sources you can verify</p>
+            <p class="mt-1 text-xs leading-relaxed text-base-content/60">
+              Content linked to trusted references, not generated claims.
+            </p>
+          </div>
+          <div class="rounded-xl bg-base-100 p-4">
+            <p class="text-sm font-medium">Accessible by design</p>
+            <p class="mt-1 text-xs leading-relaxed text-base-content/60">
+              Keyboard-navigable, responsive, and readable in any environment.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Safety section -->
+<section class="border-b border-base-300 bg-base-200 py-16 sm:py-20">
+  <div class="container-anatomia">
+    <div
+      class="mx-auto max-w-3xl rounded-2xl border border-warning/20 bg-warning/10 p-6 sm:p-8"
+      role="note"
+      aria-label="Safety notice"
+    >
+      <h2 class="text-xl font-semibold tracking-tight">Safety & responsibility</h2>
+      <p class="mt-3 text-sm leading-relaxed text-base-content/70">
+        AnatomiaX provides <strong class="font-semibold text-base-content">educational information only</strong>
+        and does not offer medical diagnosis, treatment, or emergency care. Findings and AI responses
+        should be reviewed with qualified healthcare professionals. If you have a medical concern,
+        contact your clinician or local health services promptly.
+      </p>
+      <div class="mt-4">
+        <a href="/safety/" class="btn btn-sm btn-outline">Read Safety Information</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="bg-base-100 py-16 sm:py-20">
+  <div class="container-anatomia">
+    <div class="mx-auto max-w-3xl rounded-2xl border border-base-300 bg-base-100 p-8 text-center shadow-sm sm:p-12">
+      <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">Start Exploring</h2>
+      <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-base-content/60">
+        Create your workspace and begin with 3D anatomy, then deepen your understanding through
+        simulations and clinical cases.
+      </p>
+      <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a href="/contact/" class="btn btn-primary">Get Started</a>
+        <a href="/about/" class="btn btn-ghost">Learn About AnatomiaX</a>
+      </div>
+    </div>
+  </div>
+</section>

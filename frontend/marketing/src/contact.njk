@@ -1,0 +1,85 @@
+---
+layout: layouts/base.njk
+title: "Contact — Get in Touch with AnatomiaX"
+description: "Contact AnatomiaX for support, feedback, or partnership inquiries about our 3D anatomy and medical education platform."
+---
+
+<section class="border-b border-base-300 bg-base-100 py-14 sm:py-16">
+  <div class="container-anatomia">
+    <div class="max-w-3xl">
+      <p class="text-xs font-semibold uppercase tracking-widest text-primary">Contact</p>
+      <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">We would love to hear from you</h1>
+      <p class="mt-4 text-sm leading-relaxed text-base-content/70 sm:text-base">
+        Questions about learning, partnership, or reporting a content concern? Reach out — we read
+        every message.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="bg-base-200 py-12 sm:py-16">
+  <div class="container-anatomia">
+    <div class="grid gap-8 lg:grid-cols-2">
+      <div class="space-y-6">
+        <div class="rounded-2xl border border-base-300 bg-base-100 p-6">
+          <h2 class="text-lg font-semibold">Contact details</h2>
+          <p class="mt-2 text-sm leading-relaxed text-base-content/70">
+            Email us at
+            <a href="mailto:{{ site.email }}" class="link link-primary">{{ site.email }}</a>
+            <span class="text-xs text-base-content/50"> — placeholder</span> or use the form. We
+            typically respond within 1–2 business days.
+          </p>
+          <div id="support" class="mt-4 rounded-xl bg-base-200 p-4">
+            <p class="text-sm font-medium">Support</p>
+            <p class="mt-1 text-sm leading-relaxed text-base-content/60">
+              Having trouble accessing learning paths or 3D? Include your device and browser details
+              so we can help faster.
+            </p>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-base-300 bg-base-100 p-6">
+          <h3 class="text-sm font-semibold">Office</h3>
+          <p class="mt-2 text-sm leading-relaxed text-base-content/60">
+            AnatomiaX — Medical education technology<br />
+            Remote-first, with global collaborators
+          </p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-base-300 bg-base-100 p-6">
+        <h2 class="text-lg font-semibold">Send a message</h2>
+        <p class="mt-1 text-xs text-base-content/50">
+          Demo form only — no backend connected in this initial setup.
+        </p>
+        <form class="mt-6 space-y-4" onsubmit="return false;">
+          <div class="form-control">
+            <label class="label" for="name">
+              <span class="label-text">Name</span>
+            </label>
+            <input id="name" type="text" placeholder="Your name" class="input input-bordered w-full" />
+          </div>
+          <div class="form-control">
+            <label class="label" for="email">
+              <span class="label-text">Email</span>
+            </label>
+            <input id="email" type="email" placeholder="you@example.com" class="input input-bordered w-full" />
+          </div>
+          <div class="form-control">
+            <label class="label" for="message">
+              <span class="label-text">Message</span>
+            </label>
+            <textarea
+              id="message"
+              class="textarea textarea-bordered h-24"
+              placeholder="How can we help?"
+            ></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-full">Send Message</button>
+          <p class="text-xs text-base-content/50">
+            By contacting us you agree to our <a href="/safety/" class="link">Safety</a> notice.
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="anatomiax">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="{{ canonical | default(site.url + page.url) }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ title }}" />
+    <meta property="og:description" content="{{ description }}" />
+    <meta property="og:url" content="{{ canonical | default(site.url + page.url) }}" />
+    <meta property="og:site_name" content="{{ site.name }}" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ title }}" />
+    <meta name="twitter:description" content="{{ description }}" />
+
+    <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+  </head>
+  <body class="min-h-screen bg-base-100 text-base-content antialiased">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content"
+      >Skip to content</a
+    >
+    {% include "components/navbar.njk" %}
+    <main id="main-content">{{ content | safe }}</main>
+    {% include "components/footer.njk" %}
+  </body>
+</html>

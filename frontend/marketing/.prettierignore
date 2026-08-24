@@ -1,0 +1,11 @@
+node_modules
+_site
+dist
+build
+_site
+eleventy
+*.min.js
+.git
+.idea
+.vscode
+*.log
