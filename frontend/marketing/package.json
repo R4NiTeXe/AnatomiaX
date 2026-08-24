@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "description": "AnatomiaX marketing website - 11ty + Tailwind CSS + daisyUI",
   "scripts": {
-    "dev": "tailwindcss -i ./src/styles/main.css -o ./_site/styles/main.css && eleventy --serve",
+    "dev": "concurrently \"npm:dev:eleventy\" \"npm:dev:css\"",
+    "dev:eleventy": "eleventy --serve",
+    "dev:css": "tailwindcss -i ./src/styles/main.css -o ./_site/styles/main.css --watch",
     "build": "eleventy && tailwindcss -i ./src/styles/main.css -o ./_site/styles/main.css --minify",
     "build:css": "tailwindcss -i ./src/styles/main.css -o ./_site/styles/main.css",
     "build:eleventy": "eleventy",
@@ -14,6 +16,7 @@
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
     "daisyui": "^4.12.14",
     "postcss": "^8.4.49",
     "prettier": "^3.3.3",

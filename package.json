@@ -12,6 +12,8 @@
     "backend/packages/*"
   ],
   "scripts": {
+    "dev": "npm run dev -w @anatomiax/marketing",
+    "build": "npm run build -w @anatomiax/marketing",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
