@@ -22,30 +22,35 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
     <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-8">
       <div class="max-w-xl">
         <div
+          data-hero-label
           class="inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-200 px-3 py-1 text-[0.7rem] font-medium tracking-widest text-base-content/60"
         >
           <span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
           PREMIUM MEDICAL TECHNOLOGY
         </div>
         <h1
+          data-hero-heading
           class="mt-6 text-4xl font-bold tracking-tight text-base-content sm:text-5xl lg:text-[3rem] lg:leading-[1.05]"
         >
           The Human Body,<br />
           <span class="text-primary">Brought to Life.</span>
         </h1>
-        <p class="mt-5 max-w-[36rem] text-sm leading-7 text-base-content/65 sm:text-[0.95rem]">
+        <p
+          data-hero-text
+          class="mt-5 max-w-[36rem] text-sm leading-7 text-base-content/65 sm:text-[0.95rem]"
+        >
           Explore human anatomy through interactive 3D visualization, AI-assisted health education,
           medical learning, and simulation.
         </p>
-        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div data-hero-actions class="mt-8 flex flex-col gap-3 sm:flex-row">
           <a href="/#explore" class="btn btn-primary">Explore AnatomiaX</a>
           <a href="/contact/" class="btn btn-outline">Get Started</a>
         </div>
-        <p class="mt-4 text-xs text-base-content/45">Browser-based. No install required.</p>
+        <p data-hero-meta class="mt-4 text-xs text-base-content/45">Browser-based. No install required.</p>
       </div>
 
       <!-- Visual placeholder for future 3D human -->
-      <div class="relative">
+      <div data-hero-visual class="relative">
         <div class="rounded-[1.25rem] border border-base-300 bg-base-200 p-2 sm:p-3">
           <div
             class="relative overflow-hidden rounded-xl border border-base-300 bg-base-100"
@@ -70,6 +75,11 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
             ></div>
 
             <div class="relative flex aspect-[4/3] flex-col p-4 sm:aspect-[1.15/1] sm:p-5">
+              <div
+                data-placeholder-scan
+                class="pointer-events-none absolute inset-x-0 top-4 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"
+                aria-hidden="true"
+              ></div>
               <div class="flex items-center justify-between">
                 <span
                   class="inline-flex items-center gap-1.5 rounded-full border border-base-300 bg-base-200 px-2.5 py-1 text-[0.65rem] font-medium tracking-widest text-base-content/60"
@@ -150,7 +160,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Platform introduction -->
-<section class="border-b border-base-300 bg-base-100 py-14 sm:py-16">
+<section data-reveal class="border-b border-base-300 bg-base-100 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl text-center">
       <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -173,7 +183,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Feature section -->
-<section id="explore" class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
+<section id="explore" data-reveal class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -188,6 +198,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <!-- 3D Human -->
       <article
+        data-feature-card
         class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
       >
         <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
@@ -204,6 +215,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
       <!-- AI Health -->
       <article
+        data-feature-card
         class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
       >
         <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
@@ -220,6 +232,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
       <!-- Medical Lab -->
       <article
+        data-feature-card
         class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
       >
         <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
@@ -237,6 +250,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
       <!-- Simulation Lab -->
       <article
+        data-feature-card
         class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
       >
         <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
@@ -253,6 +267,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
       <!-- Clinical Cases -->
       <article
+        data-feature-card
         class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
       >
         <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
@@ -269,6 +284,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
       <!-- Learn -->
       <article
+        data-feature-card
         class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
       >
         <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
@@ -288,7 +304,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Medical student section -->
-<section class="border-b border-base-300 bg-base-100 py-14 sm:py-16 lg:py-20">
+<section data-reveal class="border-b border-base-300 bg-base-100 py-14 sm:py-16 lg:py-20">
   <div class="container-anatomia">
     <div class="grid gap-8 lg:grid-cols-2 lg:items-center">
       <div>
@@ -356,7 +372,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- AI Section -->
-<section class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
+<section data-reveal class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl text-center">
       <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">Ask about the human body.</h2>
@@ -396,7 +412,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Simulation Section -->
-<section class="border-b border-base-300 bg-base-100 py-14 sm:py-16">
+<section data-reveal class="border-b border-base-300 bg-base-100 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl text-center">
       <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">See biology in motion.</h2>
@@ -441,7 +457,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Safety Section -->
-<section class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
+<section data-reveal class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl rounded-2xl border border-base-300 bg-base-100 p-6 sm:p-8">
       <div class="flex items-start justify-between gap-4">
@@ -480,7 +496,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Final CTA -->
-<section class="bg-base-100 py-14 sm:py-16 lg:py-20">
+<section data-reveal class="bg-base-100 py-14 sm:py-16 lg:py-20">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl rounded-2xl border border-base-300 bg-gradient-to-b from-base-100 to-base-200/40 p-8 text-center shadow-sm sm:p-12">
       <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">
