@@ -73,6 +73,9 @@ Desktop.ini
 # 3d-assets/**/*.fbx
 # 3d-assets/**/*.obj
 
+# NIH/HRA original source GLB — kept locally, not in Git (reproducible via scripts/download-anatomy-assets)
+3d-assets/male/source/*.glb
+
 # Misc
 *.pid
 *.seed

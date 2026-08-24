@@ -13,8 +13,8 @@ License: CC-BY 4.0 International (https://creativecommons.org/licenses/by/4.0/)
 Attribution: Human Reference Atlas (HRA) — Body, Male united v1.5 via NIH 3D 3DPX-021022 and PURL https://purl.humanatlas.io/ref-organ/united-male/v1.5 — CC-BY 4.0; Visible Human Male (Ackerman 1998 doi:10.1109/5.662875, Spitzer et al. 1996 doi:10.1136/jamia.1996.96236280)
 Allowed modification: Yes — CC-BY 4.0
 Allowed redistribution: Yes — CC-BY 4.0 with attribution
-Status: Research verified — Not yet downloaded
-Notes: United whole-body male reference set; created using Visible Human Male (NLM, 38yo white male 180.3cm 199lb); part of HRA 3D Reference Object Library; GLB binary glTF 2.0; collection Human Reference Atlas 3D Reference Object Library; persistent IDs 3DPX-021022 and PURL https://purl.humanatlas.io/ref-organ/united-male/v1.5; download https://3d.nih.gov/entries/download/21022/1.01 when verified
+Status: Downloaded — Inspection pending
+Notes: United whole-body male reference set; created using Visible Human Male (NLM, 38yo white male 180.3cm 199lb); part of HRA 3D Reference Object Library; GLB binary glTF 2.0; 153596592 bytes (146.48 MB), SHA-256 34C45C90AA4ACD36BE19EDF8B878A8E7137DB9E8CB90E8E6332C2ABD49D7CF9D, downloaded 2026-08-24 from https://cdn.humanatlas.io/digital-objects/ref-organ/united-male/v1.5/assets/3d-vh-m-united.glb (official HRA CDN; NIH https://3d.nih.gov/entries/download/21022/1.01); preserved at 3d-assets/male/source/hra-reference-organ-united-male-v1.5.glb (kept outside Git, ignored via .gitignore, reproducible via scripts/download-anatomy-assets/download.js with SHA-256 check); inspected 849 meshes, 86 materials, 0 textures, 0 animations, 1035 nodes, 3863220 vertices, 4018087 triangles; not yet optimized
 
 ---
 

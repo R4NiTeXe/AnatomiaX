@@ -93,10 +93,18 @@ Error state if loading fails (model not found, invalid GLB, network failure)
 
 NIH Human Reference Atlas (HRA) is the current candidate source for the first male and female whole-body models, subject to final verification and integration testing.
 
-- Male: `hra-reference-organ-united-male-v1.5.glb` — https://3d.nih.gov/entries/3DPX-021022 — PURL https://purl.humanatlas.io/ref-organ/united-male/v1.5 — CC-BY 4.0 — not yet downloaded
+- Male: `hra-reference-organ-united-male-v1.5.glb` — https://3d.nih.gov/entries/3DPX-021022 — PURL https://purl.humanatlas.io/ref-organ/united-male/v1.5 — CC-BY 4.0 — Downloaded 2026-08-24, kept outside Git (`3d-assets/male/source/*.glb` ignored), reproducible via `scripts/download-anatomy-assets/download.js`
 - Female: `hra-reference-organ-united-female-v1.5.glb` — https://3d.nih.gov/entries/3DPX-020992 — PURL https://purl.humanatlas.io/ref-organ/united-female/v1.5 — CC-BY 4.0 — not yet downloaded
 
 See `docs/architecture/hra-source.md` for full research and `3d-assets/SOURCES.md` for source records.
+
+## First approved anatomy asset
+
+- **Asset**: NIH/HRA male whole-body `hra-reference-organ-united-male-v1.5.glb` (Body, Male — Male-united set)
+- **Original file location**: `3d-assets/male/source/hra-reference-organ-united-male-v1.5.glb` (preserved unmodified, 153596592 bytes, SHA-256 `34C45C90AA4ACD36BE19EDF8B878A8E7137DB9E8CB90E8E6332C2ABD49D7CF9D`, downloaded 2026-08-24 from `https://cdn.humanatlas.io/digital-objects/ref-organ/united-male/v1.5/assets/3d-vh-m-united.glb` and NIH `https://3d.nih.gov/entries/3DPX-021022`; kept outside Git via `.gitignore` `3d-assets/male/source/*.glb`, reproducible via `scripts/download-anatomy-assets/download.js`)
+- **Source/license record**: `3d-assets/male/SOURCE.md` and `3d-assets/SOURCES.md` (male updated to Downloaded)
+- **Inspection status**: Inspected — 849 meshes, 86 materials, 0 textures, 0 animations, 1035 nodes, 1 scene, 3863220 vertices, 4018087 triangles, bbox `-0.52364,-0.91462,-0.16059` to `0.52295,0.91489,0.15563` (approx 1.05×1.83×0.32, meters, height ~1.83), contains skin, organs (heart, lungs, liver, kidneys, brain, spleen, pancreas, intestine, bladder, prostate), bones, muscles, vessels, nerves (spinal cord segments). See `3d-assets/male/SOURCE.md` for full counts.
+- **Optimization not yet performed**: Original preserved; heavy for first-load (146.48 MB) — will require splitting/optimization and CDN before React integration
 
 ## Future Extensions
 
