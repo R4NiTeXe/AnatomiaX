@@ -78,6 +78,8 @@ Desktop.ini
 
 # Working split GLBs — generated, not final, not in Git
 3d-assets/male/working/*.glb
+3d-assets/male/working/**/*.glb
+3d-assets/male/working/optimized/*.glb
 
 # Misc
 *.pid
