@@ -18,8 +18,9 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@gltf-transform/core": "^3.10.1",
-    "@gltf-transform/functions": "^3.10.1",
+    "@gltf-transform/cli": "^4.4.2",
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
     "prettier": "^3.3.3"
   },
   "engines": {
