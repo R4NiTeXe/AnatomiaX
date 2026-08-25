@@ -76,6 +76,9 @@ Desktop.ini
 # NIH/HRA original source GLB — kept locally, not in Git (reproducible via scripts/download-anatomy-assets)
 3d-assets/male/source/*.glb
 
+# Working split GLBs — generated, not final, not in Git
+3d-assets/male/working/*.glb
+
 # Misc
 *.pid
 *.seed
