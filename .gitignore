@@ -81,6 +81,10 @@ Desktop.ini
 3d-assets/male/working/**/*.glb
 3d-assets/male/working/optimized/*.glb
 
+# Temporary local dev-test copies of optimized GLBs (served by Vite from public/models-dev).
+# Reproduce via: copy files from 3d-assets/male/working/optimized/ — never commit these.
+frontend/web/public/models-dev/*.glb
+
 # Misc
 *.pid
 *.seed
