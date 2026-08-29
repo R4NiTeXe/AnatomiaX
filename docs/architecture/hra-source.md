@@ -35,23 +35,26 @@ Official candidate source for AnatomiaX whole-body reference models. No GLB has 
 ## Female model
 
 - **Model name**: Body, Female — Female-united set
-- **Asset/file name**: `hra-reference-organ-united-female-v1.5.glb` (shown as `3d-vh-f-unitedhra-reference-organ-united-female-v1.5.glb` on NIH 3D)
+- **Asset/file name**: `hra-reference-organ-united-female-v1.5.glb` (shown as `3d-vh-f-united` on HRA CDN, `3d-vh-f-unitedhra-reference-organ-united-female-v1.5.glb` on NIH 3D)
 - **Official page URL**: https://3d.nih.gov/entries/3DPX-020992 (also referenced via https://purl.humanatlas.io/ref-organ/united-female/v1.5 and https://humanatlas.io/3d-reference-library)
 - **Version**: HRA reference object v1.5; NIH 3D entry version 1.01 (published 2025-08-05, created 2024-03-06)
-- **File format**: GLB (binary glTF 2.0)
+- **File format**: GLB (binary glTF 2.0), 1 buffer, 1 scene
 - **Sex**: Female
 - **What the model represents**: United whole-body reference organ set — all HRA reference organs placed in anatomically correct positions inside the female skin, for tissue registration and HRA exploration; created using data from the Visible Human Female, provided by the National Library of Medicine (Spitzer and Whitlock 2002)
-- **Creator / source**: Human Reference Atlas (HRA), specialist in 3D medical illustration and approved by organ experts; submitted by `hra` on NIH 3D
+- **Creator / source**: Human Reference Atlas (HRA), specialist in 3D medical illustration and approved by organ experts; submitted by `hra` on NIH 3D; expert contributors Kristen Browne and Heidi Schlehlein for 3D models
 - **Collection**: Human Reference Atlas 3D Reference Object Library on NIH 3D
-- **Persistent IDs**: NIH 3D `3DPX-020992`, PURL `https://purl.humanatlas.io/ref-organ/united-female/v1.5`
-- **Download information**: Not yet downloaded; download via `https://3d.nih.gov/entries/download/20992/1.01` or HRA CDN when verified
-- **License**: CC-BY 4.0 International (same badge and HRA-wide CC-BY)
-- **Attribution requirements**: Same CC-BY attribution; bibliography Spitzer and Whitlock 2002 doi:10.1002/(SICI)1097-0185(199804)253:2<49::AID-AR8>3.0.CO;2-9
-- **Source/creator information**: Visible Human Female dataset, National Library of Medicine; 59-year-old white female, 171.2 cm (67.4 inch), obese (weight not stated in some sources, but 3D Reference Library notes obese)
+- **Persistent IDs**: NIH 3D `3DPX-020992`, PURL `https://purl.humanatlas.io/ref-organ/united-female/v1.5`, CDN path `https://cdn.humanatlas.io/digital-objects/ref-organ/united-female/v1.5/assets/3d-vh-f-united.glb`
+- **Download information**: Downloaded 2026-08-29 via official HRA CDN `https://cdn.humanatlas.io/digital-objects/ref-organ/united-female/v1.5/assets/3d-vh-f-united.glb` (NIH `https://3d.nih.gov/entries/download/20992/1.01` redirects to same); preserved at `3d-assets/female/source/hra-reference-organ-united-female-v1.5.glb`, kept outside Git (`.gitignore:3d-assets/female/source/*.glb`), reproducible via `scripts/download-anatomy-assets/download-female.js` with SHA-256 verification
+- **File size**: 211624968 bytes (201.82 MiB, 211.62 MB)
+- **SHA-256**: `472567A56896B9B7890508DA6501FBF858E56AAA30745365F7A71ADE782B529C`
+- **GLB inspection (2026-08-29)**: version 2.0, generator `babylon.js glTF exporter for Autodesk MAYA 2023.2 v20220923.2`, 1 scene (`VH_F`), 1073 nodes, 888 meshes, 92 materials, 0 textures, 0 images, 0 animations, 2785 accessors, 5474814 vertices, 5557599 triangles, bbox `-0.48956,-0.79476,-0.22262` to `0.47788,0.87159,0.23267` (0.97×1.67×0.46 m, height 1.67 m, Y up, centered near origin), 888 nodes with `extras.ontologyid` (82.8% of nodes), coordinate system Y up, root `VH_F`
+- **License**: CC-BY 4.0 International (`https://creativecommons.org/licenses/by/4.0/`) — CC-BY badge on NIH 3D entry and HRA-wide `All data is CC-BY 4.0 Licensed`
+- **Attribution requirements**: CC-BY 4.0 — attribution to Human Reference Atlas, NIH 3D and PURL, CC-BY link; bibliography Spitzer and Whitlock 2002 doi:10.1002/(SICI)1097-0185(199804)253:2<49::AID-AR8>3.0.CO;2-9; follow NIH 3D “How to cite this NIH 3D entry”
+- **Source/creator information**: Visible Human Female dataset, National Library of Medicine; 59-year-old white female, 171.2 cm (67.4 inch), obese
 - **Whether modification is allowed**: Yes under CC-BY 4.0
 - **Whether redistribution is allowed**: Yes under CC-BY 4.0
-- **Important usage conditions**: Same research-only disclaimer; expert-reviewed reference organ
-- **Important metadata**: Female counterpart to male united set; part of HRA 65 objects
+- **Important usage conditions**: Research-only disclaimer (humanatlas.io footer: “This resource is intended for research purposes only. It should not be used for emergencies or medical or professional advice.”); expert-reviewed reference organ
+- **Important metadata**: Female counterpart to male united set; part of HRA 65 objects; inspected and preserved separately from male asset, not yet optimized/integrated
 
 ## Licensing
 
