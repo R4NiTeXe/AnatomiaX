@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import AnatomyViewer from '@/components/anatomy/AnatomyViewer';
 import AnatomySystemPanel from '@/components/anatomy/AnatomySystemPanel';
+import AnatomyVerticalNavigator from '@/components/anatomy/AnatomyVerticalNavigator';
 import { AnatomyStateProvider, useAnatomyState } from '@/components/anatomy/AnatomyStateContext';
 import { getAnatomySystem } from '@/components/anatomy/anatomyAssetConfig';
 
@@ -28,13 +29,30 @@ function LoadingOverlays(): JSX.Element | null {
   );
 }
 
-function HumanViewer({ resetSignal }: { resetSignal: number }): JSX.Element {
+function HumanViewer({
+  resetSignal,
+  vertical,
+  onVerticalChange,
+}: {
+  resetSignal: number;
+  vertical: number;
+  onVerticalChange: (value: number) => void;
+}): JSX.Element {
   const { status } = useAnatomyState();
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
-      <div className="relative min-h-[55vh] flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
-        <AnatomyViewer resetSignal={resetSignal} />
+      <div
+        className="relative min-h-[55vh] flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+        style={{ touchAction: 'none' }}
+      >
+        <AnatomyViewer resetSignal={resetSignal} vertical={vertical} />
+
+        <div className="pointer-events-none absolute inset-y-0 right-2 z-10 flex items-center sm:right-3">
+          <div className="pointer-events-auto">
+            <AnatomyVerticalNavigator value={vertical} onChange={onVerticalChange} />
+          </div>
+        </div>
 
         {status.skin === 'loading' && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/50">
@@ -59,6 +77,12 @@ function HumanViewer({ resetSignal }: { resetSignal: number }): JSX.Element {
 
 export default function HumanPage(): JSX.Element {
   const [resetSignal, setResetSignal] = useState(0);
+  const [vertical, setVertical] = useState(0.5);
+
+  const handleResetCamera = useCallback(() => {
+    setVertical(0.5);
+    setResetSignal(n => n + 1);
+  }, []);
 
   return (
     <AnatomyStateProvider>
@@ -70,10 +94,14 @@ export default function HumanPage(): JSX.Element {
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden sm:p-6">
           <section className="order-1 flex min-h-0 flex-1 flex-col lg:order-2">
-            <HumanViewer resetSignal={resetSignal} />
+            <HumanViewer
+              resetSignal={resetSignal}
+              vertical={vertical}
+              onVerticalChange={setVertical}
+            />
           </section>
           <aside className="order-2 w-full shrink-0 lg:order-1 lg:w-72 lg:overflow-y-auto">
-            <AnatomySystemPanel onResetCamera={() => setResetSignal(n => n + 1)} />
+            <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>
       </main>
