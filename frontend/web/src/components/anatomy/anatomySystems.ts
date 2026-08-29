@@ -1,6 +1,16 @@
 import type { AnatomySystemAsset, AnatomySystemDefinition, AnatomySystemKey } from './anatomyTypes';
 
-const ASSET_BASE_URL: string = import.meta.env.VITE_ANATOMY_ASSET_BASE_URL ?? '/models-dev/';
+const ASSET_BASE_URL: string = (() => {
+  try {
+    // Vite provides import.meta.env at build/dev; Jest (CJS) does not support import.meta syntax.
+    // Use indirection to avoid static parse error in ts-jest CJS transform.
+    const metaEnv = Function('try{return import.meta?.env}catch(e){return undefined}')() as
+      Record<string, string | undefined> | undefined;
+    return metaEnv?.VITE_ANATOMY_ASSET_BASE_URL ?? '/models-dev/';
+  } catch {
+    return '/models-dev/';
+  }
+})();
 
 function defineSystem(
   key: AnatomySystemKey,

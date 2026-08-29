@@ -36,20 +36,45 @@ function cloneSceneMaterials(scene: THREE.Object3D): MeshMaterialEntry[] {
     if (!(mesh as unknown as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
     const shared = mesh.material;
     // Clone so opacity/highlight never mutate materials shared across meshes.
-    mesh.material = Array.isArray(shared) ? shared.map(m => m.clone()) : shared.clone();
-    entries.push({ mesh, base: mesh.material });
+    const cloned = Array.isArray(shared) ? shared.map(m => m.clone()) : shared.clone();
+    // Preserve original transparency/depthWrite for soft-transparency restore.
+    const clonedList = Array.isArray(cloned) ? cloned : [cloned];
+    const sharedList = Array.isArray(shared) ? shared : [shared];
+    clonedList.forEach((c, i) => {
+      const orig = sharedList[i] as THREE.MeshStandardMaterial;
+      (c as unknown as Record<string, unknown>).__originalTransparent = orig.transparent;
+      (c as unknown as Record<string, unknown>).__originalDepthWrite = orig.depthWrite;
+    });
+    mesh.material = cloned;
+    entries.push({ mesh, base: cloned });
   });
   return entries;
 }
 
-function applySkinOpacity(entries: MeshMaterialEntry[], opacity: number): void {
+function applySystemOpacity(entries: MeshMaterialEntry[], opacity: number): void {
   for (const { mesh } of entries) {
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of materials) {
-      const std = material as THREE.MeshStandardMaterial;
+      const std = material as THREE.MeshStandardMaterial & {
+        __originalTransparent?: boolean;
+        __originalDepthWrite?: boolean;
+      };
+      const originalTransparent = (std as unknown as Record<string, unknown>)
+        .__originalTransparent as boolean | undefined;
+      const originalDepthWrite = (std as unknown as Record<string, unknown>)
+        .__originalDepthWrite as boolean | undefined;
       std.opacity = opacity;
-      std.transparent = opacity < 0.999;
-      std.depthWrite = opacity >= 0.999;
+      if (opacity >= 0.999) {
+        std.transparent = originalTransparent ?? false;
+        std.depthWrite = originalDepthWrite ?? true;
+      } else if (opacity <= 0.001) {
+        // Fully transparent — keep transparent true but allow depth sorting to avoid artifacts.
+        std.transparent = true;
+        std.depthWrite = false;
+      } else {
+        std.transparent = true;
+        std.depthWrite = false;
+      }
       std.needsUpdate = false;
     }
   }
@@ -76,12 +101,11 @@ type AnatomyGltfProps = {
 function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   const { scene } = useGLTF(asset.path, false, true);
   const {
-    skinOpacity,
+    systemOpacity,
     selectedStructure,
     selectStructure,
     setSystemStatus,
     registerSystemStructures,
-    unregisterSystemStructures,
     registry,
   } = useAnatomyState();
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
@@ -89,21 +113,27 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
 
   useEffect(() => {
     entriesRef.current = cloneSceneMaterials(scene);
-    if (asset.key === 'skin') {
-      applySkinOpacity(entriesRef.current, skinOpacity);
-    }
+    applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
     registerSystemStructures(asset.key, scene);
     setSystemStatus(asset.key, 'loaded');
-    return () => {
-      unregisterSystemStructures(asset.key);
-    };
+    // Keep registry cached on hide — do not unregister here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, asset.key]);
 
   useEffect(() => {
-    if (asset.key !== 'skin') return;
-    applySkinOpacity(entriesRef.current, skinOpacity);
-  }, [asset.key, skinOpacity]);
+    applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
+    // Also update any currently highlighted meshes in this system.
+    for (const mesh of highlightedRef.current) {
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const m of mats) {
+        const std = m as THREE.MeshStandardMaterial;
+        const op = systemOpacity[asset.key] ?? 1;
+        std.opacity = op;
+        std.transparent = op < 0.999;
+        std.depthWrite = op >= 0.999;
+      }
+    }
+  }, [asset.key, systemOpacity]);
 
   useEffect(() => {
     // Restore any previously highlighted meshes in this system.

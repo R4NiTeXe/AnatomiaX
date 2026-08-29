@@ -6,7 +6,7 @@
   "description": "AnatomiaX main web application - React + Vite + TypeScript",
   "scripts": {
     "dev": "vite",
-    "build": "tsc \u0026\u0026 vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -26,6 +26,8 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^14.3.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.5",
