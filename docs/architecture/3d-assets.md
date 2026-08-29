@@ -96,6 +96,8 @@ NIH Human Reference Atlas (HRA) is the current candidate source for the first ma
 - Male: `hra-reference-organ-united-male-v1.5.glb` — https://3d.nih.gov/entries/3DPX-021022 — PURL https://purl.humanatlas.io/ref-organ/united-male/v1.5 — CC-BY 4.0 — Downloaded 2026-08-24, kept outside Git (`3d-assets/male/source/*.glb` ignored), reproducible via `scripts/download-anatomy-assets/download.js`
 - Female: `hra-reference-organ-united-female-v1.5.glb` — https://3d.nih.gov/entries/3DPX-020992 — PURL https://purl.humanatlas.io/ref-organ/united-female/v1.5 — CC-BY 4.0 — Downloaded 2026-08-29, kept outside Git (`3d-assets/female/source/*.glb` ignored), reproducible via `scripts/download-anatomy-assets/download-female.js` — preserved separately from the male asset (not yet split/optimized)
 
+**Female anatomy inspection**: Female source inspected (2026-08-29) — 1073 nodes, 888 meshes, 92 materials, 5.47M vertices, 5.56M triangles, height 1.67m, ontology on 82.8% nodes. Detailed map in `docs/architecture/female-anatomy-map.md`. Splitting is the next step; optimization has NOT yet been performed.
+
 See `docs/architecture/hra-source.md` for full research and `3d-assets/SOURCES.md` for source records.
 
 ## First approved anatomy asset
