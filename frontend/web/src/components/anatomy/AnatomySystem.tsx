@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useAnatomyState } from './AnatomyStateContext';
-import type { AnatomySystemAsset } from './anatomyAssetConfig';
+import type { AnatomySystemAsset } from './anatomyTypes';
+import { createStructureKey, extractOntologyId } from './anatomyRegistry';
 
 const HIGHLIGHT_EMISSIVE = new THREE.Color('#2dd4bf');
 const HIGHLIGHT_INTENSITY = 0.6;
@@ -74,7 +75,15 @@ type AnatomyGltfProps = {
 
 function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   const { scene } = useGLTF(asset.path, false, true);
-  const { skinOpacity, selectedStructure, selectStructure, setSystemStatus } = useAnatomyState();
+  const {
+    skinOpacity,
+    selectedStructure,
+    selectStructure,
+    setSystemStatus,
+    registerSystemStructures,
+    unregisterSystemStructures,
+    registry,
+  } = useAnatomyState();
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
   const highlightedRef = useRef<THREE.Mesh[]>([]);
 
@@ -83,7 +92,11 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     if (asset.key === 'skin') {
       applySkinOpacity(entriesRef.current, skinOpacity);
     }
+    registerSystemStructures(asset.key, scene);
     setSystemStatus(asset.key, 'loaded');
+    return () => {
+      unregisterSystemStructures(asset.key);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, asset.key]);
 
@@ -104,10 +117,14 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       const targets: THREE.Mesh[] = [];
       scene.traverse(obj => {
         const mesh = obj as THREE.Mesh;
-        if (
-          (mesh as unknown as { isMesh?: boolean }).isMesh &&
-          resolveStructureName(mesh) === selectedStructure.name
-        ) {
+        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
+        const objectName = resolveStructureName(mesh);
+        const ontologyId = extractOntologyId(mesh);
+        const key = createStructureKey(asset.key, ontologyId, objectName);
+        if (key === selectedStructure.structureKey) {
+          targets.push(mesh);
+        } else if (selectedStructure.ontologyId && ontologyId === selectedStructure.ontologyId) {
+          // Multiple meshes sharing the same ontologyId — highlight all.
           targets.push(mesh);
         }
       });
@@ -128,9 +145,17 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
 
   const handleClick = (event: ThreeEvent<MouseEvent>): void => {
     event.stopPropagation();
+    const objectName = resolveStructureName(event.object);
+    const ontologyId = extractOntologyId(event.object);
+    const structureKey = createStructureKey(asset.key, ontologyId, objectName);
+    const registered = registry.findByStructureKey(structureKey);
+    // Prefer canonical registry values when available; otherwise use derived ones.
     selectStructure({
-      name: resolveStructureName(event.object),
+      structureKey: registered?.structureKey ?? structureKey,
+      name: registered?.name ?? objectName,
+      objectName,
       systemKey: asset.key,
+      ontologyId: registered?.ontologyId ?? ontologyId,
     });
   };
 

@@ -1,11 +1,18 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { initialVisibleSystems, type AnatomySystemKey } from './anatomyAssetConfig';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import * as THREE from 'three';
+import { initialVisibleSystems } from './anatomyAssetConfig';
+import type { AnatomySystemKey, AnatomySelection, AnatomyStructure } from './anatomyTypes';
+import { AnatomyStructureRegistry } from './anatomyRegistry';
 
-export interface SelectedStructure {
-  /** Verified object/node name from the loaded GLB — not a curated label. */
-  name: string;
-  systemKey: AnatomySystemKey;
-}
+export type SelectedStructure = AnatomySelection;
 
 export type SystemLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -36,11 +43,15 @@ interface AnatomyStateValue {
   setSystemError: (key: AnatomySystemKey, message: string) => void;
   attempts: Record<AnatomySystemKey, number>;
   retrySystem: (key: AnatomySystemKey) => void;
+  registry: AnatomyStructureRegistry;
+  registerSystemStructures: (key: AnatomySystemKey, scene: THREE.Object3D) => AnatomyStructure[];
+  unregisterSystemStructures: (key: AnatomySystemKey) => void;
 }
 
 const AnatomyStateContext = createContext<AnatomyStateValue | null>(null);
 
 export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX.Element {
+  const registryRef = useRef<AnatomyStructureRegistry>(new AnatomyStructureRegistry());
   const [visibleSystems, setVisibleSystems] = useState(initialVisibleSystems);
   const [skinOpacity, setSkinOpacity] = useState(1);
   const [selectedStructure, setSelectedStructure] = useState<SelectedStructure | null>(null);
@@ -90,6 +101,19 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
     setAttempts(prev => ({ ...prev, [key]: prev[key] + 1 }));
   }, []);
 
+  const registerSystemStructures = useCallback(
+    (key: AnatomySystemKey, scene: THREE.Object3D): AnatomyStructure[] => {
+      return registryRef.current.registerSystem(key, scene);
+    },
+    []
+  );
+
+  const unregisterSystemStructures = useCallback((key: AnatomySystemKey): void => {
+    registryRef.current.unregisterSystem(key);
+    // Clear selection if it belonged to the system being removed.
+    setSelectedStructure(prev => (prev && prev.systemKey === key ? null : prev));
+  }, []);
+
   const value = useMemo<AnatomyStateValue>(
     () => ({
       visibleSystems,
@@ -104,6 +128,9 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
       setSystemError,
       attempts,
       retrySystem,
+      registry: registryRef.current,
+      registerSystemStructures,
+      unregisterSystemStructures,
     }),
     [
       visibleSystems,
@@ -117,6 +144,8 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
       setSystemError,
       attempts,
       retrySystem,
+      registerSystemStructures,
+      unregisterSystemStructures,
     ]
   );
 

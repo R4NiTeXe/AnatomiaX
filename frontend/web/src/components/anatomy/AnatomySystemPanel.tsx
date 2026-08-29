@@ -141,8 +141,17 @@ export default function AnatomySystemPanel({
           >
             {selectedStructure.name}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500" data-testid="selected-system">
             System: {getAnatomySystem(selectedStructure.systemKey).label}
+          </p>
+          <p
+            className="mt-1 break-words font-mono text-xs leading-5 text-slate-400"
+            data-testid="selected-ontology"
+          >
+            Ontology:{' '}
+            {selectedStructure.ontologyId
+              ? selectedStructure.ontologyId
+              : 'Ontology ID not available'}
           </p>
           <button
             type="button"
