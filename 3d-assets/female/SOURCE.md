@@ -51,3 +51,10 @@ Separation quality: Skin/GOOD, Musculoskeletal/GOOD, Nervous/GOOD, Cardiovascula
 Performance: 5.5M vertices, 5.5M triangles, 888 meshes, 92 materials. Recommended lazy-load order: skin → musculoskeletal → nervous → cardiovascular → respiratory → digestive → urinary → reproductive → lymphatic.
 
 See docs/architecture/female-anatomy-map.md for full map.
+
+## Split inspection (2026-08-29)
+
+- **Tool**: `scripts/split-female.js` via glTF-Transform 4.4.2 (`NodeIO` + `prune`) — no optimization
+- **Outputs**: 9 working GLBs in `3d-assets/female/working/` — `skin.glb` (17 meshes, 1245604 verts, UBERON:0002097), `musculoskeletal.glb` (107 meshes, 467440 verts), `nervous.glb` (362 meshes, 2065073 verts), `cardiovascular.glb` (124 meshes, 474817 verts), `respiratory.glb` (70 meshes, 606811 verts), `digestive.glb` (61 meshes, 173006 verts), `urinary.glb` (87 meshes, 131966 verts), `reproductive.glb` (46 meshes, 178284 verts, female-specific ovary/uterus/cervix/vagina/fallopian/broad ligament preserved), `lymphatic.glb` (14 meshes, 131813 verts, minimal by source)
+- **Preservation**: All 888 meshes, 5474814 verts, 5557599 tris preserved (output sum equals source); materials, node names, `extras.ontologyid` (888 nodes), transforms, Y-up/meters, `VH_F` root, bbox subsets, no invented anatomy
+- **Limitations**: Lymphatic minimal (14 meshes) per source; breast stays in `skin.glb` per HRA hierarchy (not in reproductive); endocrine distributed (placenta/ovary in reproductive, pituitary/thyroid remain under nervous/urinary); working files unoptimized and stay ignored via `.gitignore` `3d-assets/female/working/*.glb`, documented in `3d-assets/female/working/README.md`
