@@ -31,21 +31,24 @@ function meshWithUserData(
 describe('createStructureKey', () => {
   it('uses ontologyId when present', () => {
     expect(createStructureKey('nervous', 'UBERON:0000955', 'VH_M_brain')).toBe(
-      'nervous:UBERON:0000955'
+      'male:nervous:UBERON:0000955'
+    );
+    expect(createStructureKey('nervous', 'UBERON:0000955', 'VH_M_brain', 'female')).toBe(
+      'female:nervous:UBERON:0000955'
     );
   });
 
   it('falls back to object name when ontology missing', () => {
-    expect(createStructureKey('skin', null, 'VH_M_skin')).toBe('skin:object:VH_M_skin');
-    expect(createStructureKey('skin', '', 'VH_M_skin')).toBe('skin:object:VH_M_skin');
+    expect(createStructureKey('skin', null, 'VH_M_skin')).toBe('male:skin:object:VH_M_skin');
+    expect(createStructureKey('skin', '', 'VH_M_skin')).toBe('male:skin:object:VH_M_skin');
   });
 
   it('sanitizes fallback name', () => {
-    expect(createStructureKey('skin', null, '  my object  ')).toBe('skin:object:my_object');
+    expect(createStructureKey('skin', null, '  my object  ')).toBe('male:skin:object:my_object');
   });
 
   it('handles unnamed object', () => {
-    expect(createStructureKey('nervous', null, '')).toBe('nervous:object:unnamed');
+    expect(createStructureKey('nervous', null, '')).toBe('male:nervous:object:unnamed');
   });
 });
 
@@ -111,18 +114,21 @@ describe('AnatomyStructureRegistry', () => {
   ): AnatomyStructure {
     const ontologyId = overrides.ontologyId ?? null;
     const objectName = overrides.objectName ?? overrides.name ?? 'VH_M_test';
+    const bodyModel = overrides.bodyModel ?? 'male';
     const structureKey =
-      overrides.structureKey ?? createStructureKey(overrides.systemKey, ontologyId, objectName);
+      overrides.structureKey ??
+      createStructureKey(overrides.systemKey, ontologyId, objectName, bodyModel);
     const base: AnatomyStructure = {
       id: structureKey,
       structureKey,
       name: overrides.name ?? objectName,
       objectName,
       systemKey: overrides.systemKey,
+      bodyModel,
       ontologyId,
       lineage: overrides.lineage ?? [objectName],
     };
-    return { ...base, ...overrides, id: structureKey, structureKey } as AnatomyStructure;
+    return { ...base, ...overrides, id: structureKey, structureKey, bodyModel } as AnatomyStructure;
   }
 
   it('registers and finds by structure key', () => {
@@ -202,7 +208,7 @@ describe('AnatomyStructureRegistry', () => {
       objectName: 'Allen_brain',
       ontologyId: null,
     });
-    expect(s.structureKey).toBe('nervous:object:Allen_brain');
+    expect(s.structureKey).toBe('male:nervous:object:Allen_brain');
     registry.register(s);
     expect(registry.findStructureByObjectName('Allen_brain')).toEqual(s);
     expect(registry.findStructureByOntologyId('UBERON:0000955')).toBeUndefined();
@@ -269,7 +275,7 @@ describe('collectStructuresFromScene', () => {
     scene.add(m1, m2);
     const result = collectStructuresFromScene(scene, 'cardiovascular');
     expect(result).toHaveLength(1);
-    expect(result[0].structureKey).toBe('cardiovascular:UBERON:0000948');
+    expect(result[0].structureKey).toBe('male:cardiovascular:UBERON:0000948');
   });
 
   it('uses fallback key when ontology missing', () => {
@@ -278,7 +284,7 @@ describe('collectStructuresFromScene', () => {
     m.name = 'Allen_brain';
     scene.add(m);
     const result = collectStructuresFromScene(scene, 'nervous');
-    expect(result[0].structureKey).toBe('nervous:object:Allen_brain');
+    expect(result[0].structureKey).toBe('male:nervous:object:Allen_brain');
     expect(result[0].ontologyId).toBeNull();
   });
 });
@@ -299,9 +305,54 @@ describe('selection conversion', () => {
       name: found!.name,
       objectName: found!.objectName,
       systemKey: found!.systemKey,
+      bodyModel: found!.bodyModel,
       ontologyId: found!.ontologyId,
     };
-    expect(selection.structureKey).toBe('skin:UBERON:0002097');
+    expect(selection.structureKey).toBe('male:skin:UBERON:0002097');
     expect(selection.ontologyId).toBe('UBERON:0002097');
+    expect(selection.bodyModel).toBe('male');
+  });
+});
+
+describe('body model abstraction', () => {
+  it('same ontology in male and female does not collide', () => {
+    const registry = new AnatomyStructureRegistry();
+    const maleScene = new THREE.Group();
+    const maleMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+    maleMesh.name = 'VH_M_skin';
+    maleMesh.userData.ontologyId = 'UBERON:0002097';
+    maleScene.add(maleMesh);
+    const femaleScene = new THREE.Group();
+    const femaleMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+    femaleMesh.name = 'VH_F_skin';
+    femaleMesh.userData.ontologyId = 'UBERON:0002097';
+    femaleScene.add(femaleMesh);
+    registry.registerSystem('skin', maleScene, 'male');
+    registry.registerSystem('skin', femaleScene, 'female');
+    expect(registry.size).toBe(2);
+    expect(registry.findByStructureKey('male:skin:UBERON:0002097')).toBeDefined();
+    expect(registry.findByStructureKey('female:skin:UBERON:0002097')).toBeDefined();
+    // global ontology search returns both
+    expect(registry.findStructuresByOntologyId('UBERON:0002097')).toHaveLength(2);
+  });
+
+  it('female asset resolution uses distinct path', async () => {
+    const { getAnatomySystemAssetForBody } = await import('../anatomySystems');
+    const maleAsset = getAnatomySystemAssetForBody('male', 'skin');
+    const femaleAsset = getAnatomySystemAssetForBody('female', 'skin');
+    expect(maleAsset.path).toBe('/models-dev/skin-meshopt.glb');
+    expect(femaleAsset.path).toBe('/models-dev/female-skin-meshopt.glb');
+    expect(maleAsset.path).not.toBe(femaleAsset.path);
+  });
+
+  it('male asset resolution still works via legacy helper', async () => {
+    const { getAnatomySystemAsset } = await import('../anatomySystems');
+    expect(getAnatomySystemAsset('skin').path).toBe('/models-dev/skin-meshopt.glb');
+  });
+
+  it('same system key works for both body models', async () => {
+    const { getAnatomySystemDefinitionForBody } = await import('../anatomySystems');
+    expect(getAnatomySystemDefinitionForBody('male', 'reproductive').label).toBe('Reproductive');
+    expect(getAnatomySystemDefinitionForBody('female', 'reproductive').label).toBe('Reproductive');
   });
 });

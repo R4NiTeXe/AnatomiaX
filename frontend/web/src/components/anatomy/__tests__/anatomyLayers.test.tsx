@@ -50,10 +50,11 @@ function TestPanel() {
         data-testid="select-heart"
         onClick={() =>
           s.selectStructure({
-            structureKey: 'cardiovascular:UBERON:0000948',
+            structureKey: 'male:cardiovascular:UBERON:0000948',
             name: 'VH_M_heart',
             objectName: 'VH_M_heart',
             systemKey: 'cardiovascular',
+            bodyModel: 'male',
             ontologyId: 'UBERON:0000948',
           })
         }
@@ -64,10 +65,11 @@ function TestPanel() {
         data-testid="select-brain"
         onClick={() =>
           s.selectStructure({
-            structureKey: 'nervous:UBERON:0000955',
+            structureKey: 'male:nervous:UBERON:0000955',
             name: 'VH_M_brain',
             objectName: 'VH_M_brain',
             systemKey: 'nervous',
+            bodyModel: 'male',
             ontologyId: 'UBERON:0000955',
           })
         }

@@ -1,26 +1,38 @@
 import * as THREE from 'three';
-import type { AnatomyStructure, AnatomySystemKey } from './anatomyTypes';
+import type { AnatomyBodyModelKey, AnatomyStructure, AnatomySystemKey } from './anatomyTypes';
 
 /**
  * Stable key for a structure.
- * - Preferred: `${systemKey}:${ontologyId}` when a verified ontologyId exists.
- * - Fallback: `${systemKey}:object:${sanitizedObjectName}` when ontology is absent.
+ * - Preferred: `${bodyModel}:${systemKey}:${ontologyId}` when a verified ontologyId exists.
+ * - Fallback: `${bodyModel}:${systemKey}:object:${sanitizedObjectName}` when ontology is absent.
  *
+ * Body model prefix ensures male and female structures with the same ontology do not collide,
+ * while keeping ontologyId globally searchable via `byOntology`.
  * Sanitization: trim and replace whitespace runs with single underscore,
  * keep original casing (HRA names are already stable like `VH_M_heart`).
- * This fallback is documented and never invents medical identifiers.
  */
 export function createStructureKey(
   systemKey: AnatomySystemKey,
   ontologyId: string | null,
-  objectName: string
+  objectName: string,
+  bodyModel: AnatomyBodyModelKey = 'male'
 ): string {
   if (ontologyId) {
     const normalized = ontologyId.trim();
-    if (normalized) return `${systemKey}:${normalized}`;
+    if (normalized) return `${bodyModel}:${systemKey}:${normalized}`;
   }
   const fallback = objectName.trim().replace(/\s+/g, '_') || 'unnamed';
-  return `${systemKey}:object:${fallback}`;
+  return `${bodyModel}:${systemKey}:object:${fallback}`;
+}
+
+/** Legacy overload — bodyModel defaults to male for backward compat */
+export function createStructureKeyForBody(
+  bodyModel: AnatomyBodyModelKey,
+  systemKey: AnatomySystemKey,
+  ontologyId: string | null,
+  objectName: string
+): string {
+  return createStructureKey(systemKey, ontologyId, objectName, bodyModel);
 }
 
 function readOntologyCandidate(data: unknown): string | null {
@@ -82,10 +94,12 @@ export function resolveObjectName(object: THREE.Object3D): string {
  * called for systems that are actually loaded (keeps startup cheap).
  * Deduplicates by structureKey — multiple meshes sharing the same ontologyId
  * collapse to one entry (documented, not pretended as distinct structures).
+ * Body model prefix ensures male/female do not collide.
  */
 export function collectStructuresFromScene(
   scene: THREE.Object3D,
-  systemKey: AnatomySystemKey
+  systemKey: AnatomySystemKey,
+  bodyModel: AnatomyBodyModelKey = 'male'
 ): AnatomyStructure[] {
   const byKey = new Map<string, AnatomyStructure>();
 
@@ -95,7 +109,7 @@ export function collectStructuresFromScene(
 
     const objectName = resolveObjectName(mesh);
     const ontologyId = extractOntologyId(mesh);
-    const structureKey = createStructureKey(systemKey, ontologyId, objectName);
+    const structureKey = createStructureKey(systemKey, ontologyId, objectName, bodyModel);
     if (byKey.has(structureKey)) return;
 
     const lineage: string[] = [];
@@ -111,6 +125,7 @@ export function collectStructuresFromScene(
       name: objectName,
       objectName,
       systemKey,
+      bodyModel,
       ontologyId,
       lineage,
     };
@@ -163,10 +178,22 @@ export class AnatomyStructureRegistry {
     }
   }
 
-  registerSystem(systemKey: AnatomySystemKey, scene: THREE.Object3D): AnatomyStructure[] {
-    const structures = collectStructuresFromScene(scene, systemKey);
+  registerSystem(
+    systemKey: AnatomySystemKey,
+    scene: THREE.Object3D,
+    bodyModel: AnatomyBodyModelKey = 'male'
+  ): AnatomyStructure[] {
+    const structures = collectStructuresFromScene(scene, systemKey, bodyModel);
     for (const s of structures) this.register(s);
     return structures;
+  }
+
+  registerSystemForBody(
+    bodyModel: AnatomyBodyModelKey,
+    systemKey: AnatomySystemKey,
+    scene: THREE.Object3D
+  ): AnatomyStructure[] {
+    return this.registerSystem(systemKey, scene, bodyModel);
   }
 
   unregisterSystem(systemKey: AnatomySystemKey): void {

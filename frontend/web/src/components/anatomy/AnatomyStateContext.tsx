@@ -10,7 +10,12 @@ import {
 } from 'react';
 import * as THREE from 'three';
 import { initialVisibleSystems } from './anatomyAssetConfig';
-import type { AnatomySystemKey, AnatomySelection, AnatomyStructure } from './anatomyTypes';
+import type {
+  AnatomyBodyModelKey,
+  AnatomySelection,
+  AnatomyStructure,
+  AnatomySystemKey,
+} from './anatomyTypes';
 import { AnatomyStructureRegistry } from './anatomyRegistry';
 
 export type SelectedStructure = AnatomySelection;
@@ -63,6 +68,9 @@ interface AnatomyStateValue {
   resetView: () => void;
   selectedStructure: SelectedStructure | null;
   selectStructure: (structure: SelectedStructure | null) => void;
+  /** Prepared for shared viewer — /human remains male */
+  selectedBodyModel: AnatomyBodyModelKey;
+  setSelectedBodyModel: (model: AnatomyBodyModelKey) => void;
   status: SystemLoadStatusMap;
   setSystemStatus: (key: AnatomySystemKey, status: SystemLoadStatus) => void;
   errorMessages: Record<AnatomySystemKey, string>;
@@ -83,6 +91,7 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
   const [isolatedSystem, setIsolatedSystem] = useState<AnatomySystemKey | null>(null);
   const [isolatedSnapshot, setIsolatedSnapshot] = useState<IsolatedSnapshot | null>(null);
   const [selectedStructure, setSelectedStructure] = useState<SelectedStructure | null>(null);
+  const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>('male');
   const [status, setStatus] = useState<SystemLoadStatusMap>(IDLE_STATUS);
   const [errorMessages, setErrorMessages] = useState<Record<AnatomySystemKey, string>>({
     skin: '',
@@ -192,9 +201,9 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
 
   const registerSystemStructures = useCallback(
     (key: AnatomySystemKey, scene: THREE.Object3D): AnatomyStructure[] => {
-      return registryRef.current.registerSystem(key, scene);
+      return registryRef.current.registerSystem(key, scene, selectedBodyModel);
     },
-    []
+    [selectedBodyModel]
   );
 
   const unregisterSystemStructures = useCallback((key: AnatomySystemKey): void => {
@@ -216,6 +225,8 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
       resetView,
       selectedStructure,
       selectStructure,
+      selectedBodyModel,
+      setSelectedBodyModel,
       status,
       setSystemStatus,
       errorMessages,
@@ -238,6 +249,7 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
       resetView,
       selectedStructure,
       selectStructure,
+      selectedBodyModel,
       status,
       setSystemStatus,
       errorMessages,

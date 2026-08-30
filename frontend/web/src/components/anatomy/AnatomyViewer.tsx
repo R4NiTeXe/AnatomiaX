@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { Bounds, OrbitControls, useBounds } from '@react-three/drei';
 import { useAnatomyState } from './AnatomyStateContext';
 import AnatomySystemSlot from './AnatomySystem';
-import { maleAnatomyAssets } from './anatomyAssetConfig';
+import { ANATOMY_BODY_MODELS } from './anatomySystems';
 import { VerticalCameraHandler } from './AnatomyVerticalNavigator';
 
 function FitController({ resetSignal }: { resetSignal: number }): null {
@@ -20,19 +20,21 @@ function FitController({ resetSignal }: { resetSignal: number }): null {
 }
 
 function AnatomySystems(): JSX.Element {
-  const { visibleSystems, status, setSystemStatus, attempts } = useAnatomyState();
+  const { visibleSystems, status, setSystemStatus, attempts, selectedBodyModel } =
+    useAnatomyState();
+  const assets = Object.values(ANATOMY_BODY_MODELS[selectedBodyModel].systems);
 
   useEffect(() => {
-    for (const asset of maleAnatomyAssets) {
+    for (const asset of assets) {
       if (visibleSystems[asset.key] && asset.available && status[asset.key] === 'idle') {
         setSystemStatus(asset.key, 'loading');
       }
     }
-  }, [visibleSystems, status, setSystemStatus]);
+  }, [visibleSystems, status, setSystemStatus, assets]);
 
   return (
     <>
-      {maleAnatomyAssets
+      {assets
         .filter(asset => asset.available && visibleSystems[asset.key])
         .map(asset => (
           <AnatomySystemSlot key={`${asset.key}:${attempts[asset.key]}`} asset={asset} />

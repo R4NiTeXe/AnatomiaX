@@ -1,4 +1,10 @@
-import type { AnatomySystemAsset, AnatomySystemDefinition, AnatomySystemKey } from './anatomyTypes';
+import type {
+  AnatomyBodyModelDefinition,
+  AnatomyBodyModelKey,
+  AnatomySystemAsset,
+  AnatomySystemDefinition,
+  AnatomySystemKey,
+} from './anatomyTypes';
 
 const ASSET_BASE_URL: string = (() => {
   try {
@@ -57,4 +63,120 @@ export function getAnatomySystemDefinition(key: AnatomySystemKey): AnatomySystem
 
 export function getAnatomySystemAsset(key: AnatomySystemKey): AnatomySystemAsset {
   return ANATOMY_SYSTEMS_BY_KEY[key].asset;
+}
+
+// ---------------------------------------------------------------------------
+// Body-model abstraction — single viewer, no duplicated logic
+// ---------------------------------------------------------------------------
+
+function defineBodySystem(
+  _bodyModel: AnatomyBodyModelKey,
+  key: AnatomySystemKey,
+  label: string,
+  file: string,
+  displayOrder: number,
+  available: boolean
+): AnatomySystemDefinition {
+  const asset: AnatomySystemAsset = {
+    key,
+    label,
+    type: key === 'skin' ? 'body' : 'system',
+    path: `${ASSET_BASE_URL}${file}`,
+    available,
+  };
+  return { key, label, asset, available, displayOrder };
+}
+
+const MALE_SYSTEMS = ANATOMY_SYSTEM_DEFINITIONS;
+
+const FEMALE_SYSTEMS: readonly AnatomySystemDefinition[] = [
+  defineBodySystem('female', 'skin', 'Skin', 'female-skin-meshopt.glb', 0, true),
+  defineBodySystem(
+    'female',
+    'musculoskeletal',
+    'Musculoskeletal',
+    'female-musculoskeletal-meshopt.glb',
+    1,
+    true
+  ),
+  defineBodySystem('female', 'nervous', 'Nervous', 'female-nervous-meshopt.glb', 2, true),
+  defineBodySystem(
+    'female',
+    'cardiovascular',
+    'Cardiovascular',
+    'female-cardiovascular-meshopt.glb',
+    3,
+    true
+  ),
+  defineBodySystem(
+    'female',
+    'respiratory',
+    'Respiratory',
+    'female-respiratory-meshopt.glb',
+    4,
+    true
+  ),
+  defineBodySystem('female', 'digestive', 'Digestive', 'female-digestive-meshopt.glb', 5, true),
+  defineBodySystem('female', 'urinary', 'Urinary', 'female-urinary-meshopt.glb', 6, true),
+  defineBodySystem(
+    'female',
+    'reproductive',
+    'Reproductive',
+    'female-reproductive-meshopt.glb',
+    7,
+    true
+  ),
+  defineBodySystem('female', 'lymphatic', 'Lymphatic', 'female-lymphatic-meshopt.glb', 8, true),
+];
+
+export const ANATOMY_BODY_MODELS: Readonly<
+  Record<AnatomyBodyModelKey, AnatomyBodyModelDefinition>
+> = {
+  male: {
+    key: 'male',
+    label: 'Male',
+    systems: Object.fromEntries(MALE_SYSTEMS.map(d => [d.key, d.asset])) as Record<
+      AnatomySystemKey,
+      AnatomySystemAsset
+    >,
+    available: true,
+  },
+  female: {
+    key: 'female',
+    label: 'Female',
+    systems: Object.fromEntries(FEMALE_SYSTEMS.map(d => [d.key, d.asset])) as Record<
+      AnatomySystemKey,
+      AnatomySystemAsset
+    >,
+    // Not yet integrated into live /human UI — configuration only, keeps asset base consistent
+    available: false,
+  },
+};
+
+const BODY_SYSTEMS_BY_KEY: Readonly<
+  Record<AnatomyBodyModelKey, Readonly<Record<AnatomySystemKey, AnatomySystemDefinition>>>
+> = {
+  male: ANATOMY_SYSTEMS_BY_KEY,
+  female: Object.fromEntries(FEMALE_SYSTEMS.map(d => [d.key, d])) as Record<
+    AnatomySystemKey,
+    AnatomySystemDefinition
+  >,
+};
+
+export function getAnatomySystemDefinitionForBody(
+  bodyModel: AnatomyBodyModelKey,
+  key: AnatomySystemKey
+): AnatomySystemDefinition {
+  return BODY_SYSTEMS_BY_KEY[bodyModel][key];
+}
+
+export function getAnatomySystemAssetForBody(
+  bodyModel: AnatomyBodyModelKey,
+  key: AnatomySystemKey
+): AnatomySystemAsset {
+  return BODY_SYSTEMS_BY_KEY[bodyModel][key].asset;
+}
+
+export function getBodyModelDefinition(key: AnatomyBodyModelKey): AnatomyBodyModelDefinition {
+  return ANATOMY_BODY_MODELS[key];
 }
