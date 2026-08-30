@@ -157,9 +157,38 @@ Total: 13 (8.14.1) + 13 (8.14.3) = **26 records** for 16 distinct canonical conc
 - **Reproductive:** ovary/uterus/cervix/fallopian (female), testis/prostate (male)
 - **Skin:** skin
 
-### Structures Intentionally Not Documented Yet
+### Structures Intentionally Not Documented Yet (8.14.3)
 
 - Most musculoskeletal muscles/bones beyond femur, lymphatic vessels/nodes, detailed vascular branches, and fine subdivisions (e.g., individual vertebrae, bronchial segments). These remain `Information unavailable` until authoritative concise summaries are verified. Intentional to avoid fabrication and to keep dataset extendable.
+
+## Expanded Dataset (8.14.5 — 38 records, high-value verified present)
+
+Inspection of current 26 records vs. actual HRA GLB metadata (`dump-male.txt` 485 structures, `getAllLoadedStructures()` via `window.__ANATOMIA_REGISTRY`) showed whole-organ UBERONs (e.g., `UBERON:0000948` heart, `UBERON:0000955` brain, `UBERON:0002048` lung) are **not** present as meshes — the assets contain substructures (ventricles `UBERON:0002080`, bronchopulmonary segments `FMA:7374`, femur `FMA:24474`, etc.). To keep `Information unavailable` correct and to prioritize high-value **actually present** structures, 8.14.5 adds 12 records with **exact GLB ontology IDs verified present**:
+
+- **Ascending aorta** — `male:cardiovascular:UBERON:0001496`, `female:cardiovascular:UBERON:0001496` — NIH `https://medlineplus.gov/ency/imagepages/19264.htm` — verified `VH_M_ascending_aorta` (cardiovascular)
+- **Gallbladder** — `male:digestive:UBERON:0002110`, `female:digestive:UBERON:0002110` — NIH `https://medlineplus.gov/ency/article/000273.htm` — verified `VH_M_gallbladder` (digestive)
+- **Right ventricle** — `male:cardiovascular:UBERON:0002080`, `female:cardiovascular:UBERON:0002080` — NIH `https://medlineplus.gov/ency/imagepages/19612.htm` — verified `VH_M_heart_right_ventricle` (cardiovascular)
+- **Hilum of lung** — `male:respiratory:UBERON:0004887`, `female:respiratory:UBERON:0004887` — NIH `https://medlineplus.gov/ency/imagepages/19380.htm` — verified `VH_M_hilum_L` (respiratory)
+- **Hilum of spleen** — `male:lymphatic:UBERON:0001248`, `female:lymphatic:UBERON:0001248` — NIH `https://medlineplus.gov/ency/imagepages/19075.htm` — verified `VH_M_hilum_of_spleen` (lymphatic)
+- **Femur (FMA)** — `male:musculoskeletal:FMA:24474`, `female:musculoskeletal:FMA:24474` — NIH `https://medlineplus.gov/ency/imagepages/19089.htm` — verified `VH_M_femur_R_1` `FMA:24474` (musculoskeletal, longest bone; corrects earlier `UBERON:0000981` which is not present as mesh)
+
+Total: 26 (8.14.3) + 12 (8.14.5) = **38 records** for 22 distinct canonical concepts. No record added merely because a node name looked important — each verified present via `dump-male.txt` and authoritative source, with `source` `sourceUrl` `lastVerified` `2026-01-15` `license`.
+
+### Coverage by System (8.14.5)
+
+- **Nervous:** brain + spinal cord (whole concepts) + spinal segments remain `Information unavailable` until individually verified
+- **Respiratory:** lung (whole) + hilum of lung (present)
+- **Digestive:** liver + stomach + gallbladder (present)
+- **Urinary:** kidney + bladder (whole) + trigone/hilum remain `Information unavailable` except bladder whole
+- **Cardiovascular:** heart (whole) + ascending aorta (present) + right ventricle (present)
+- **Musculoskeletal:** femur UBERON (whole) + femur FMA (present) — both retained, distinct `structureKey`
+- **Reproductive:** ovary/uterus/cervix/fallopian (female), testis/prostate (male)
+- **Lymphatic:** hilum of spleen (present) — key lymphatic where authoritative data exists
+- **Skin:** skin
+
+### Structures Intentionally Not Documented Yet (8.14.5)
+
+- Most musculoskeletal muscles/bones beyond femur (e.g., `FMA:32860` condyle, `FMA:49057` extraocular), lymphatic vessels/nodes beyond hilum, detailed vascular branches beyond aorta, bronchopulmonary segments beyond hilum, and fine subdivisions (vertebrae, spinal segments `UBERON:0006469`). These remain `Information unavailable` until authoritative concise summaries are verified. Intentional to avoid fabrication and to keep dataset extendable. No invented information/ontology IDs.
 
 ## Data Access
 

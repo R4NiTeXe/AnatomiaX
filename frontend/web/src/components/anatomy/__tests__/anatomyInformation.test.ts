@@ -185,8 +185,9 @@ describe('anatomyInformation — verified source architecture', () => {
   it('seed covers 8 distinct structures with male/female separation (8.14.1 baseline)', () => {
     const seed = getAnatomyInformationSeed();
     // 8.14.1 baseline: 8 concepts => 13 records (5 shared*2 +3)
-    // 8.14.3 expanded: 16 concepts => 26 records — verify baseline still present
-    expect(seed.length).toBe(26);
+    // 8.14.3 expanded: 16 concepts => 26 records
+    // 8.14.5 expanded: 22 concepts => 38 records — verify baseline still present
+    expect(seed.length).toBe(38);
     const canonicalNames = new Set(seed.map(s => s.canonicalName));
     // Baseline must still be present
     for (const name of ['Skin', 'Heart', 'Brain', 'Liver', 'Kidney', 'Ovary', 'Uterus', 'Cervix']) {
@@ -202,6 +203,11 @@ describe('anatomyInformation — verified source architecture', () => {
       'Testis',
       'Prostate',
       'Fallopian tube',
+      'Ascending aorta',
+      'Gallbladder',
+      'Right ventricle',
+      'Hilum of lung',
+      'Hilum of spleen',
     ]) {
       expect(canonicalNames.has(name)).toBe(true);
     }
@@ -260,5 +266,30 @@ describe('anatomyInformation — verified source architecture', () => {
     const testis = getAnatomyInformationByStructureKey('male:reproductive:UBERON:0000473');
     expect(testis?.source).toBe('Human Reference Atlas');
     expect(testis?.license).toBe('CC BY 4.0 (HRA)');
+  });
+
+  it('high-value present structures verified (8.14.5)', () => {
+    // Verified present via dump-male.txt
+    const aortaMale = getAnatomyInformationByStructureKey('male:cardiovascular:UBERON:0001496');
+    expect(aortaMale?.canonicalName).toBe('Ascending aorta');
+    expect(aortaMale?.systemKey).toBe('cardiovascular');
+    const aortaFemale = getAnatomyInformationByStructureKey('female:cardiovascular:UBERON:0001496');
+    expect(aortaFemale?.bodyModel).toBe('female');
+    const gallbladder = getAnatomyInformationByStructureKey('male:digestive:UBERON:0002110');
+    expect(gallbladder?.canonicalName).toBe('Gallbladder');
+    const ventricle = getAnatomyInformationByStructureKey('female:cardiovascular:UBERON:0002080');
+    expect(ventricle?.canonicalName).toBe('Right ventricle');
+    const hilumLung = getAnatomyInformationByStructureKey('male:respiratory:UBERON:0004887');
+    expect(hilumLung?.canonicalName).toBe('Hilum of lung');
+    const hilumSpleen = getAnatomyInformationByStructureKey('female:lymphatic:UBERON:0001248');
+    expect(hilumSpleen?.canonicalName).toBe('Hilum of spleen');
+    const femurFMA = getAnatomyInformationByStructureKey('male:musculoskeletal:FMA:24474');
+    expect(femurFMA?.canonicalName).toBe('Femur');
+    expect(femurFMA?.ontologyId).toBe('FMA:24474');
+    // Male/female separate for present structures
+    expect(getAnatomyInformationByOntologyId('UBERON:0001496')).toBeUndefined();
+    expect(getAnatomyInformationByOntologyId('UBERON:0001496', 'male')?.structureKey).toBe(
+      'male:cardiovascular:UBERON:0001496'
+    );
   });
 });
