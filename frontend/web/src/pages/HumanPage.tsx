@@ -75,6 +75,50 @@ function HumanViewer({
   );
 }
 
+function BodyModelSelector({
+  onVerticalChange,
+  onResetCamera,
+}: {
+  onVerticalChange: (value: number) => void;
+  onResetCamera: () => void;
+}): JSX.Element {
+  const { selectedBodyModel, setSelectedBodyModel } = useAnatomyState();
+
+  const handleBodyModelChange = useCallback(
+    (model: 'male' | 'female') => {
+      if (model === selectedBodyModel) return;
+      setSelectedBodyModel(model);
+      onVerticalChange(0.5);
+      onResetCamera();
+    },
+    [selectedBodyModel, setSelectedBodyModel, onVerticalChange, onResetCamera]
+  );
+
+  return (
+    <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Body model</p>
+      <div className="mt-2 flex gap-2">
+        {(['male', 'female'] as const).map(model => (
+          <button
+            key={model}
+            type="button"
+            aria-pressed={selectedBodyModel === model}
+            data-testid={`body-model-${model}`}
+            onClick={() => handleBodyModelChange(model)}
+            className={`flex-1 rounded-lg border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+              selectedBodyModel === model
+                ? 'border-teal-500 bg-teal-500/20 text-teal-300'
+                : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            {model}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HumanPage(): JSX.Element {
   const [resetSignal, setResetSignal] = useState(0);
   const [vertical, setVertical] = useState(0.5);
@@ -100,7 +144,8 @@ export default function HumanPage(): JSX.Element {
               onVerticalChange={setVertical}
             />
           </section>
-          <aside className="order-2 w-full shrink-0 lg:order-1 lg:w-72 lg:overflow-y-auto">
+          <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:w-72 lg:overflow-y-auto">
+            <BodyModelSelector onVerticalChange={setVertical} onResetCamera={handleResetCamera} />
             <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>
