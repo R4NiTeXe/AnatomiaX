@@ -84,14 +84,20 @@ interface AnatomyStateValue {
 
 const AnatomyStateContext = createContext<AnatomyStateValue | null>(null);
 
-export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX.Element {
+export function AnatomyStateProvider({
+  children,
+  initialBodyModel = 'male' as AnatomyBodyModelKey,
+}: {
+  children: ReactNode;
+  initialBodyModel?: AnatomyBodyModelKey;
+}): JSX.Element {
   const registryRef = useRef<AnatomyStructureRegistry>(new AnatomyStructureRegistry());
   const [visibleSystems, setVisibleSystems] = useState(initialVisibleSystems);
   const [systemOpacity, setSystemOpacityMap] = useState<SystemOpacityMap>(INITIAL_OPACITY);
   const [isolatedSystem, setIsolatedSystem] = useState<AnatomySystemKey | null>(null);
   const [isolatedSnapshot, setIsolatedSnapshot] = useState<IsolatedSnapshot | null>(null);
   const [selectedStructure, setSelectedStructure] = useState<SelectedStructure | null>(null);
-  const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>('male');
+  const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>(initialBodyModel);
   const [status, setStatus] = useState<SystemLoadStatusMap>(IDLE_STATUS);
   const [errorMessages, setErrorMessages] = useState<Record<AnatomySystemKey, string>>({
     skin: '',
@@ -130,6 +136,43 @@ export function AnatomyStateProvider({ children }: { children: ReactNode }): JSX
       if (!visibleSystems[selectedStructure.systemKey]) setSelectedStructure(null);
     }
   }, [isolatedSystem, selectedStructure, visibleSystems]);
+
+  // Handle body model switch — clear per-body state but keep GLTF cache
+  const prevBodyModelRef = useRef(selectedBodyModel);
+  useEffect(() => {
+    if (prevBodyModelRef.current !== selectedBodyModel) {
+      prevBodyModelRef.current = selectedBodyModel;
+      registryRef.current.clear();
+      setSelectedStructure(null);
+      setIsolatedSnapshot(null);
+      setIsolatedSystem(null);
+      setStatus(IDLE_STATUS);
+      setErrorMessages({
+        skin: '',
+        musculoskeletal: '',
+        nervous: '',
+        cardiovascular: '',
+        respiratory: '',
+        digestive: '',
+        urinary: '',
+        reproductive: '',
+        lymphatic: '',
+      });
+      setAttempts({
+        skin: 0,
+        musculoskeletal: 0,
+        nervous: 0,
+        cardiovascular: 0,
+        respiratory: 0,
+        digestive: 0,
+        urinary: 0,
+        reproductive: 0,
+        lymphatic: 0,
+      });
+      setVisibleSystems(initialVisibleSystems);
+      setSystemOpacityMap(INITIAL_OPACITY);
+    }
+  }, [selectedBodyModel]);
 
   const toggleSystem = useCallback((key: AnatomySystemKey) => {
     setVisibleSystems(prev => ({ ...prev, [key]: !prev[key] }));
