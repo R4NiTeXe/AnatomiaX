@@ -106,6 +106,8 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     selectStructure,
     setSystemStatus,
     registerSystemStructures,
+    registerSystemScene,
+    unregisterSystemScene,
     registry,
     selectedBodyModel,
   } = useAnatomyState();
@@ -116,9 +118,13 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     entriesRef.current = cloneSceneMaterials(scene);
     applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
     registerSystemStructures(asset.key, scene);
+    registerSystemScene(asset.key, scene);
     // Also register with body-model-qualified key for future female coexistence
     // (registry now stores bodyModel in structureKey, default male)
     setSystemStatus(asset.key, 'loaded');
+    return () => {
+      unregisterSystemScene(asset.key);
+    };
     // Keep registry cached on hide — do not unregister here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, asset.key]);

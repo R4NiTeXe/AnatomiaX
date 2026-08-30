@@ -16,7 +16,12 @@ import type {
   AnatomyStructure,
   AnatomySystemKey,
 } from './anatomyTypes';
-import { AnatomyStructureRegistry } from './anatomyRegistry';
+import {
+  AnatomyStructureRegistry,
+  createStructureKey,
+  extractOntologyId,
+  resolveObjectName,
+} from './anatomyRegistry';
 
 export type SelectedStructure = AnatomySelection;
 
@@ -80,6 +85,9 @@ interface AnatomyStateValue {
   registry: AnatomyStructureRegistry;
   registerSystemStructures: (key: AnatomySystemKey, scene: THREE.Object3D) => AnatomyStructure[];
   unregisterSystemStructures: (key: AnatomySystemKey) => void;
+  registerSystemScene: (key: AnatomySystemKey, scene: THREE.Object3D) => void;
+  unregisterSystemScene: (key: AnatomySystemKey) => void;
+  getMeshesForStructure: (selection: SelectedStructure | null) => THREE.Mesh[];
 }
 
 const AnatomyStateContext = createContext<AnatomyStateValue | null>(null);
@@ -92,6 +100,7 @@ export function AnatomyStateProvider({
   initialBodyModel?: AnatomyBodyModelKey;
 }): JSX.Element {
   const registryRef = useRef<AnatomyStructureRegistry>(new AnatomyStructureRegistry());
+  const systemScenesRef = useRef<Map<AnatomySystemKey, THREE.Object3D>>(new Map());
   const [visibleSystems, setVisibleSystems] = useState(initialVisibleSystems);
   const [systemOpacity, setSystemOpacityMap] = useState<SystemOpacityMap>(INITIAL_OPACITY);
   const [isolatedSystem, setIsolatedSystem] = useState<AnatomySystemKey | null>(null);
@@ -143,6 +152,7 @@ export function AnatomyStateProvider({
     if (prevBodyModelRef.current !== selectedBodyModel) {
       prevBodyModelRef.current = selectedBodyModel;
       registryRef.current.clear();
+      systemScenesRef.current.clear();
       setSelectedStructure(null);
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
@@ -255,6 +265,42 @@ export function AnatomyStateProvider({
     // Only clear selection if it belonged to the removed system (handled by effect above).
   }, []);
 
+  const registerSystemScene = useCallback((key: AnatomySystemKey, scene: THREE.Object3D): void => {
+    systemScenesRef.current.set(key, scene);
+  }, []);
+
+  const unregisterSystemScene = useCallback((key: AnatomySystemKey): void => {
+    systemScenesRef.current.delete(key);
+  }, []);
+
+  const getMeshesForStructure = useCallback((selection: SelectedStructure | null): THREE.Mesh[] => {
+    if (!selection) return [];
+    const scene = systemScenesRef.current.get(selection.systemKey);
+    // If system scene not yet stored (e.g., legacy hide), fall back to empty
+    if (!scene) return [];
+    // Do not focus hidden system — caller should check visibility
+    const targets: THREE.Mesh[] = [];
+    scene.traverse(obj => {
+      const mesh = obj as THREE.Mesh;
+      if (!(mesh as unknown as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
+      const objectName = resolveObjectName(mesh);
+      const ontologyId = extractOntologyId(mesh);
+      const key = createStructureKey(
+        selection.systemKey,
+        ontologyId,
+        objectName,
+        selection.bodyModel
+      );
+      if (key === selection.structureKey) {
+        targets.push(mesh);
+      } else if (selection.ontologyId && ontologyId && ontologyId === selection.ontologyId) {
+        // Multiple meshes sharing same ontologyId within same system — focus all
+        if (!targets.includes(mesh)) targets.push(mesh);
+      }
+    });
+    return targets;
+  }, []);
+
   const value = useMemo<AnatomyStateValue>(
     () => ({
       visibleSystems,
@@ -279,6 +325,9 @@ export function AnatomyStateProvider({
       registry: registryRef.current,
       registerSystemStructures,
       unregisterSystemStructures,
+      registerSystemScene,
+      unregisterSystemScene,
+      getMeshesForStructure,
     }),
     [
       visibleSystems,
@@ -301,6 +350,9 @@ export function AnatomyStateProvider({
       retrySystem,
       registerSystemStructures,
       unregisterSystemStructures,
+      registerSystemScene,
+      unregisterSystemScene,
+      getMeshesForStructure,
     ]
   );
 

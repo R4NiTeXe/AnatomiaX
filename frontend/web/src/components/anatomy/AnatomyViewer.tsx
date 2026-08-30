@@ -5,6 +5,7 @@ import { useAnatomyState } from './AnatomyStateContext';
 import AnatomySystemSlot from './AnatomySystem';
 import { ANATOMY_BODY_MODELS } from './anatomySystems';
 import { VerticalCameraHandler } from './AnatomyVerticalNavigator';
+import AnatomyFocusController from './AnatomyFocusController';
 
 function FitController({ resetSignal }: { resetSignal: number }): null {
   const api = useBounds();
@@ -79,6 +80,7 @@ export default function AnatomyViewer({ resetSignal, vertical }: AnatomyViewerPr
         enableRotate
         panSpeed={1.6}
       />
+      <AnatomyFocusController />
     </Canvas>
   );
 }
