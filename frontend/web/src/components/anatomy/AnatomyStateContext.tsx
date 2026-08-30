@@ -301,6 +301,12 @@ export function AnatomyStateProvider({
     return targets;
   }, []);
 
+  // E2E observability — expose registry/selection for QA (no architecture change)
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).__ANATOMIA_REGISTRY = registryRef.current;
+    (window as unknown as Record<string, unknown>).__ANATOMIA_SELECTION = selectedStructure;
+  }, [selectedStructure]);
+
   const value = useMemo<AnatomyStateValue>(
     () => ({
       visibleSystems,
