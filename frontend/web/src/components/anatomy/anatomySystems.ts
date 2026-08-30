@@ -148,8 +148,8 @@ export const ANATOMY_BODY_MODELS: Readonly<
       AnatomySystemKey,
       AnatomySystemAsset
     >,
-    // Not yet integrated into live /human UI — configuration only, keeps asset base consistent
-    available: false,
+    // Now integrated into live /human UI via body model selector
+    available: true,
   },
 };
 

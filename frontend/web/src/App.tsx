@@ -5,8 +5,6 @@ import NotFoundPage from '@/pages/NotFoundPage';
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const HumanPage = lazy(() => import('@/pages/HumanPage'));
 const HumanTestPage = lazy(() => import('@/pages/HumanTestPage'));
-const FemaleRuntimeTestPage = lazy(() => import('@/pages/FemaleRuntimeTestPage'));
-const FemaleTestPage = lazy(() => import('@/pages/FemaleTestPage'));
 const AiHealthPage = lazy(() => import('@/pages/AiHealthPage'));
 const MedicalLabPage = lazy(() => import('@/pages/MedicalLabPage'));
 const SimulationPage = lazy(() => import('@/pages/SimulationPage'));
@@ -28,8 +26,6 @@ export default function App(): JSX.Element {
         <Route path="/" element={<HomePage />} />
         <Route path="/human" element={<HumanPage />} />
         <Route path="/human-test" element={<HumanTestPage />} />
-        <Route path="/female-runtime-test" element={<FemaleRuntimeTestPage />} />
-        <Route path="/female-test" element={<FemaleTestPage />} />
         <Route path="/ai-health" element={<AiHealthPage />} />
         <Route path="/medical-lab" element={<MedicalLabPage />} />
         <Route path="/simulation" element={<SimulationPage />} />
