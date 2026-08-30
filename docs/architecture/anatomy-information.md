@@ -59,9 +59,16 @@ No duplication of `AnatomyStructure` beyond the four identity fields plus the th
 - **No AI generation:** do not generate descriptions with AI; no medical advice/diagnosis.
 - **No invention:** if no verified content exists, store no record — callers receive `undefined`.
 - **Attribution:** every record retains `source`, `sourceUrl`, `lastVerified`, `license` when applicable.
-- **Concise:** prefer factual summaries over copied long text.
+- **Concise:** prefer factual summaries over copied long text (paraphrased, not long copyrighted excerpts).
 
-Seed verification date for this step: `2026-01-15`.
+Seed verification date for this step: `2026-01-15` (both 8.14.1 and 8.14.3).
+
+### Source Policy (8.14.3)
+
+- **Authoritative only:** HRA for reproductive structures (CC BY 4.0), NIH MedlinePlus for systemic organs (Public domain). No blogs/forums, no AI-generated medical content, no invented facts.
+- **Paraphrased concise:** descriptions/functions are short factual paraphrases, not verbatim long copyrighted passages.
+- **Preserved provenance:** each record stores `source`, `sourceUrl`, `lastVerified`, `license` for future UI attribution.
+- **Attribution/License notes:** HRA records `CC BY 4.0 (HRA)` with link to `https://humanatlas.io/asct-b-reporter`; NIH records `Public domain (NIH)` with direct MedlinePlus article/image URL. No license is invented.
 
 ## Unavailable-Data Behavior
 
@@ -109,7 +116,7 @@ verified information (this layer, deterministic)
 
 Deterministic layer remains the source of truth. AI must not be implemented now and, when added, must be constrained to cite `AnatomyInformation` provenance and must not invent missing records.
 
-## Seed Dataset (8.14.1)
+## Seed Dataset (8.14.1 — initial, 13 records)
 
 Small local seed, 13 records for 8 concepts (shared structures duplicated per bodyModel):
 
@@ -122,7 +129,37 @@ Small local seed, 13 records for 8 concepts (shared structures duplicated per bo
 - **Uterus** — `female:reproductive:UBERON:0000995` — HRA (female-only)
 - **Cervix** — `female:reproductive:UBERON:0000002` — HRA (female-only, matches HRA asset ontology for this step)
 
-Only these verified entries are stored; entire anatomy library is not populated now.
+Only these verified entries were stored in 8.14.1.
+
+## Expanded Dataset (8.14.3 — 26 records)
+
+Reuse of the existing model/repository; no architecture change. Added 13 verified records for commonly used structures present in the 9 GLB systems:
+
+- **Spinal cord** — `male:nervous:UBERON:0002240`, `female:nervous:UBERON:0002240` — NIH `https://medlineplus.gov/ency/article/002249.htm` (nervous)
+- **Lung** — `male:respiratory:UBERON:0002048`, `female:respiratory:UBERON:0002048` — NIH `https://medlineplus.gov/ency/article/002309.htm` (respiratory)
+- **Stomach** — `male:digestive:UBERON:0000945`, `female:digestive:UBERON:0000945` — NIH `https://medlineplus.gov/ency/article/003121.htm` (digestive)
+- **Urinary bladder** — `male:urinary:UBERON:0001255`, `female:urinary:UBERON:0001255` — NIH `https://medlineplus.gov/ency/article/003246.htm` (urinary)
+- **Femur** — `male:musculoskeletal:UBERON:0000981`, `female:musculoskeletal:UBERON:0000981` — NIH `https://medlineplus.gov/ency/imagepages/19089.htm` (musculoskeletal, longest bone)
+- **Testis** — `male:reproductive:UBERON:0000473` — HRA `https://humanatlas.io/asct-b-reporter` (male-only)
+- **Prostate** — `male:reproductive:UBERON:0002367` — NIH `https://medlineplus.gov/ency/article/002276.htm` (male-only)
+- **Fallopian tube** — `female:reproductive:UBERON:0003889` — HRA `https://humanatlas.io/asct-b-reporter` (female-only)
+
+Total: 13 (8.14.1) + 13 (8.14.3) = **26 records** for 16 distinct canonical concepts. No record was created merely because a node name exists — each has authoritative source.
+
+### Coverage by System
+
+- **Nervous:** brain + spinal cord
+- **Respiratory:** lung
+- **Digestive:** liver + stomach
+- **Urinary:** kidney + bladder
+- **Cardiovascular:** heart
+- **Musculoskeletal:** femur (representative long bone)
+- **Reproductive:** ovary/uterus/cervix/fallopian (female), testis/prostate (male)
+- **Skin:** skin
+
+### Structures Intentionally Not Documented Yet
+
+- Most musculoskeletal muscles/bones beyond femur, lymphatic vessels/nodes, detailed vascular branches, and fine subdivisions (e.g., individual vertebrae, bronchial segments). These remain `Information unavailable` until authoritative concise summaries are verified. Intentional to avoid fabrication and to keep dataset extendable.
 
 ## Data Access
 

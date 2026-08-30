@@ -182,22 +182,83 @@ describe('anatomyInformation — verified source architecture', () => {
     expect(getAnatomyInformationKeys().length).toBe(before);
   });
 
-  it('seed covers 8 distinct structures with male/female separation', () => {
+  it('seed covers 8 distinct structures with male/female separation (8.14.1 baseline)', () => {
     const seed = getAnatomyInformationSeed();
-    // 8 concepts: skin, heart, brain, liver, kidney, ovary, uterus, cervix
-    // Shared ones have male+female, female-only have 1 each => 5 shared*2 + 3 =13
-    expect(seed.length).toBe(13);
+    // 8.14.1 baseline: 8 concepts => 13 records (5 shared*2 +3)
+    // 8.14.3 expanded: 16 concepts => 26 records — verify baseline still present
+    expect(seed.length).toBe(26);
     const canonicalNames = new Set(seed.map(s => s.canonicalName));
-    expect(canonicalNames.has('Skin')).toBe(true);
-    expect(canonicalNames.has('Heart')).toBe(true);
-    expect(canonicalNames.has('Brain')).toBe(true);
-    expect(canonicalNames.has('Liver')).toBe(true);
-    expect(canonicalNames.has('Kidney')).toBe(true);
-    expect(canonicalNames.has('Ovary')).toBe(true);
-    expect(canonicalNames.has('Uterus')).toBe(true);
-    expect(canonicalNames.has('Cervix')).toBe(true);
+    // Baseline must still be present
+    for (const name of ['Skin', 'Heart', 'Brain', 'Liver', 'Kidney', 'Ovary', 'Uterus', 'Cervix']) {
+      expect(canonicalNames.has(name)).toBe(true);
+    }
+    // Expanded must include new canonicals
+    for (const name of [
+      'Spinal cord',
+      'Lung',
+      'Stomach',
+      'Urinary bladder',
+      'Femur',
+      'Testis',
+      'Prostate',
+      'Fallopian tube',
+    ]) {
+      expect(canonicalNames.has(name)).toBe(true);
+    }
     // Verify no duplicate structureKey
     const keys = seed.map(s => s.structureKey);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('existing 13 records unchanged (8.14.1 seed preserved)', () => {
+    // Spot-check that original 13 still return exact same values
+    const skinMale = getAnatomyInformationByStructureKey('male:skin:UBERON:0002097');
+    expect(skinMale?.canonicalName).toBe('Skin');
+    expect(skinMale?.sourceUrl).toBe('https://medlineplus.gov/ency/article/002363.htm');
+    const uterus = getAnatomyInformationByStructureKey('female:reproductive:UBERON:0000995');
+    expect(uterus?.canonicalName).toBe('Uterus');
+  });
+
+  it('lookup several newly added records', () => {
+    const lungMale = getAnatomyInformationByStructureKey('male:respiratory:UBERON:0002048');
+    expect(lungMale?.canonicalName).toBe('Lung');
+    expect(lungMale?.systemKey).toBe('respiratory');
+    const spinalFemale = getAnatomyInformationByStructureKey('female:nervous:UBERON:0002240');
+    expect(spinalFemale?.canonicalName).toBe('Spinal cord');
+    const stomach = getAnatomyInformationByStructureKey('female:digestive:UBERON:0000945');
+    expect(stomach?.canonicalName).toBe('Stomach');
+    const bladder = getAnatomyInformationByStructureKey('male:urinary:UBERON:0001255');
+    expect(bladder?.canonicalName).toBe('Urinary bladder');
+    const femur = getAnatomyInformationByStructureKey('female:musculoskeletal:UBERON:0000981');
+    expect(femur?.canonicalName).toBe('Femur');
+    const testis = getAnatomyInformationByStructureKey('male:reproductive:UBERON:0000473');
+    expect(testis?.canonicalName).toBe('Testis');
+    const prostate = getAnatomyInformationByStructureKey('male:reproductive:UBERON:0002367');
+    expect(prostate?.canonicalName).toBe('Prostate');
+    const fallopian = getAnatomyInformationByStructureKey('female:reproductive:UBERON:0003889');
+    expect(fallopian?.canonicalName).toBe('Fallopian tube');
+  });
+
+  it('new male/female same ontology does not collide (e.g., lung, spinal cord)', () => {
+    const maleLung = getAnatomyInformationByStructureKey('male:respiratory:UBERON:0002048');
+    const femaleLung = getAnatomyInformationByStructureKey('female:respiratory:UBERON:0002048');
+    expect(maleLung?.bodyModel).toBe('male');
+    expect(femaleLung?.bodyModel).toBe('female');
+    expect(maleLung?.structureKey).not.toBe(femaleLung?.structureKey);
+    // Ontology ambiguous without bodyModel
+    expect(getAnatomyInformationByOntologyId('UBERON:0002048')).toBeUndefined();
+    expect(getAnatomyInformationByOntologyId('UBERON:0002048', 'male')?.structureKey).toBe(
+      'male:respiratory:UBERON:0002048'
+    );
+  });
+
+  it('new records provenance preserved', () => {
+    const lung = getAnatomyInformationByStructureKey('male:respiratory:UBERON:0002048');
+    expect(lung?.source).toBe('NIH');
+    expect(lung?.sourceUrl).toMatch(/^https:\/\//);
+    expect(lung?.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const testis = getAnatomyInformationByStructureKey('male:reproductive:UBERON:0000473');
+    expect(testis?.source).toBe('Human Reference Atlas');
+    expect(testis?.license).toBe('CC BY 4.0 (HRA)');
   });
 });

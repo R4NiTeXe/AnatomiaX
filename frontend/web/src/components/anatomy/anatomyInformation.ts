@@ -256,6 +256,200 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
+  // Spinal cord — shared
+  {
+    structureKey: 'male:nervous:UBERON:0002240',
+    bodyModel: 'male',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0002240',
+    canonicalName: 'Spinal cord',
+    description:
+      'A column of nervous tissue extending from the brainstem through the vertebral canal, carrying signals between brain and body.',
+    function:
+      'Transmits sensory and motor signals and coordinates reflexes independent of the brain.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002249.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:nervous:UBERON:0002240',
+    bodyModel: 'female',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0002240',
+    canonicalName: 'Spinal cord',
+    description:
+      'A column of nervous tissue extending from the brainstem through the vertebral canal, carrying signals between brain and body.',
+    function:
+      'Transmits sensory and motor signals and coordinates reflexes independent of the brain.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002249.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  // Lungs — respiratory, shared
+  {
+    structureKey: 'male:respiratory:UBERON:0002048',
+    bodyModel: 'male',
+    systemKey: 'respiratory',
+    ontologyId: 'UBERON:0002048',
+    canonicalName: 'Lung',
+    description:
+      'Paired organs in the thorax that facilitate gas exchange between air and blood within alveoli.',
+    function: 'Oxygenates blood and removes carbon dioxide through ventilation and diffusion.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002309.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:respiratory:UBERON:0002048',
+    bodyModel: 'female',
+    systemKey: 'respiratory',
+    ontologyId: 'UBERON:0002048',
+    canonicalName: 'Lung',
+    description:
+      'Paired organs in the thorax that facilitate gas exchange between air and blood within alveoli.',
+    function: 'Oxygenates blood and removes carbon dioxide through ventilation and diffusion.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002309.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  // Stomach — digestive, shared
+  {
+    structureKey: 'male:digestive:UBERON:0000945',
+    bodyModel: 'male',
+    systemKey: 'digestive',
+    ontologyId: 'UBERON:0000945',
+    canonicalName: 'Stomach',
+    description:
+      'A muscular, hollow organ in the upper abdomen that stores and partially digests food with gastric juices.',
+    function:
+      'Breaks down food chemically and mechanically and regulates delivery to the small intestine.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/003121.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:digestive:UBERON:0000945',
+    bodyModel: 'female',
+    systemKey: 'digestive',
+    ontologyId: 'UBERON:0000945',
+    canonicalName: 'Stomach',
+    description:
+      'A muscular, hollow organ in the upper abdomen that stores and partially digests food with gastric juices.',
+    function:
+      'Breaks down food chemically and mechanically and regulates delivery to the small intestine.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/003121.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  // Urinary bladder — urinary, shared
+  {
+    structureKey: 'male:urinary:UBERON:0001255',
+    bodyModel: 'male',
+    systemKey: 'urinary',
+    ontologyId: 'UBERON:0001255',
+    canonicalName: 'Urinary bladder',
+    description: 'A hollow muscular organ in the pelvis that stores urine before excretion.',
+    function: 'Stores and expels urine via coordinated detrusor and sphincter activity.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/003246.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:urinary:UBERON:0001255',
+    bodyModel: 'female',
+    systemKey: 'urinary',
+    ontologyId: 'UBERON:0001255',
+    canonicalName: 'Urinary bladder',
+    description: 'A hollow muscular organ in the pelvis that stores urine before excretion.',
+    function: 'Stores and expels urine via coordinated detrusor and sphincter activity.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/003246.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  // Femur — musculoskeletal, shared (major long bone)
+  {
+    structureKey: 'male:musculoskeletal:UBERON:0000981',
+    bodyModel: 'male',
+    systemKey: 'musculoskeletal',
+    ontologyId: 'UBERON:0000981',
+    canonicalName: 'Femur',
+    description:
+      'The thigh bone, the longest and strongest bone in the human body, extending from hip to knee.',
+    function: 'Supports body weight, enables locomotion, and anchors muscles of the thigh and hip.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19089.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:musculoskeletal:UBERON:0000981',
+    bodyModel: 'female',
+    systemKey: 'musculoskeletal',
+    ontologyId: 'UBERON:0000981',
+    canonicalName: 'Femur',
+    description:
+      'The thigh bone, the longest and strongest bone in the human body, extending from hip to knee.',
+    function: 'Supports body weight, enables locomotion, and anchors muscles of the thigh and hip.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19089.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  // Testis — male reproductive only
+  {
+    structureKey: 'male:reproductive:UBERON:0000473',
+    bodyModel: 'male',
+    systemKey: 'reproductive',
+    ontologyId: 'UBERON:0000473',
+    canonicalName: 'Testis',
+    description:
+      'Paired male reproductive glands that produce sperm and testosterone within the scrotum.',
+    function:
+      'Generates spermatozoa and androgens supporting spermatogenesis and male secondary characteristics.',
+    source: 'Human Reference Atlas',
+    sourceUrl: 'https://humanatlas.io/asct-b-reporter',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 4.0 (HRA)',
+  },
+  // Prostate — male reproductive only
+  {
+    structureKey: 'male:reproductive:UBERON:0002367',
+    bodyModel: 'male',
+    systemKey: 'reproductive',
+    ontologyId: 'UBERON:0002367',
+    canonicalName: 'Prostate',
+    description:
+      'A walnut-sized gland surrounding the male urethra that contributes fluid to semen.',
+    function: 'Secretes prostatic fluid that nourishes and transports sperm during ejaculation.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002276.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  // Fallopian tube — female reproductive only
+  {
+    structureKey: 'female:reproductive:UBERON:0003889',
+    bodyModel: 'female',
+    systemKey: 'reproductive',
+    ontologyId: 'UBERON:0003889',
+    canonicalName: 'Fallopian tube',
+    description:
+      'Paired tubes connecting ovaries to the uterus that transport oocytes and support fertilization.',
+    function:
+      'Conveys ova toward the uterus and provides site for fertilization and early embryo transport.',
+    source: 'Human Reference Atlas',
+    sourceUrl: 'https://humanatlas.io/asct-b-reporter',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 4.0 (HRA)',
+  },
 ];
 
 // ---------------------------------------------------------------------------
