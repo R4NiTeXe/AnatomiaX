@@ -306,3 +306,114 @@ export function findStructuresByName(
 ): AnatomyStructure[] {
   return registry.findStructuresByName(name);
 }
+
+// ---------------------------------------------------------------------------
+// Search index — loaded-only, deterministic, no duplication
+// ---------------------------------------------------------------------------
+
+export function normalizeQuery(query: string): string {
+  if (!query) return '';
+  return query
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w:\-\s]/g, '');
+}
+
+function getMatchScore(query: string, target: string): number | null {
+  if (!target) return null;
+  const nq = normalizeQuery(query);
+  const nt = normalizeQuery(target);
+  if (!nq || !nt) return null;
+  if (nq === nt) return 0;
+  if (nt.startsWith(nq)) return 1;
+  if (nt.includes(nq)) return 2;
+  const words = nq.split(' ').filter(w => w.length > 0);
+  if (words.length > 1) {
+    let last = -1;
+    let allInOrder = true;
+    for (const w of words) {
+      const idx = nt.indexOf(w, last + 1);
+      if (idx === -1) {
+        allInOrder = false;
+        break;
+      }
+      last = idx;
+    }
+    if (allInOrder) return 3;
+    if (words.every(w => nt.includes(w))) return 4;
+  }
+  return null;
+}
+
+function getSystemLabel(systemKey: string): string {
+  const labels: Record<string, string> = {
+    skin: 'skin',
+    musculoskeletal: 'musculoskeletal',
+    nervous: 'nervous',
+    cardiovascular: 'cardiovascular',
+    respiratory: 'respiratory',
+    digestive: 'digestive',
+    urinary: 'urinary',
+    reproductive: 'reproductive',
+    lymphatic: 'lymphatic',
+  };
+  return labels[systemKey] || systemKey;
+}
+
+export function searchStructures(
+  registry: AnatomyStructureRegistry,
+  query: string,
+  options: import('./anatomyTypes').AnatomySearchOptions = {}
+): import('./anatomyTypes').AnatomySearchResult[] {
+  const nq = normalizeQuery(query);
+  if (!nq) return [];
+  const { bodyModel = 'all', systemKey = 'all', limit = 50 } = options;
+  const candidates = registry.getAllLoadedStructures().filter(s => {
+    if (bodyModel !== 'all' && s.bodyModel !== bodyModel) return false;
+    if (systemKey !== 'all' && s.systemKey !== systemKey) return false;
+    return true;
+  });
+  const scored: { result: import('./anatomyTypes').AnatomySearchResult; score: number }[] = [];
+  for (const s of candidates) {
+    let best: number | null = null;
+    const consider = (score: number | null) => {
+      if (score !== null && (best === null || score < best)) best = score;
+    };
+    consider(getMatchScore(nq, s.structureKey));
+    consider(getMatchScore(nq, s.name));
+    consider(getMatchScore(nq, s.objectName));
+    if (s.ontologyId) consider(getMatchScore(nq, s.ontologyId));
+    consider(getMatchScore(nq, s.systemKey));
+    consider(getMatchScore(nq, s.bodyModel));
+    consider(getMatchScore(nq, getSystemLabel(s.systemKey)));
+    if (best !== null) {
+      scored.push({
+        result: {
+          structureKey: s.structureKey,
+          bodyModel: s.bodyModel,
+          systemKey: s.systemKey,
+          name: s.name,
+          objectName: s.objectName,
+          ontologyId: s.ontologyId,
+        },
+        score: best,
+      });
+    }
+  }
+  scored.sort((a, b) =>
+    a.score !== b.score
+      ? a.score - b.score
+      : a.result.structureKey.localeCompare(b.result.structureKey)
+  );
+  const seen = new Set<string>();
+  const out: import('./anatomyTypes').AnatomySearchResult[] = [];
+  for (const { result } of scored) {
+    if (!seen.has(result.structureKey)) {
+      seen.add(result.structureKey);
+      out.push(result);
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+}

@@ -66,3 +66,18 @@ export interface AnatomySelection {
   bodyModel: AnatomyBodyModelKey;
   ontologyId: string | null;
 }
+
+export interface AnatomySearchResult {
+  structureKey: string;
+  bodyModel: AnatomyBodyModelKey;
+  systemKey: AnatomySystemKey;
+  name: string;
+  objectName: string;
+  ontologyId: string | null;
+}
+
+export interface AnatomySearchOptions {
+  bodyModel?: AnatomyBodyModelKey | 'all';
+  systemKey?: AnatomySystemKey | 'all';
+  limit?: number;
+}
