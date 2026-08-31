@@ -149,8 +149,8 @@ export default function HumanPage(): JSX.Element {
           <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:w-72 lg:overflow-y-auto">
             <AnatomySearchBox />
             <BodyModelSelector onVerticalChange={setVertical} onResetCamera={handleResetCamera} />
-            <AnatomySystemPanel onResetCamera={handleResetCamera} />
             <AnatomyInformationPanel />
+            <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>
       </main>

@@ -13,9 +13,10 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
 
   return (
     <section
-      className="flex max-h-[45vh] flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40"
+      className="flex min-h-[220px] max-h-[50vh] flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40"
       data-testid="anatomy-information-panel"
       aria-label="Anatomy information"
+      aria-live="polite"
     >
       <div className="border-b border-slate-800 px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -23,7 +24,10 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
         </h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3" data-testid="anatomy-information-content">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
+        data-testid="anatomy-information-content"
+      >
         {!info ? (
           <p className="text-sm text-slate-400" data-testid="anatomy-information-unavailable">
             Information unavailable
