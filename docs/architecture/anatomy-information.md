@@ -190,6 +190,28 @@ Total: 26 (8.14.3) + 12 (8.14.5) = **38 records** for 22 distinct canonical conc
 
 - Most musculoskeletal muscles/bones beyond femur (e.g., `FMA:32860` condyle, `FMA:49057` extraocular), lymphatic vessels/nodes beyond hilum, detailed vascular branches beyond aorta, bronchopulmonary segments beyond hilum, and fine subdivisions (vertebrae, spinal segments `UBERON:0006469`). These remain `Information unavailable` until authoritative concise summaries are verified. Intentional to avoid fabrication and to keep dataset extendable. No invented information/ontology IDs.
 
+## Expanded Dataset (8.15.3 — 45 records, actual present high-value)
+
+Verified via `dump-male.txt` 485 `male:*` and `dump-female-quick.txt` 276 `female:*` that whole-organ UBERONs (e.g., `UBERON:0000992` ovary, `UBERON:0000955` brain) have no mesh, while substructures do. To make common searches produce useful information and to keep `Information unavailable` correct, 8.15.3 adds 7 records with **exact GLB ontology IDs verified present** (in addition to existing whole-organ records kept for future aggregation):
+
+- **Ovary (actual)** — `female:reproductive:FMA:7213` `VH_F_right_ovary` / `FMA:7214` `VH_F_left_ovary` — HRA `https://humanatlas.io/asct-b-reporter` `CC BY 4.0` (verified via `ovary` search 4 results, first `FMA:7213` not `FMA:19823` ligament)
+- **Body of uterus (actual)** — `female:reproductive:UBERON:0009853` `VH_F_body_of_uterus` — HRA (verified `dump-female-quick.txt` `female:reproductive:UBERON:0009853`)
+- **Left ventricle** — `male:cardiovascular:UBERON:0002084` `VH_M_heart_left_ventricle` / `female:cardiovascular:UBERON:0002084` — NIH `https://medlineplus.gov/ency/imagepages/19612.htm` `Public domain` (verified `dump-male.txt` `UBERON:0002080`/`0002084` ventricles, `heart` search now returns `VH_M_heart_left_ventricle` first due to ranking fix, not papillary)
+- **Kidney capsule (actual)** — `male:urinary:UBERON:0002015` `VH_M_kidney_capsule_L` / `female:urinary:UBERON:0002015` — NIH `https://medlineplus.gov/ency/article/002266.htm` `Public domain` (verified `dump-male.txt` `UBERON:0002015`)
+
+Total: 38 (8.14.5) + 7 (8.15.3) = **45 records** for 24 distinct canonical concepts ( `Body of uterus` already existed as `Uterus` whole, now `Body of uterus` distinct; `Kidney` already existed as whole, now `Kidney` capsule shares canonical `Kidney` but distinct `structureKey` `FMA:7213` etc.). No duplicate `structureKey` (verified `45 unique`), no removal of valid whole-organ records.
+
+### Coverage by System (8.15.3)
+
+- **Reproductive:** ovary `UBERON:0000992` whole + `FMA:7213`/`7214` actual (present) — both retained, `ovary` search now prefers actual ovary (shorter `VH_F_ovary` vs ligament) and shows `Ovary` `FMA:7213` `HRA` (verified `ovary` search cnt 4 first `FMA:7213`)
+- **Cardiovascular:** heart whole `UBERON:0000948` + right `UBERON:0002080` + left `UBERON:0002084` ventricles (present) — `heart` search now prefers `heart` exact and ventricles before papillary via `specificity` length/index
+- **Urinary:** kidney whole `UBERON:0002113` + capsule `UBERON:0002015` (present) — `kidney` search now returns `kidney_capsule_L` first with `Kidney` info via `canonicalName` match
+- Other systems unchanged.
+
+### Search Ranking Fix (8.15.3)
+
+No hardcoded heart/ovary. General rule in `anatomyRegistry.ts:385-410` adds `specificity` secondary: `score 0/1 → nt.length`, `score 2 → nt.length*10 + indexOf(nq)`, `isNameField` (`name`/`objectName`) bonus `-0.5`, and also considers verified `canonicalName` from `anatomyInformation` so `lung` matches `Hilum of lung` (canonical) even though `objectName` `VH_M_hilum_L` does not contain `lung`. Deterministic `score` → `specificity` → `structureKey`.
+
 ## Data Access
 
 ```ts

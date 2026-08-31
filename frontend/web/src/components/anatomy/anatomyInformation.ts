@@ -622,6 +622,37 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
+  // Kidney capsule — verified present as VH_M_kidney_capsule_L UBERON:0002015 (urinary)
+  {
+    structureKey: 'male:urinary:UBERON:0002015',
+    bodyModel: 'male',
+    systemKey: 'urinary',
+    ontologyId: 'UBERON:0002015',
+    canonicalName: 'Kidney',
+    description:
+      'Paired retroperitoneal organs that filter blood to form urine and regulate fluid and electrolyte balance.',
+    function:
+      'Filters waste, balances fluids and electrolytes, and regulates blood pressure via hormonal signaling.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002266.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:urinary:UBERON:0002015',
+    bodyModel: 'female',
+    systemKey: 'urinary',
+    ontologyId: 'UBERON:0002015',
+    canonicalName: 'Kidney',
+    description:
+      'Paired retroperitoneal organs that filter blood to form urine and regulate fluid and electrolyte balance.',
+    function:
+      'Filters waste, balances fluids and electrolytes, and regulates blood pressure via hormonal signaling.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002266.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
   // Actual ovary — verified present as VH_F_right_ovary FMA:7213 and VH_F_left_ovary FMA:7214
   {
     structureKey: 'female:reproductive:FMA:7213',

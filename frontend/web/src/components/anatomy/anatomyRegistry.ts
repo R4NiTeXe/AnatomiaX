@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { AnatomyBodyModelKey, AnatomyStructure, AnatomySystemKey } from './anatomyTypes';
+import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 
 /**
  * Stable key for a structure.
@@ -417,6 +418,11 @@ export function searchStructures(
     consider(s.systemKey);
     consider(s.bodyModel);
     consider(getSystemLabel(s.systemKey));
+    // Also consider verified canonicalName from information repository
+    // so "lung" matches hilum of lung (canonical "Hilum of lung") even though
+    // objectName is VH_M_hilum_L, and "kidney" matches capsule etc.
+    const info = getAnatomyInformationByStructureKey(s.structureKey);
+    if (info?.canonicalName) consider(info.canonicalName);
     if (best !== null) {
       scored.push({
         result: {
