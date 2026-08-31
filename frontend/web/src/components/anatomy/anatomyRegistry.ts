@@ -374,19 +374,49 @@ export function searchStructures(
     if (systemKey !== 'all' && s.systemKey !== systemKey) return false;
     return true;
   });
-  const scored: { result: import('./anatomyTypes').AnatomySearchResult; score: number }[] = [];
+  const scored: {
+    result: import('./anatomyTypes').AnatomySearchResult;
+    score: number;
+    specificity: number;
+  }[] = [];
   for (const s of candidates) {
     let best: number | null = null;
-    const consider = (score: number | null) => {
-      if (score !== null && (best === null || score < best)) best = score;
+    let bestSpecificity = Number.MAX_SAFE_INTEGER;
+    const consider = (target: string | null | undefined) => {
+      if (!target) return;
+      const score = getMatchScore(nq, target);
+      if (score === null) return;
+      const nt = normalizeQuery(target);
+      let specificity = 0;
+      if (score === 0) {
+        specificity = nt.length;
+      } else if (score === 1) {
+        specificity = nt.length;
+      } else if (score === 2) {
+        const idx = nt.indexOf(nq);
+        specificity = nt.length * 10 + (idx >= 0 ? idx : 999);
+      } else {
+        specificity = nt.length * 10;
+      }
+      const isNameField = target === s.name || target === s.objectName;
+      if (isNameField) specificity -= 0.5;
+      if (
+        score !== null &&
+        (best === null || score < best || (score === best && specificity < bestSpecificity))
+      ) {
+        best = score;
+        bestSpecificity = specificity;
+      } else if (score === best && specificity < bestSpecificity) {
+        bestSpecificity = specificity;
+      }
     };
-    consider(getMatchScore(nq, s.structureKey));
-    consider(getMatchScore(nq, s.name));
-    consider(getMatchScore(nq, s.objectName));
-    if (s.ontologyId) consider(getMatchScore(nq, s.ontologyId));
-    consider(getMatchScore(nq, s.systemKey));
-    consider(getMatchScore(nq, s.bodyModel));
-    consider(getMatchScore(nq, getSystemLabel(s.systemKey)));
+    consider(s.structureKey);
+    consider(s.name);
+    consider(s.objectName);
+    if (s.ontologyId) consider(s.ontologyId);
+    consider(s.systemKey);
+    consider(s.bodyModel);
+    consider(getSystemLabel(s.systemKey));
     if (best !== null) {
       scored.push({
         result: {
@@ -398,14 +428,15 @@ export function searchStructures(
           ontologyId: s.ontologyId,
         },
         score: best,
+        specificity: bestSpecificity,
       });
     }
   }
-  scored.sort((a, b) =>
-    a.score !== b.score
-      ? a.score - b.score
-      : a.result.structureKey.localeCompare(b.result.structureKey)
-  );
+  scored.sort((a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    if (a.specificity !== b.specificity) return a.specificity - b.specificity;
+    return a.result.structureKey.localeCompare(b.result.structureKey);
+  });
   const seen = new Set<string>();
   const out: import('./anatomyTypes').AnatomySearchResult[] = [];
   for (const { result } of scored) {

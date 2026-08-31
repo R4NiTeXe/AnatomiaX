@@ -258,4 +258,90 @@ describe('Anatomy Search', () => {
     });
     expect(results.length).toBeLessThanOrEqual(2);
   });
+
+  describe('ranking improvements (8.15.3)', () => {
+    it('heart ranking prefers actual heart over papillary muscle', () => {
+      const registry = new AnatomyStructureRegistry();
+      const scene = new THREE.Group();
+      const heart = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      heart.name = 'VH_M_heart';
+      heart.userData.ontologyId = 'UBERON:0000948';
+      scene.add(heart);
+      const papillary = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      papillary.name = 'VH_M_papillary_muscle_of_heart_posterior';
+      papillary.userData.ontologyId = 'FMA:7261';
+      scene.add(papillary);
+      const structs = collectStructuresFromScene(scene, 'cardiovascular', 'male');
+      structs.forEach(s => registry.register(s));
+      const results = searchStructures(registry, 'heart', { bodyModel: 'male', systemKey: 'all' });
+      expect(results.length).toBeGreaterThanOrEqual(2);
+      // Heart (shorter, exact canonical) should be first
+      expect(results[0].objectName).toBe('VH_M_heart');
+    });
+
+    it('ovary ranking prefers actual ovary over ligament', () => {
+      const registry = new AnatomyStructureRegistry();
+      const scene = new THREE.Group();
+      const ovary = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      ovary.name = 'VH_F_ovary';
+      ovary.userData.ontologyId = 'UBERON:0000992';
+      scene.add(ovary);
+      const ligament = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      ligament.name = 'VH_F_suspensory_ligament_of_ovary_R';
+      ligament.userData.ontologyId = 'FMA:19823';
+      scene.add(ligament);
+      const structs = collectStructuresFromScene(scene, 'reproductive', 'female');
+      structs.forEach(s => registry.register(s));
+      const results = searchStructures(registry, 'ovary', {
+        bodyModel: 'female',
+        systemKey: 'all',
+      });
+      expect(results.length).toBeGreaterThanOrEqual(2);
+      expect(results[0].objectName).toBe('VH_F_ovary');
+    });
+
+    it('exact canonical name beats substructure substring', () => {
+      const registry = new AnatomyStructureRegistry();
+      const scene = new THREE.Group();
+      const exact = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      exact.name = 'Heart';
+      exact.userData.ontologyId = 'UBERON:0000948';
+      scene.add(exact);
+      const sub = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      sub.name = 'Papillary_muscle_of_heart_posterior';
+      sub.userData.ontologyId = 'FMA:7261';
+      scene.add(sub);
+      const structs = collectStructuresFromScene(scene, 'cardiovascular', 'male');
+      structs.forEach(s => registry.register(s));
+      const results = searchStructures(registry, 'Heart', { bodyModel: 'male', systemKey: 'all' });
+      expect(results[0].objectName).toBe('Heart');
+    });
+
+    it('actual ontology-linked information lookup for new high-value', () => {
+      const registry = new AnatomyStructureRegistry();
+      const scene = new THREE.Group();
+      const rightVentricle = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+      rightVentricle.name = 'VH_M_heart_right_ventricle';
+      rightVentricle.userData.ontologyId = 'UBERON:0002080';
+      scene.add(rightVentricle);
+      const structs = collectStructuresFromScene(scene, 'cardiovascular', 'male');
+      structs.forEach(s => registry.register(s));
+      const results = searchStructures(registry, 'UBERON:0002080', {
+        bodyModel: 'male',
+        systemKey: 'all',
+      });
+      expect(results[0].ontologyId).toBe('UBERON:0002080');
+      // Verify information lookup would work (structureKey matches seed)
+      expect(results[0].structureKey).toBe('male:cardiovascular:UBERON:0002080');
+    });
+
+    it('unavailable fallback still works', () => {
+      const registry = new AnatomyStructureRegistry();
+      const results = searchStructures(registry, 'nonexistent_xyz', {
+        bodyModel: 'all',
+        systemKey: 'all',
+      });
+      expect(results).toEqual([]);
+    });
+  });
 });

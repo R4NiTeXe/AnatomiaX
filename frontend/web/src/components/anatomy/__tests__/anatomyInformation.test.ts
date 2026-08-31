@@ -186,8 +186,9 @@ describe('anatomyInformation — verified source architecture', () => {
     const seed = getAnatomyInformationSeed();
     // 8.14.1 baseline: 8 concepts => 13 records (5 shared*2 +3)
     // 8.14.3 expanded: 16 concepts => 26 records
-    // 8.14.5 expanded: 22 concepts => 38 records — verify baseline still present
-    expect(seed.length).toBe(38);
+    // 8.14.5 expanded: 22 concepts => 38 records
+    // 8.15.3 expanded: 24 concepts => 43 records — verify baseline still present
+    expect(seed.length).toBe(43);
     const canonicalNames = new Set(seed.map(s => s.canonicalName));
     // Baseline must still be present
     for (const name of ['Skin', 'Heart', 'Brain', 'Liver', 'Kidney', 'Ovary', 'Uterus', 'Cervix']) {
@@ -208,6 +209,8 @@ describe('anatomyInformation — verified source architecture', () => {
       'Right ventricle',
       'Hilum of lung',
       'Hilum of spleen',
+      'Body of uterus',
+      'Left ventricle',
     ]) {
       expect(canonicalNames.has(name)).toBe(true);
     }
@@ -291,5 +294,26 @@ describe('anatomyInformation — verified source architecture', () => {
     expect(getAnatomyInformationByOntologyId('UBERON:0001496', 'male')?.structureKey).toBe(
       'male:cardiovascular:UBERON:0001496'
     );
+  });
+
+  it('actual high-value loaded structures for 8.15.3 (ovary FMA, uterus body, left ventricle)', () => {
+    const ovaryRight = getAnatomyInformationByStructureKey('female:reproductive:FMA:7213');
+    expect(ovaryRight?.canonicalName).toBe('Ovary');
+    expect(ovaryRight?.ontologyId).toBe('FMA:7213');
+    const ovaryLeft = getAnatomyInformationByStructureKey('female:reproductive:FMA:7214');
+    expect(ovaryLeft?.canonicalName).toBe('Ovary');
+    const bodyUterus = getAnatomyInformationByStructureKey('female:reproductive:UBERON:0009853');
+    expect(bodyUterus?.canonicalName).toBe('Body of uterus');
+    const leftVentricleMale = getAnatomyInformationByStructureKey(
+      'male:cardiovascular:UBERON:0002084'
+    );
+    expect(leftVentricleMale?.canonicalName).toBe('Left ventricle');
+    const leftVentricleFemale = getAnatomyInformationByStructureKey(
+      'female:cardiovascular:UBERON:0002084'
+    );
+    expect(leftVentricleFemale?.canonicalName).toBe('Left ventricle');
+    // Verify male/female separation not needed for ovary (female-only)
+    expect(getAnatomyInformationByOntologyId('FMA:7213')).toBeDefined();
+    expect(getAnatomyInformationByOntologyId('FMA:7213')?.bodyModel).toBe('female');
   });
 });

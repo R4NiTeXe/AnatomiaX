@@ -622,6 +622,79 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
+  // Actual ovary — verified present as VH_F_right_ovary FMA:7213 and VH_F_left_ovary FMA:7214
+  {
+    structureKey: 'female:reproductive:FMA:7213',
+    bodyModel: 'female',
+    systemKey: 'reproductive',
+    ontologyId: 'FMA:7213',
+    canonicalName: 'Ovary',
+    description:
+      'Paired female reproductive glands that produce oocytes and secrete estrogen and progesterone.',
+    function:
+      'Generates ova and reproductive hormones regulating the menstrual cycle and secondary sexual characteristics.',
+    source: 'Human Reference Atlas',
+    sourceUrl: 'https://humanatlas.io/asct-b-reporter',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 4.0 (HRA)',
+  },
+  {
+    structureKey: 'female:reproductive:FMA:7214',
+    bodyModel: 'female',
+    systemKey: 'reproductive',
+    ontologyId: 'FMA:7214',
+    canonicalName: 'Ovary',
+    description:
+      'Paired female reproductive glands that produce oocytes and secrete estrogen and progesterone.',
+    function:
+      'Generates ova and reproductive hormones regulating the menstrual cycle and secondary sexual characteristics.',
+    source: 'Human Reference Atlas',
+    sourceUrl: 'https://humanatlas.io/asct-b-reporter',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 4.0 (HRA)',
+  },
+  // Body of uterus — verified present as VH_F_body_of_uterus UBERON:0009853
+  {
+    structureKey: 'female:reproductive:UBERON:0009853',
+    bodyModel: 'female',
+    systemKey: 'reproductive',
+    ontologyId: 'UBERON:0009853',
+    canonicalName: 'Body of uterus',
+    description:
+      'The main part of the uterus above the cervix where implantation and fetal growth occur.',
+    function: 'Supports embryo implantation and provides muscular expansion during pregnancy.',
+    source: 'Human Reference Atlas',
+    sourceUrl: 'https://humanatlas.io/asct-b-reporter',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 4.0 (HRA)',
+  },
+  // Left ventricle — verified present as VH_M_heart_left_ventricle UBERON:0002084
+  {
+    structureKey: 'male:cardiovascular:UBERON:0002084',
+    bodyModel: 'male',
+    systemKey: 'cardiovascular',
+    ontologyId: 'UBERON:0002084',
+    canonicalName: 'Left ventricle',
+    description: 'The left lower chamber of the heart that pumps oxygenated blood into the aorta.',
+    function: 'Drives systemic circulation by ejecting blood at high pressure to the body.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19612.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:cardiovascular:UBERON:0002084',
+    bodyModel: 'female',
+    systemKey: 'cardiovascular',
+    ontologyId: 'UBERON:0002084',
+    canonicalName: 'Left ventricle',
+    description: 'The left lower chamber of the heart that pumps oxygenated blood into the aorta.',
+    function: 'Drives systemic circulation by ejecting blood at high pressure to the body.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19612.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
 ];
 
 // ---------------------------------------------------------------------------
