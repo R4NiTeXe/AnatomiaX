@@ -190,7 +190,8 @@ describe('anatomyInformation — verified source architecture', () => {
     // 8.15.3 expanded: 24 concepts => 45 records (added ovary FMA, body of uterus, left ventricle, kidney capsule)
     // 8.16.5 expanded: 25 concepts => 47 records (added Brain UBERON:0004720 for actual present cerebellar vermis)
     // 8.16.9 expanded: 26 concepts => 51 records (added Putamen UBERON:0008884 and Pineal gland UBERON:0001905 for Allen)
-    expect(seed.length).toBe(51);
+    // 8.16.11 expanded: 26 concepts => 53 records (added Putamen UBERON:0008885 for right putamen)
+    expect(seed.length).toBe(53);
     const canonicalNames = new Set(seed.map(s => s.canonicalName));
     // Baseline must still be present
     for (const name of ['Skin', 'Heart', 'Brain', 'Liver', 'Kidney', 'Ovary', 'Uterus', 'Cervix']) {

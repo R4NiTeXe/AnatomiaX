@@ -757,7 +757,7 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Putamen — verified present as Allen_putamen_L UBERON:0008884
+  // Putamen — verified present as Allen_putamen_L UBERON:0008884 and Allen_putamen_R UBERON:0008885
   {
     structureKey: 'male:nervous:UBERON:0008884',
     bodyModel: 'male',
@@ -785,6 +785,36 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Contributes to motor control and procedural learning as part of the basal ganglia circuitry.',
     source: 'Uberon',
     sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0008884',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 3.0 (Uberon)',
+  },
+  {
+    structureKey: 'male:nervous:UBERON:0008885',
+    bodyModel: 'male',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0008885',
+    canonicalName: 'Putamen',
+    description:
+      'A rounded structure in the forebrain that is part of the basal ganglia and regulates movement and learning.',
+    function:
+      'Contributes to motor control and procedural learning as part of the basal ganglia circuitry.',
+    source: 'Uberon',
+    sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0008885',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 3.0 (Uberon)',
+  },
+  {
+    structureKey: 'female:nervous:UBERON:0008885',
+    bodyModel: 'female',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0008885',
+    canonicalName: 'Putamen',
+    description:
+      'A rounded structure in the forebrain that is part of the basal ganglia and regulates movement and learning.',
+    function:
+      'Contributes to motor control and procedural learning as part of the basal ganglia circuitry.',
+    source: 'Uberon',
+    sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0008885',
     lastVerified: '2026-01-15',
     license: 'CC BY 3.0 (Uberon)',
   },
