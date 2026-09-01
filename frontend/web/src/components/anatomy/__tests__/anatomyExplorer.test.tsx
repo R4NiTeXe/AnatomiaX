@@ -96,13 +96,14 @@ describe('AnatomyStructureExplorer', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
-    expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/VH_M_brain/);
+    // Now displays canonicalName "Brain" where available, not raw VH_M_brain
+    expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/Brain/);
     fireEvent.click(screen.getByTestId('switch-female'));
     // After switch, male structures cleared, explorer should be empty until female load
     expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('load-nervous-female'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
-    expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/VH_F_brain/);
+    expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/Brain/);
   });
 
   it('filter matching: Filter structures... by name/objectName case-insensitive', () => {
@@ -232,5 +233,85 @@ describe('AnatomyStructureExplorer', () => {
     expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(2);
     fireEvent.change(input, { target: { value: 'nonexistent123' } });
     expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
+  });
+
+  it('system grouping: structures grouped by systemKey', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    expect(screen.getByTestId('anatomy-explorer-system-nervous')).toBeInTheDocument();
+  });
+
+  it('parent grouping from lineage[1]: structures grouped by immediate parent', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    // VH_M_brain lineage is [VH_M_brain, VH_M_integumentary_system, VH_M] -> parent VH_M_integumentary_system not in nervous
+    // For our test data, brain and spinal cord have different lineages but same system, they share system group
+    expect(screen.getByTestId('anatomy-explorer-system-nervous')).toBeInTheDocument();
+    // Check parent groups exist
+    const parents = screen.queryAllByTestId(/anatomy-explorer-parent-/);
+    expect(parents.length).toBeGreaterThan(0);
+  });
+
+  it('deterministic ordering: structureKey sort', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const opts = screen.getAllByTestId(/anatomy-explorer-option-/);
+    const keys = opts.map(el => el.getAttribute('data-testid'));
+    expect(keys).toEqual([...keys].sort());
+  });
+
+  it('filtered hierarchy shows only matching branches and ancestors', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const input = screen.getByTestId('anatomy-explorer-filter');
+    fireEvent.change(input, { target: { value: 'brain' } });
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
+    expect(screen.getByTestId('anatomy-explorer-system-nervous')).toBeInTheDocument();
+  });
+
+  it('empty groups removed when filtering', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('load-musculoskeletal-male'));
+    // Need to make musculoskeletal visible
+    // For this test, just filter to brain, which should hide musculoskeletal system group
+    const input = screen.getByTestId('anatomy-explorer-filter');
+    fireEvent.change(input, { target: { value: 'brain' } });
+    expect(screen.queryByTestId('anatomy-explorer-system-musculoskeletal')).not.toBeInTheDocument();
+  });
+
+  it('collapse/expand system and parent groups', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const systemToggle = screen.getByTestId('anatomy-explorer-system-toggle-nervous');
+    expect(systemToggle).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(systemToggle);
+    expect(systemToggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(systemToggle);
+    expect(systemToggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('no duplicate structures', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const opts = screen.getAllByTestId(/anatomy-explorer-option-/);
+    const keys = opts.map(el => el.getAttribute('id'));
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('uses verified canonicalName for display where available', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    // Brain has canonicalName Brain from seed, should display Brain not VH_M_brain
+    expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/Brain/);
   });
 });

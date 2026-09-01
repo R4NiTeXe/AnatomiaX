@@ -2,7 +2,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAnatomyState } from './AnatomyStateContext';
 import { getAnatomySystem } from './anatomyAssetConfig';
 import { getAnatomyInformationByStructureKey } from './anatomyInformation';
-import type { AnatomySystemKey } from './anatomyTypes';
+import type { AnatomyStructure, AnatomySystemKey } from './anatomyTypes';
+
+function humanizeParentName(raw: string): string {
+  // Remove VH_M_ / VH_F_ prefix and underscores, keep readable
+  const withoutPrefix = raw.replace(/^VH_[MF]_/, '');
+  return withoutPrefix.replace(/_/g, ' ');
+}
+
+function getDisplayName(structure: AnatomyStructure): string {
+  const canonical = getAnatomyInformationByStructureKey(structure.structureKey)?.canonicalName;
+  if (canonical) return canonical;
+  // Fallback to humanized objectName without VH_ prefix
+  return humanizeParentName(structure.name);
+}
+
+function getParentDisplayName(parentRaw: string, systemKey: AnatomySystemKey): string {
+  // Try to find verified canonicalName for a structure that has this parentRaw in its lineage
+  // Fallback to humanized parentRaw
+  // For system-level fallback, use system label
+  if (!parentRaw || parentRaw === 'VH_M' || parentRaw === 'VH_F') {
+    return getAnatomySystem(systemKey as never).label;
+  }
+  // Try to find any information record that matches parentRaw as objectName (without prefix)
+  // We don't have direct parent structure, so humanize
+  return humanizeParentName(parentRaw);
+}
 
 export default function AnatomyStructureExplorer(): JSX.Element {
   const {
@@ -17,11 +42,12 @@ export default function AnatomyStructureExplorer(): JSX.Element {
   const [filter, setFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState<AnatomySystemKey | 'all'>('all');
   const [activeIndex, setActiveIndex] = useState(-1);
-  const listRef = useRef<HTMLUListElement>(null);
+  const [expandedSystems, setExpandedSystems] = useState<Set<AnatomySystemKey>>(new Set());
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const allLoaded = useMemo(() => {
-    // Only structures belonging to selected bodyModel and currently visible systems
     return registry
       .getAllLoadedStructures()
       .filter(s => s.bodyModel === selectedBodyModel && visibleSystems[s.systemKey]);
@@ -33,7 +59,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     return [...set].sort();
   }, [allLoaded]);
 
-  // Reset system filter if it becomes unavailable
   useEffect(() => {
     if (systemFilter !== 'all' && !availableSystems.includes(systemFilter)) {
       setSystemFilter('all');
@@ -56,23 +81,78 @@ export default function AnatomyStructureExplorer(): JSX.Element {
         return name.includes(nq) || obj.includes(nq) || ont.includes(nq) || canonical.includes(nq);
       });
     }
-    // Deterministic ordering
     return [...list].sort((a, b) => a.structureKey.localeCompare(b.structureKey));
   }, [allLoaded, filter, systemFilter]);
 
-  useEffect(() => {
-    setActiveIndex(filtered.length > 0 ? 0 : -1);
+  // Hierarchy: System -> Parent (lineage[1]) -> Structures
+  const hierarchy = useMemo(() => {
+    const bySystem = new Map<AnatomySystemKey, Map<string, AnatomyStructure[]>>();
+    for (const s of filtered) {
+      const parentRaw = s.lineage[1] ?? s.systemKey;
+      // Fallback to systemKey if parent is VH_M / VH_F or empty
+      const parentKey =
+        !parentRaw || parentRaw === 'VH_M' || parentRaw === 'VH_F' ? s.systemKey : parentRaw;
+      if (!bySystem.has(s.systemKey)) bySystem.set(s.systemKey, new Map());
+      const byParent = bySystem.get(s.systemKey)!;
+      if (!byParent.has(parentKey)) byParent.set(parentKey, []);
+      byParent.get(parentKey)!.push(s);
+    }
+    // Sort systems, parents, and structures deterministically
+    const sortedSystems = [...bySystem.entries()].sort(([a], [b]) => a.localeCompare(b));
+    for (const [, byParent] of sortedSystems) {
+      for (const [parent, list] of byParent.entries()) {
+        list.sort((a, b) => a.structureKey.localeCompare(b.structureKey));
+        byParent.set(parent, list);
+      }
+    }
+    // Also sort parents within each system
+    for (const [sys, byParent] of sortedSystems) {
+      const sortedParents = [...byParent.entries()].sort(([a], [b]) => a.localeCompare(b));
+      bySystem.set(sys, new Map(sortedParents));
+    }
+    return new Map(sortedSystems);
   }, [filtered]);
 
+  const flatFiltered = useMemo(() => filtered, [filtered]);
+
   useEffect(() => {
-    if (activeIndex >= 0 && listRef.current) {
-      const el = listRef.current.children[activeIndex] as HTMLElement | undefined;
-      el?.scrollIntoView?.({ block: 'nearest' });
+    setActiveIndex(flatFiltered.length > 0 ? 0 : -1);
+  }, [flatFiltered]);
+
+  // Auto-expand systems/parents when filtering or initial load
+  useEffect(() => {
+    if (filtered.length > 0 && filtered.length <= 20) {
+      // Small result set: expand all
+      setExpandedSystems(new Set([...hierarchy.keys()]));
+      const allParents = new Set<string>();
+      for (const [sys, byParent] of hierarchy.entries()) {
+        for (const parent of byParent.keys()) {
+          allParents.add(`${sys}:${parent}`);
+        }
+      }
+      setExpandedParents(allParents);
+    } else if (filter.trim()) {
+      // When filtering, expand all matching branches
+      setExpandedSystems(new Set([...hierarchy.keys()]));
+      const allParents = new Set<string>();
+      for (const [sys, byParent] of hierarchy.entries()) {
+        for (const parent of byParent.keys()) {
+          allParents.add(`${sys}:${parent}`);
+        }
+      }
+      setExpandedParents(allParents);
     }
-  }, [activeIndex]);
+  }, [filtered, hierarchy]);
+
+  // Expand all systems by default when first loaded
+  useEffect(() => {
+    if (allLoaded.length > 0 && allLoaded.length <= 10) {
+      setExpandedSystems(new Set([...hierarchy.keys()]));
+    }
+  }, [allLoaded.length, hierarchy]);
 
   const handleSelect = useCallback(
-    (structure: (typeof filtered)[number]) => {
+    (structure: AnatomyStructure) => {
       selectStructure({
         structureKey: structure.structureKey,
         name: structure.name,
@@ -89,14 +169,14 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setActiveIndex(prev => (prev + 1) % filtered.length);
+        setActiveIndex(prev => (prev + 1) % flatFiltered.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setActiveIndex(prev => (prev - 1 + filtered.length) % filtered.length);
+        setActiveIndex(prev => (prev - 1 + flatFiltered.length) % flatFiltered.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (activeIndex >= 0 && filtered[activeIndex]) {
-          handleSelect(filtered[activeIndex]);
+        if (activeIndex >= 0 && flatFiltered[activeIndex]) {
+          handleSelect(flatFiltered[activeIndex]);
         }
       } else if (e.key === 'Escape') {
         e.preventDefault();
@@ -104,15 +184,45 @@ export default function AnatomyStructureExplorer(): JSX.Element {
         inputRef.current?.focus();
       }
     },
-    [filtered, activeIndex, handleSelect]
+    [flatFiltered, activeIndex, handleSelect]
   );
 
-  // Reset filter on body switch
   useEffect(() => {
     setFilter('');
     setSystemFilter('all');
     setActiveIndex(-1);
+    setExpandedSystems(new Set());
+    setExpandedParents(new Set());
   }, [selectedBodyModel]);
+
+  const toggleSystem = useCallback((sys: AnatomySystemKey) => {
+    setExpandedSystems(prev => {
+      const next = new Set(prev);
+      if (next.has(sys)) next.delete(sys);
+      else next.add(sys);
+      return next;
+    });
+  }, []);
+
+  const toggleParent = useCallback((sys: AnatomySystemKey, parent: string) => {
+    const key = `${sys}:${parent}`;
+    setExpandedParents(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  // Scroll active into view
+  useEffect(() => {
+    if (activeIndex >= 0 && listRef.current) {
+      const el = listRef.current.querySelector(
+        `[data-index="${activeIndex}"]`
+      ) as HTMLElement | null;
+      el?.scrollIntoView?.({ block: 'nearest' });
+    }
+  }, [activeIndex]);
 
   return (
     <section
@@ -190,7 +300,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
             )}
           </div>
 
-          <ul
+          <div
             ref={listRef}
             role="listbox"
             aria-label="Loaded structures"
@@ -198,49 +308,143 @@ export default function AnatomyStructureExplorer(): JSX.Element {
             className="mt-3 max-h-[30vh] overflow-y-auto rounded-lg border border-slate-700/50 bg-slate-800/30"
           >
             {filtered.length === 0 ? (
-              <li
+              <div
                 className="px-3 py-6 text-center text-sm text-slate-500"
                 data-testid="anatomy-explorer-empty"
               >
                 {allLoaded.length === 0 ? 'No structures loaded' : 'No matching structures'}
-              </li>
+              </div>
             ) : (
-              filtered.map((s, index) => {
-                const isSelected = selectedStructure?.structureKey === s.structureKey;
-                const isActive = index === activeIndex;
+              [...hierarchy.entries()].map(([systemKey, byParent]) => {
+                const isSystemExpanded = expandedSystems.has(systemKey);
+                const systemLabel = getAnatomySystem(systemKey as never).label;
+                const systemCount = [...byParent.values()].reduce(
+                  (acc, arr) => acc + arr.length,
+                  0
+                );
                 return (
-                  <li
-                    key={s.structureKey}
-                    id={`anatomy-explorer-option-${s.structureKey}`}
-                    role="option"
-                    aria-selected={isSelected}
-                    data-testid={`anatomy-explorer-option-${index}`}
-                    onClick={() => handleSelect(s)}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    className={`cursor-pointer border-b border-slate-700/30 px-3 py-2 last:border-b-0 focus-visible:outline-none ${
-                      isSelected
-                        ? 'bg-teal-500/20 text-teal-200'
-                        : isActive
-                          ? 'bg-slate-700 text-slate-100'
-                          : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium">{s.name}</span>
-                      <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-xs capitalize text-slate-400">
-                        {getAnatomySystem(s.systemKey as never).label}
+                  <div key={systemKey} data-testid={`anatomy-explorer-system-${systemKey}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSystem(systemKey)}
+                      aria-expanded={isSystemExpanded}
+                      data-testid={`anatomy-explorer-system-toggle-${systemKey}`}
+                      className="flex w-full items-center justify-between bg-slate-800/50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest text-slate-400 hover:bg-slate-700/50 focus-visible:outline-none"
+                    >
+                      <span>
+                        {systemLabel} ({systemCount})
                       </span>
-                    </div>
-                    {s.ontologyId && (
-                      <span className="mt-0.5 block truncate font-mono text-xs text-slate-500">
-                        {s.ontologyId}
-                      </span>
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        aria-hidden
+                        className={`text-slate-400 transition-transform ${isSystemExpanded ? 'rotate-180' : ''}`}
+                      >
+                        <path
+                          d="M3 5l4 4 4-4"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    {isSystemExpanded && (
+                      <div>
+                        {[...byParent.entries()].map(([parentRaw, structures]) => {
+                          const parentKey = `${systemKey}:${parentRaw}`;
+                          const isParentExpanded = expandedParents.has(parentKey);
+                          const parentLabel = getParentDisplayName(parentRaw, systemKey);
+                          return (
+                            <div
+                              key={parentKey}
+                              data-testid={`anatomy-explorer-parent-${systemKey}-${parentRaw}`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => toggleParent(systemKey, parentRaw)}
+                                aria-expanded={isParentExpanded}
+                                data-testid={`anatomy-explorer-parent-toggle-${systemKey}-${parentRaw}`}
+                                className="flex w-full items-center justify-between bg-slate-800/30 px-3 py-1.5 pl-6 text-left text-xs font-medium text-slate-300 hover:bg-slate-700/30 focus-visible:outline-none"
+                              >
+                                <span className="truncate">
+                                  {parentLabel} ({structures.length})
+                                </span>
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 14 14"
+                                  fill="none"
+                                  aria-hidden
+                                  className={`shrink-0 text-slate-400 transition-transform ${isParentExpanded ? 'rotate-180' : ''}`}
+                                >
+                                  <path
+                                    d="M3 5l4 4 4-4"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </button>
+                              {isParentExpanded && (
+                                <ul>
+                                  {structures.map(s => {
+                                    const flatIndex = flatFiltered.findIndex(
+                                      f => f.structureKey === s.structureKey
+                                    );
+                                    const isSelected =
+                                      selectedStructure?.structureKey === s.structureKey;
+                                    const isActive = flatIndex === activeIndex;
+                                    const displayName = getDisplayName(s);
+                                    return (
+                                      <li
+                                        key={s.structureKey}
+                                        id={`anatomy-explorer-option-${s.structureKey}`}
+                                        role="option"
+                                        aria-selected={isSelected}
+                                        data-testid={`anatomy-explorer-option-${flatIndex >= 0 ? flatIndex : s.structureKey}`}
+                                        data-index={flatIndex}
+                                        onClick={() => handleSelect(s)}
+                                        onMouseEnter={() => setActiveIndex(flatIndex)}
+                                        className={`cursor-pointer border-b border-slate-700/30 px-3 py-2 pl-8 last:border-b-0 focus-visible:outline-none ${
+                                          isSelected
+                                            ? 'bg-teal-500/20 text-teal-200'
+                                            : isActive
+                                              ? 'bg-slate-700 text-slate-100'
+                                              : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="truncate text-sm font-medium">
+                                            {displayName}
+                                          </span>
+                                          <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-xs capitalize text-slate-400">
+                                            {getAnatomySystem(s.systemKey as never).label}
+                                          </span>
+                                        </div>
+                                        {s.ontologyId && (
+                                          <span className="mt-0.5 block truncate font-mono text-xs text-slate-500">
+                                            {s.ontologyId}
+                                          </span>
+                                        )}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
-                  </li>
+                  </div>
                 );
               })
             )}
-          </ul>
+          </div>
         </div>
       )}
     </section>
