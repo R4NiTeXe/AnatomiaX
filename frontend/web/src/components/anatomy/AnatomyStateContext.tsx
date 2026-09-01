@@ -83,6 +83,7 @@ interface AnatomyStateValue {
   attempts: Record<AnatomySystemKey, number>;
   retrySystem: (key: AnatomySystemKey) => void;
   registry: AnatomyStructureRegistry;
+  registryVersion: number;
   registerSystemStructures: (key: AnatomySystemKey, scene: THREE.Object3D) => AnatomyStructure[];
   unregisterSystemStructures: (key: AnatomySystemKey) => void;
   registerSystemScene: (key: AnatomySystemKey, scene: THREE.Object3D) => void;
@@ -101,6 +102,7 @@ export function AnatomyStateProvider({
 }): JSX.Element {
   const registryRef = useRef<AnatomyStructureRegistry>(new AnatomyStructureRegistry());
   const systemScenesRef = useRef<Map<AnatomySystemKey, THREE.Object3D>>(new Map());
+  const [registryVersion, setRegistryVersion] = useState(0);
   const [visibleSystems, setVisibleSystems] = useState(initialVisibleSystems);
   const [systemOpacity, setSystemOpacityMap] = useState<SystemOpacityMap>(INITIAL_OPACITY);
   const [isolatedSystem, setIsolatedSystem] = useState<AnatomySystemKey | null>(null);
@@ -153,6 +155,7 @@ export function AnatomyStateProvider({
       prevBodyModelRef.current = selectedBodyModel;
       registryRef.current.clear();
       systemScenesRef.current.clear();
+      setRegistryVersion(v => v + 1);
       setSelectedStructure(null);
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
@@ -254,13 +257,16 @@ export function AnatomyStateProvider({
 
   const registerSystemStructures = useCallback(
     (key: AnatomySystemKey, scene: THREE.Object3D): AnatomyStructure[] => {
-      return registryRef.current.registerSystem(key, scene, selectedBodyModel);
+      const res = registryRef.current.registerSystem(key, scene, selectedBodyModel);
+      setRegistryVersion(v => v + 1);
+      return res;
     },
     [selectedBodyModel]
   );
 
   const unregisterSystemStructures = useCallback((key: AnatomySystemKey): void => {
     registryRef.current.unregisterSystem(key);
+    setRegistryVersion(v => v + 1);
     // Do NOT clear registry on hide for layer visibility — keep cached data.
     // Only clear selection if it belonged to the removed system (handled by effect above).
   }, []);
@@ -329,6 +335,7 @@ export function AnatomyStateProvider({
       attempts,
       retrySystem,
       registry: registryRef.current,
+      registryVersion,
       registerSystemStructures,
       unregisterSystemStructures,
       registerSystemScene,
@@ -354,6 +361,7 @@ export function AnatomyStateProvider({
       setSystemError,
       attempts,
       retrySystem,
+      registryVersion,
       registerSystemStructures,
       unregisterSystemStructures,
       registerSystemScene,
