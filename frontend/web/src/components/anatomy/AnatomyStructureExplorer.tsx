@@ -281,6 +281,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
               data-testid="anatomy-explorer-filter"
               className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
+            <p className="px-1 text-xs text-slate-500">Browse loaded structures</p>
 
             {availableSystems.length > 1 && (
               <select
@@ -329,7 +330,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                       onClick={() => toggleSystem(systemKey)}
                       aria-expanded={isSystemExpanded}
                       data-testid={`anatomy-explorer-system-toggle-${systemKey}`}
-                      className="flex w-full items-center justify-between bg-slate-800/50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest text-slate-400 hover:bg-slate-700/50 focus-visible:outline-none"
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest hover:bg-slate-700/50 focus-visible:outline-none ${isSystemExpanded ? 'bg-slate-700 text-slate-100' : 'bg-slate-800/50 text-slate-400'}`}
                     >
                       <span>
                         {systemLabel} ({systemCount})
@@ -340,7 +341,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                         viewBox="0 0 14 14"
                         fill="none"
                         aria-hidden
-                        className={`text-slate-400 transition-transform ${isSystemExpanded ? 'rotate-180' : ''}`}
+                        className={`transition-transform ${isSystemExpanded ? 'rotate-180 text-slate-200' : 'text-slate-400'}`}
                       >
                         <path
                           d="M3 5l4 4 4-4"
@@ -367,7 +368,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                 onClick={() => toggleParent(systemKey, parentRaw)}
                                 aria-expanded={isParentExpanded}
                                 data-testid={`anatomy-explorer-parent-toggle-${systemKey}-${parentRaw}`}
-                                className="flex w-full items-center justify-between bg-slate-800/30 px-3 py-1.5 pl-6 text-left text-xs font-medium text-slate-300 hover:bg-slate-700/30 focus-visible:outline-none"
+                                className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 pl-6 text-left text-xs font-medium hover:bg-slate-700/30 focus-visible:outline-none ${isParentExpanded ? 'border-teal-500/50 bg-slate-700/20 text-slate-200' : 'border-slate-700/50 bg-slate-800/30 text-slate-300'}`}
                               >
                                 <span className="truncate">
                                   {parentLabel} ({structures.length})
@@ -378,7 +379,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                   viewBox="0 0 14 14"
                                   fill="none"
                                   aria-hidden
-                                  className={`shrink-0 text-slate-400 transition-transform ${isParentExpanded ? 'rotate-180' : ''}`}
+                                  className={`shrink-0 transition-transform ${isParentExpanded ? 'rotate-180 text-slate-200' : 'text-slate-400'}`}
                                 >
                                   <path
                                     d="M3 5l4 4 4-4"

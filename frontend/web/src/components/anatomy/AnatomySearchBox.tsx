@@ -96,6 +96,7 @@ export default function AnatomySearchBox(): JSX.Element {
 
   return (
     <div className="relative">
+      <p className="mb-1 px-1 text-xs text-slate-500">Search all anatomy</p>
       <div className="relative">
         <input
           ref={inputRef}

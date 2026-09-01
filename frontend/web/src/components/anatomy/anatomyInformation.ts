@@ -757,6 +757,66 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
+  // Putamen — verified present as Allen_putamen_L UBERON:0008884
+  {
+    structureKey: 'male:nervous:UBERON:0008884',
+    bodyModel: 'male',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0008884',
+    canonicalName: 'Putamen',
+    description:
+      'A rounded structure in the forebrain that is part of the basal ganglia and regulates movement and learning.',
+    function:
+      'Contributes to motor control and procedural learning as part of the basal ganglia circuitry.',
+    source: 'Uberon',
+    sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0008884',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 3.0 (Uberon)',
+  },
+  {
+    structureKey: 'female:nervous:UBERON:0008884',
+    bodyModel: 'female',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0008884',
+    canonicalName: 'Putamen',
+    description:
+      'A rounded structure in the forebrain that is part of the basal ganglia and regulates movement and learning.',
+    function:
+      'Contributes to motor control and procedural learning as part of the basal ganglia circuitry.',
+    source: 'Uberon',
+    sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0008884',
+    lastVerified: '2026-01-15',
+    license: 'CC BY 3.0 (Uberon)',
+  },
+  // Pineal gland — verified present as Allen_pineal_body_L UBERON:0001905
+  {
+    structureKey: 'male:nervous:UBERON:0001905',
+    bodyModel: 'male',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0001905',
+    canonicalName: 'Pineal gland',
+    description:
+      'A small endocrine gland in the brain that produces melatonin and regulates sleep-wake cycles.',
+    function: 'Secretes melatonin in response to darkness, influencing circadian rhythms.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002341.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:nervous:UBERON:0001905',
+    bodyModel: 'female',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0001905',
+    canonicalName: 'Pineal gland',
+    description:
+      'A small endocrine gland in the brain that produces melatonin and regulates sleep-wake cycles.',
+    function: 'Secretes melatonin in response to darkness, influencing circadian rhythms.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002341.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
 ];
 
 // ---------------------------------------------------------------------------
