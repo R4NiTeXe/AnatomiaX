@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAnatomyState } from './AnatomyStateContext';
 import { getAnatomySystem } from './anatomyAssetConfig';
+import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 import type { AnatomySystemKey } from './anatomyTypes';
 
 export default function AnatomyStructureExplorer(): JSX.Element {
@@ -50,7 +51,9 @@ export default function AnatomyStructureExplorer(): JSX.Element {
         const name = s.name.toLowerCase();
         const obj = s.objectName.toLowerCase();
         const ont = s.ontologyId ? s.ontologyId.toLowerCase() : '';
-        return name.includes(nq) || obj.includes(nq) || ont.includes(nq);
+        const canonical =
+          getAnatomyInformationByStructureKey(s.structureKey)?.canonicalName.toLowerCase() ?? '';
+        return name.includes(nq) || obj.includes(nq) || ont.includes(nq) || canonical.includes(nq);
       });
     }
     // Deterministic ordering

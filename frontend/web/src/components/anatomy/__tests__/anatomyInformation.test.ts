@@ -187,8 +187,9 @@ describe('anatomyInformation — verified source architecture', () => {
     // 8.14.1 baseline: 8 concepts => 13 records (5 shared*2 +3)
     // 8.14.3 expanded: 16 concepts => 26 records
     // 8.14.5 expanded: 22 concepts => 38 records
-    // 8.15.3 expanded: 24 concepts => 45 records (added ovary FMA, body of uterus, left ventricle, kidney capsule) — verify baseline still present
-    expect(seed.length).toBe(45);
+    // 8.15.3 expanded: 24 concepts => 45 records (added ovary FMA, body of uterus, left ventricle, kidney capsule)
+    // 8.16.5 expanded: 25 concepts => 47 records (added Brain UBERON:0004720 for actual present cerebellar vermis)
+    expect(seed.length).toBe(47);
     const canonicalNames = new Set(seed.map(s => s.canonicalName));
     // Baseline must still be present
     for (const name of ['Skin', 'Heart', 'Brain', 'Liver', 'Kidney', 'Ovary', 'Uterus', 'Cervix']) {

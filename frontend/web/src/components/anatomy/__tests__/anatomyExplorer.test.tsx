@@ -195,4 +195,42 @@ describe('AnatomyStructureExplorer', () => {
     expect(list).toHaveClass('max-h-[30vh]');
     expect(list).toHaveClass('overflow-y-auto');
   });
+
+  it('canonicalName filtering: verified canonicalName from anatomy information', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    const input = screen.getByTestId('anatomy-explorer-filter');
+    fireEvent.change(input, { target: { value: 'Brain' } });
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
+    expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/brain/i);
+  });
+
+  it('existing name/object/ontology filtering still works', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    const input = screen.getByTestId('anatomy-explorer-filter');
+    // Name
+    fireEvent.change(input, { target: { value: 'VH_M_brain' } });
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
+    // Ontology
+    fireEvent.change(input, { target: { value: 'UBERON:0000955' } });
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
+    // Case-insensitive
+    fireEvent.change(input, { target: { value: 'BRAIN' } });
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
+  });
+
+  it('empty filter shows all, no-match shows empty', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    const input = screen.getByTestId('anatomy-explorer-filter');
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(2);
+    fireEvent.change(input, { target: { value: '' } });
+    expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(2);
+    fireEvent.change(input, { target: { value: 'nonexistent123' } });
+    expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
+  });
 });

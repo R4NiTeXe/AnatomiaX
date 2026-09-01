@@ -726,6 +726,37 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
+  // Brain — verified present as Allen_cerebellar_vermis_L UBERON:0004720 (actual present brain substructure)
+  {
+    structureKey: 'male:nervous:UBERON:0004720',
+    bodyModel: 'male',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0004720',
+    canonicalName: 'Brain',
+    description:
+      'The central organ of the nervous system housed within the cranium, composed of billions of neurons and glia.',
+    function:
+      'Integrates sensory information, coordinates motor output, and supports cognition, memory, and autonomic regulation.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002344.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
+  {
+    structureKey: 'female:nervous:UBERON:0004720',
+    bodyModel: 'female',
+    systemKey: 'nervous',
+    ontologyId: 'UBERON:0004720',
+    canonicalName: 'Brain',
+    description:
+      'The central organ of the nervous system housed within the cranium, composed of billions of neurons and glia.',
+    function:
+      'Integrates sensory information, coordinates motor output, and supports cognition, memory, and autonomic regulation.',
+    source: 'NIH',
+    sourceUrl: 'https://medlineplus.gov/ency/article/002344.htm',
+    lastVerified: '2026-01-15',
+    license: 'Public domain (NIH)',
+  },
 ];
 
 // ---------------------------------------------------------------------------
