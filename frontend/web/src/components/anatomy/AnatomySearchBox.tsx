@@ -4,7 +4,7 @@ import { searchStructures } from './anatomyRegistry';
 import type { AnatomySearchResult } from './anatomyTypes';
 
 export default function AnatomySearchBox(): JSX.Element {
-  const { registry, selectedBodyModel, selectStructure } = useAnatomyState();
+  const { registry, selectedBodyModel, selectStructure, setHoveredStructure } = useAnatomyState();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -165,7 +165,18 @@ export default function AnatomySearchBox(): JSX.Element {
                 aria-selected={index === activeIndex}
                 data-testid={`anatomy-search-option-${index}`}
                 onClick={() => handleSelect(result)}
-                onMouseEnter={() => setActiveIndex(index)}
+                onMouseEnter={() => {
+                  setActiveIndex(index);
+                  setHoveredStructure({
+                    structureKey: result.structureKey,
+                    name: result.name,
+                    objectName: result.objectName,
+                    systemKey: result.systemKey as never,
+                    bodyModel: result.bodyModel,
+                    ontologyId: result.ontologyId,
+                  });
+                }}
+                onMouseLeave={() => setHoveredStructure(null)}
                 className={`cursor-pointer px-3 py-2 text-sm ${
                   index === activeIndex
                     ? 'bg-teal-500/20 text-teal-200'

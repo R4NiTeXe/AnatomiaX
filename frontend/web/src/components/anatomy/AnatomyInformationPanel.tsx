@@ -3,13 +3,17 @@ import { getAnatomyInformation } from './anatomyInformation';
 import { getAnatomySystem } from './anatomyAssetConfig';
 
 export default function AnatomyInformationPanel(): JSX.Element | null {
-  const { selectedStructure } = useAnatomyState();
+  const { selectedStructure, hoveredStructure, recentHistory, selectStructure } = useAnatomyState();
 
-  if (!selectedStructure) return null;
+  const displayStructure = hoveredStructure || selectedStructure;
 
-  const info = getAnatomyInformation(selectedStructure);
+  if (!displayStructure) return null;
 
-  const systemLabel = getAnatomySystem(selectedStructure.systemKey).label;
+  const info = getAnatomyInformation(displayStructure);
+
+  const systemLabel = getAnatomySystem(displayStructure.systemKey).label;
+  const isHoverPreview =
+    hoveredStructure && hoveredStructure.structureKey !== selectedStructure?.structureKey;
 
   return (
     <section
@@ -19,6 +23,21 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
       aria-live="polite"
     >
       <div className="border-b border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Anatomy information
+          </h2>
+          {isHoverPreview && (
+            <span className="px-2 py-0.5 text-xs text-teal-300 bg-teal-500/20 rounded">
+              Hover preview
+            </span>
+          )}
+          {recentHistory.length > 0 && !isHoverPreview && (
+            <span className="px-2 py-0.5 text-xs text-slate-400 bg-slate-800/50 rounded">
+              Recent
+            </span>
+          )}
+        </div>
         <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
           Anatomy information
         </h2>
@@ -110,6 +129,43 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
                 </p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Recent history section */}
+        {recentHistory.length > 0 && !isHoverPreview && (
+          <div className="border-t border-slate-800 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">
+              Recent
+            </p>
+            <ul className="flex flex-col gap-2">
+              {recentHistory.map((item, index) => (
+                <li
+                  key={item.structureKey}
+                  onClick={() => {
+                    selectStructure({
+                      structureKey: item.structureKey,
+                      name: item.name,
+                      objectName: item.objectName,
+                      systemKey: item.systemKey,
+                      bodyModel: item.bodyModel,
+                      ontologyId: item.ontologyId,
+                    });
+                  }}
+                  className="cursor-pointer px-2 py-1.5 rounded bg-slate-800/50 hover:bg-slate-700/50 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
+                  data-testid={`anatomy-recent-item-${index}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium text-slate-100">
+                      {getAnatomyInformation(item)?.canonicalName || item.name}
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-400">
+                      {getAnatomySystem(item.systemKey as never).label}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

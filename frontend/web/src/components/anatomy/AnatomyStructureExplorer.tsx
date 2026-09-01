@@ -37,6 +37,8 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     visibleSystems,
     selectedStructure,
     selectStructure,
+    hoveredStructure,
+    setHoveredStructure,
   } = useAnatomyState();
   const [isOpen, setIsOpen] = useState(true);
   const [filter, setFilter] = useState('');
@@ -409,13 +411,26 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                         data-testid={`anatomy-explorer-option-${flatIndex >= 0 ? flatIndex : s.structureKey}`}
                                         data-index={flatIndex}
                                         onClick={() => handleSelect(s)}
-                                        onMouseEnter={() => setActiveIndex(flatIndex)}
+                                        onMouseEnter={() => {
+                                          setActiveIndex(flatIndex);
+                                          setHoveredStructure({
+                                            structureKey: s.structureKey,
+                                            name: s.name,
+                                            objectName: s.objectName,
+                                            systemKey: s.systemKey,
+                                            bodyModel: s.bodyModel,
+                                            ontologyId: s.ontologyId,
+                                          });
+                                        }}
+                                        onMouseLeave={() => setHoveredStructure(null)}
                                         className={`cursor-pointer border-b border-slate-700/30 px-3 py-2 pl-8 last:border-b-0 focus-visible:outline-none ${
                                           isSelected
                                             ? 'bg-teal-500/20 text-teal-200'
                                             : isActive
                                               ? 'bg-slate-700 text-slate-100'
-                                              : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
+                                              : hoveredStructure?.structureKey === s.structureKey
+                                                ? 'bg-slate-700/50 text-slate-100'
+                                                : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
                                         }`}
                                       >
                                         <div className="flex items-center justify-between gap-2">

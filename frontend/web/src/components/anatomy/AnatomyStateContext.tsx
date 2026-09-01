@@ -73,6 +73,10 @@ interface AnatomyStateValue {
   resetView: () => void;
   selectedStructure: SelectedStructure | null;
   selectStructure: (structure: SelectedStructure | null) => void;
+  hoveredStructure: SelectedStructure | null;
+  setHoveredStructure: (structure: SelectedStructure | null) => void;
+  recentHistory: SelectedStructure[];
+  clearHistory: () => void;
   /** Prepared for shared viewer — /human remains male */
   selectedBodyModel: AnatomyBodyModelKey;
   setSelectedBodyModel: (model: AnatomyBodyModelKey) => void;
@@ -108,6 +112,8 @@ export function AnatomyStateProvider({
   const [isolatedSystem, setIsolatedSystem] = useState<AnatomySystemKey | null>(null);
   const [isolatedSnapshot, setIsolatedSnapshot] = useState<IsolatedSnapshot | null>(null);
   const [selectedStructure, setSelectedStructure] = useState<SelectedStructure | null>(null);
+  const [hoveredStructure, setHoveredStructure] = useState<SelectedStructure | null>(null);
+  const [recentHistory, setRecentHistory] = useState<SelectedStructure[]>([]);
   const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>(initialBodyModel);
   const [status, setStatus] = useState<SystemLoadStatusMap>(IDLE_STATUS);
   const [errorMessages, setErrorMessages] = useState<Record<AnatomySystemKey, string>>({
@@ -157,6 +163,8 @@ export function AnatomyStateProvider({
       systemScenesRef.current.clear();
       setRegistryVersion(v => v + 1);
       setSelectedStructure(null);
+      setHoveredStructure(null);
+      setRecentHistory([]);
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
       setStatus(IDLE_STATUS);
@@ -239,6 +247,21 @@ export function AnatomyStateProvider({
 
   const selectStructure = useCallback((structure: SelectedStructure | null) => {
     setSelectedStructure(structure);
+    setHoveredStructure(null);
+    if (structure) {
+      setRecentHistory(prev => {
+        const key = `${structure.bodyModel}:${structure.structureKey}`;
+        const filtered = prev.filter(s => `${s.bodyModel}:${s.structureKey}` !== key);
+        const next = [structure, ...filtered];
+        return next.slice(0, 5);
+      });
+    } else {
+      setHoveredStructure(null);
+    }
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setRecentHistory([]);
   }, []);
 
   const setSystemStatus = useCallback((key: AnatomySystemKey, next: SystemLoadStatus) => {
@@ -311,7 +334,9 @@ export function AnatomyStateProvider({
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__ANATOMIA_REGISTRY = registryRef.current;
     (window as unknown as Record<string, unknown>).__ANATOMIA_SELECTION = selectedStructure;
-  }, [selectedStructure]);
+    (window as unknown as Record<string, unknown>).__ANATOMIA_HOVERED = hoveredStructure;
+    (window as unknown as Record<string, unknown>).__ANATOMIA_HISTORY = recentHistory;
+  }, [selectedStructure, hoveredStructure, recentHistory]);
 
   const value = useMemo<AnatomyStateValue>(
     () => ({
@@ -326,6 +351,10 @@ export function AnatomyStateProvider({
       resetView,
       selectedStructure,
       selectStructure,
+      hoveredStructure,
+      setHoveredStructure,
+      recentHistory,
+      clearHistory,
       selectedBodyModel,
       setSelectedBodyModel,
       status,
@@ -354,6 +383,10 @@ export function AnatomyStateProvider({
       resetView,
       selectedStructure,
       selectStructure,
+      hoveredStructure,
+      setHoveredStructure,
+      recentHistory,
+      clearHistory,
       selectedBodyModel,
       status,
       setSystemStatus,

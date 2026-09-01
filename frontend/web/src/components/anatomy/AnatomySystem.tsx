@@ -8,6 +8,8 @@ import { createStructureKey, extractOntologyId } from './anatomyRegistry';
 
 const HIGHLIGHT_EMISSIVE = new THREE.Color('#2dd4bf');
 const HIGHLIGHT_INTENSITY = 0.6;
+const HOVER_EMISSIVE = new THREE.Color('#5eead4');
+const HOVER_INTENSITY = 0.35;
 
 /**
  * Resolves a user-facing structure name from a clicked object by walking up
@@ -80,14 +82,14 @@ function applySystemOpacity(entries: MeshMaterialEntry[], opacity: number): void
   }
 }
 
-function applyHighlight(mesh: THREE.Mesh): void {
+function applyHighlight(mesh: THREE.Mesh, hover = false): void {
   const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
   const highlighted = materials.map(material => {
     const clone = material.clone();
     const std = clone as THREE.MeshStandardMaterial;
     if (std.emissive) {
-      std.emissive = HIGHLIGHT_EMISSIVE.clone();
-      std.emissiveIntensity = HIGHLIGHT_INTENSITY;
+      std.emissive = (hover ? HOVER_EMISSIVE : HIGHLIGHT_EMISSIVE).clone();
+      std.emissiveIntensity = hover ? HOVER_INTENSITY : HIGHLIGHT_INTENSITY;
     }
     return clone;
   });
@@ -104,6 +106,8 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     systemOpacity,
     selectedStructure,
     selectStructure,
+    hoveredStructure,
+    setHoveredStructure,
     setSystemStatus,
     registerSystemStructures,
     registerSystemScene,
@@ -113,6 +117,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   } = useAnatomyState();
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
   const highlightedRef = useRef<THREE.Mesh[]>([]);
+  const hoveredRef = useRef<THREE.Mesh[]>([]);
 
   useEffect(() => {
     entriesRef.current = cloneSceneMaterials(scene);
@@ -176,7 +181,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
         }
       });
       for (const mesh of targets) {
-        applyHighlight(mesh);
+        applyHighlight(mesh, false);
         highlightedRef.current.push(mesh);
       }
     }
@@ -190,13 +195,64 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     };
   }, [scene, asset.key, selectedStructure, selectedBodyModel]);
 
+  useEffect(() => {
+    // Hover preview — temporary, distinct from selection
+    for (const mesh of hoveredRef.current) {
+      // Don't restore if mesh is currently selected (selected highlight takes precedence)
+      const isSelected = highlightedRef.current.includes(mesh);
+      if (!isSelected) {
+        const entry = entriesRef.current.find(e => e.mesh === mesh);
+        if (entry) mesh.material = entry.base;
+      }
+    }
+    hoveredRef.current = [];
+
+    if (
+      hoveredStructure &&
+      hoveredStructure.systemKey === asset.key &&
+      hoveredStructure.bodyModel === selectedBodyModel &&
+      // Don't hover the already selected structure
+      hoveredStructure.structureKey !== selectedStructure?.structureKey
+    ) {
+      const targets: THREE.Mesh[] = [];
+      scene.traverse(obj => {
+        const mesh = obj as THREE.Mesh;
+        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
+        const objectName = resolveStructureName(mesh);
+        const ontologyId = extractOntologyId(mesh);
+        const key = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
+        if (key === hoveredStructure.structureKey) {
+          targets.push(mesh);
+        } else if (hoveredStructure.ontologyId && ontologyId === hoveredStructure.ontologyId) {
+          targets.push(mesh);
+        }
+      });
+      for (const mesh of targets) {
+        // Skip if already highlighted as selected
+        if (highlightedRef.current.includes(mesh)) continue;
+        applyHighlight(mesh, true);
+        hoveredRef.current.push(mesh);
+      }
+    }
+
+    return () => {
+      for (const mesh of hoveredRef.current) {
+        const isSelected = highlightedRef.current.includes(mesh);
+        if (!isSelected) {
+          const entry = entriesRef.current.find(e => e.mesh === mesh);
+          if (entry) mesh.material = entry.base;
+        }
+      }
+      hoveredRef.current = [];
+    };
+  }, [scene, asset.key, hoveredStructure, selectedStructure, selectedBodyModel]);
+
   const handleClick = (event: ThreeEvent<MouseEvent>): void => {
     event.stopPropagation();
     const objectName = resolveStructureName(event.object);
     const ontologyId = extractOntologyId(event.object);
     const structureKey = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
     const registered = registry.findByStructureKey(structureKey);
-    // Prefer canonical registry values when available; otherwise use derived ones.
     selectStructure({
       structureKey: registered?.structureKey ?? structureKey,
       name: registered?.name ?? objectName,
@@ -207,7 +263,41 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     });
   };
 
-  return <primitive object={scene} onClick={handleClick} />;
+  const handlePointerOver = (event: ThreeEvent<PointerEvent>): void => {
+    event.stopPropagation();
+    // Don't hover on touch devices - pointerType will be touch
+    if ((event as unknown as { pointerType?: string }).pointerType === 'touch') return;
+    const objectName = resolveStructureName(event.object);
+    const ontologyId = extractOntologyId(event.object);
+    const structureKey = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
+    const registered = registry.findByStructureKey(structureKey);
+    // Don't hover the already selected structure
+    if (registered?.structureKey === selectedStructure?.structureKey) return;
+    if (structureKey === selectedStructure?.structureKey) return;
+    setHoveredStructure({
+      structureKey: registered?.structureKey ?? structureKey,
+      name: registered?.name ?? objectName,
+      objectName,
+      systemKey: asset.key,
+      bodyModel: selectedBodyModel,
+      ontologyId: registered?.ontologyId ?? ontologyId,
+    });
+  };
+
+  const handlePointerOut = (event: ThreeEvent<PointerEvent>): void => {
+    event.stopPropagation();
+    setHoveredStructure(null);
+  };
+
+  return (
+    <primitive
+      object={scene}
+      onClick={handleClick}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+      onPointerMissed={() => setHoveredStructure(null)}
+    />
+  );
 }
 
 class AnatomySystemErrorBoundary extends Component<
