@@ -170,49 +170,54 @@ export default function AnatomySearchBox(): JSX.Element {
               No results
             </li>
           ) : (
-            results.map((result, index) => (
-              <li
-                key={result.structureKey}
-                id={`anatomy-search-option-${result.structureKey}`}
-                role="option"
-                aria-selected={index === activeIndex}
-                data-testid={`anatomy-search-option-${index}`}
-                onClick={e => handleSelect(result, e as unknown as React.MouseEvent)}
-                onMouseEnter={() => {
-                  setActiveIndex(index);
-                  setHoveredStructure({
-                    structureKey: result.structureKey,
-                    name: result.name,
-                    objectName: result.objectName,
-                    systemKey: result.systemKey as never,
-                    bodyModel: result.bodyModel,
-                    ontologyId: result.ontologyId,
-                  });
-                }}
-                onMouseLeave={() => setHoveredStructure(null)}
-                className={`cursor-pointer px-3 py-2 text-sm ${
-                  index === activeIndex
-                    ? 'bg-teal-500/20 text-teal-200'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate font-medium">{result.name}</span>
-                  <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-xs capitalize text-slate-400">
-                    {result.systemKey}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
-                  <span className="capitalize">{result.bodyModel}</span>
-                  {result.ontologyId && (
-                    <>
-                      <span>·</span>
-                      <span className="truncate font-mono">{result.ontologyId}</span>
-                    </>
-                  )}
-                </div>
+            <>
+              {results.map((result, index) => (
+                <li
+                  key={result.structureKey}
+                  id={`anatomy-search-option-${result.structureKey}`}
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  data-testid={`anatomy-search-option-${index}`}
+                  onClick={e => handleSelect(result, e as unknown as React.MouseEvent)}
+                  onMouseEnter={() => {
+                    setActiveIndex(index);
+                    setHoveredStructure({
+                      structureKey: result.structureKey,
+                      name: result.name,
+                      objectName: result.objectName,
+                      systemKey: result.systemKey as never,
+                      bodyModel: result.bodyModel,
+                      ontologyId: result.ontologyId,
+                    });
+                  }}
+                  onMouseLeave={() => setHoveredStructure(null)}
+                  className={`cursor-pointer px-3 py-2 text-sm ${
+                    index === activeIndex
+                      ? 'bg-teal-500/20 text-teal-200'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{result.name}</span>
+                    <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-xs capitalize text-slate-400">
+                      {result.systemKey}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
+                    <span className="capitalize">{result.bodyModel}</span>
+                    {result.ontologyId && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate font-mono">{result.ontologyId}</span>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+              <li className="border-t border-slate-700 px-3 py-1 text-xs text-slate-500">
+                Shift+Click to compare
               </li>
-            ))
+            </>
           )}
         </ul>
       )}

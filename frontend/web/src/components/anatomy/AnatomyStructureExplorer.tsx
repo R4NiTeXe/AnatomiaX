@@ -298,6 +298,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
               className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
             <p className="px-1 text-xs text-slate-500">Browse loaded structures</p>
+            <p className="px-1 text-xs text-slate-500">Shift+Click or Compare to compare</p>
 
             {availableSystems.length > 1 && (
               <select
@@ -473,7 +474,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                               }}
                                               aria-label={`Compare ${displayName}`}
                                               data-testid={`anatomy-explorer-compare-${flatIndex >= 0 ? flatIndex : s.structureKey}`}
-                                              className={`rounded px-1.5 py-0.5 text-xs ${isCompared ? 'bg-violet-500/30 text-violet-200' : 'bg-slate-700 text-slate-400 hover:bg-violet-500/20 hover:text-violet-200'}`}
+                                              className={`rounded px-1.5 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${isCompared ? 'bg-violet-500/30 text-violet-200' : 'bg-slate-700 text-slate-400 hover:bg-violet-500/30 hover:text-violet-100'}`}
                                             >
                                               Compare
                                             </button>
