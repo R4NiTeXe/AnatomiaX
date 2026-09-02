@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import AnatomyComparePanel from '@/components/anatomy/AnatomyComparePanel';
 import AnatomyInformationPanel from '@/components/anatomy/AnatomyInformationPanel';
 import AnatomySearchBox from '@/components/anatomy/AnatomySearchBox';
 import AnatomyStructureExplorer from '@/components/anatomy/AnatomyStructureExplorer';
@@ -152,6 +153,7 @@ export default function HumanPage(): JSX.Element {
             <BodyModelSelector onVerticalChange={setVertical} onResetCamera={handleResetCamera} />
             <AnatomyStructureExplorer />
             <AnatomyInformationPanel />
+            <AnatomyComparePanel />
             <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>

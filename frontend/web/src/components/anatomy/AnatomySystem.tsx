@@ -10,6 +10,8 @@ const HIGHLIGHT_EMISSIVE = new THREE.Color('#2dd4bf');
 const HIGHLIGHT_INTENSITY = 0.6;
 const HOVER_EMISSIVE = new THREE.Color('#5eead4');
 const HOVER_INTENSITY = 0.35;
+const COMPARE_EMISSIVE = new THREE.Color('#a78bfa');
+const COMPARE_INTENSITY = 0.55;
 
 /**
  * Resolves a user-facing structure name from a clicked object by walking up
@@ -82,14 +84,25 @@ function applySystemOpacity(entries: MeshMaterialEntry[], opacity: number): void
   }
 }
 
-function applyHighlight(mesh: THREE.Mesh, hover = false): void {
+function applyHighlight(
+  mesh: THREE.Mesh,
+  type: 'selected' | 'hover' | 'compare' = 'selected'
+): void {
   const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
   const highlighted = materials.map(material => {
     const clone = material.clone();
     const std = clone as THREE.MeshStandardMaterial;
     if (std.emissive) {
-      std.emissive = (hover ? HOVER_EMISSIVE : HIGHLIGHT_EMISSIVE).clone();
-      std.emissiveIntensity = hover ? HOVER_INTENSITY : HIGHLIGHT_INTENSITY;
+      if (type === 'hover') {
+        std.emissive = HOVER_EMISSIVE.clone();
+        std.emissiveIntensity = HOVER_INTENSITY;
+      } else if (type === 'compare') {
+        std.emissive = COMPARE_EMISSIVE.clone();
+        std.emissiveIntensity = COMPARE_INTENSITY;
+      } else {
+        std.emissive = HIGHLIGHT_EMISSIVE.clone();
+        std.emissiveIntensity = HIGHLIGHT_INTENSITY;
+      }
     }
     return clone;
   });
@@ -108,6 +121,8 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     selectStructure,
     hoveredStructure,
     setHoveredStructure,
+    compareStructure,
+    setCompareStructure,
     setSystemStatus,
     registerSystemStructures,
     registerSystemScene,
@@ -118,6 +133,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
   const highlightedRef = useRef<THREE.Mesh[]>([]);
   const hoveredRef = useRef<THREE.Mesh[]>([]);
+  const compareRef = useRef<THREE.Mesh[]>([]);
 
   useEffect(() => {
     entriesRef.current = cloneSceneMaterials(scene);
@@ -181,7 +197,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
         }
       });
       for (const mesh of targets) {
-        applyHighlight(mesh, false);
+        applyHighlight(mesh, 'selected');
         highlightedRef.current.push(mesh);
       }
     }
@@ -230,7 +246,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       for (const mesh of targets) {
         // Skip if already highlighted as selected
         if (highlightedRef.current.includes(mesh)) continue;
-        applyHighlight(mesh, true);
+        applyHighlight(mesh, 'hover');
         hoveredRef.current.push(mesh);
       }
     }
@@ -247,20 +263,76 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     };
   }, [scene, asset.key, hoveredStructure, selectedStructure, selectedBodyModel]);
 
+  useEffect(() => {
+    // Compare highlight — distinct from selected and hover
+    for (const mesh of compareRef.current) {
+      const isSelected = highlightedRef.current.includes(mesh);
+      const isHovered = hoveredRef.current.includes(mesh);
+      if (!isSelected && !isHovered) {
+        const entry = entriesRef.current.find(e => e.mesh === mesh);
+        if (entry) mesh.material = entry.base;
+      }
+    }
+    compareRef.current = [];
+
+    if (
+      compareStructure &&
+      compareStructure.systemKey === asset.key &&
+      compareStructure.bodyModel === selectedBodyModel &&
+      compareStructure.structureKey !== selectedStructure?.structureKey
+    ) {
+      const targets: THREE.Mesh[] = [];
+      scene.traverse(obj => {
+        const mesh = obj as THREE.Mesh;
+        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
+        const objectName = resolveStructureName(mesh);
+        const ontologyId = extractOntologyId(mesh);
+        const key = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
+        if (key === compareStructure.structureKey) {
+          targets.push(mesh);
+        } else if (compareStructure.ontologyId && ontologyId === compareStructure.ontologyId) {
+          targets.push(mesh);
+        }
+      });
+      for (const mesh of targets) {
+        if (highlightedRef.current.includes(mesh) || hoveredRef.current.includes(mesh)) continue;
+        applyHighlight(mesh, 'compare');
+        compareRef.current.push(mesh);
+      }
+    }
+
+    return () => {
+      for (const mesh of compareRef.current) {
+        const isSelected = highlightedRef.current.includes(mesh);
+        const isHovered = hoveredRef.current.includes(mesh);
+        if (!isSelected && !isHovered) {
+          const entry = entriesRef.current.find(e => e.mesh === mesh);
+          if (entry) mesh.material = entry.base;
+        }
+      }
+      compareRef.current = [];
+    };
+  }, [scene, asset.key, compareStructure, selectedStructure, hoveredStructure, selectedBodyModel]);
+
   const handleClick = (event: ThreeEvent<MouseEvent>): void => {
     event.stopPropagation();
     const objectName = resolveStructureName(event.object);
     const ontologyId = extractOntologyId(event.object);
     const structureKey = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
     const registered = registry.findByStructureKey(structureKey);
-    selectStructure({
+    const selection = {
       structureKey: registered?.structureKey ?? structureKey,
       name: registered?.name ?? objectName,
       objectName,
       systemKey: asset.key,
       bodyModel: selectedBodyModel,
       ontologyId: registered?.ontologyId ?? ontologyId,
-    });
+    } as const;
+    if ((event as unknown as { shiftKey?: boolean }).shiftKey) {
+      setCompareStructure(selection as never);
+      return;
+    }
+    selectStructure(selection as never);
   };
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>): void => {

@@ -39,6 +39,8 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     selectStructure,
     hoveredStructure,
     setHoveredStructure,
+    setCompareStructure,
+    compareStructure,
   } = useAnatomyState();
   const [isOpen, setIsOpen] = useState(true);
   const [filter, setFilter] = useState('');
@@ -154,7 +156,19 @@ export default function AnatomyStructureExplorer(): JSX.Element {
   }, [allLoaded.length, hierarchy]);
 
   const handleSelect = useCallback(
-    (structure: AnatomyStructure) => {
+    (structure: AnatomyStructure, e?: React.MouseEvent) => {
+      const isShift = (e as unknown as { shiftKey?: boolean })?.shiftKey;
+      if (isShift) {
+        setCompareStructure({
+          structureKey: structure.structureKey,
+          name: structure.name,
+          objectName: structure.objectName,
+          systemKey: structure.systemKey,
+          bodyModel: structure.bodyModel,
+          ontologyId: structure.ontologyId,
+        } as never);
+        return;
+      }
       selectStructure({
         structureKey: structure.structureKey,
         name: structure.name,
@@ -164,7 +178,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
         ontologyId: structure.ontologyId,
       });
     },
-    [selectStructure]
+    [selectStructure, setCompareStructure]
   );
 
   const handleKeyDown = useCallback(
@@ -400,6 +414,8 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                     );
                                     const isSelected =
                                       selectedStructure?.structureKey === s.structureKey;
+                                    const isCompared =
+                                      compareStructure?.structureKey === s.structureKey;
                                     const isActive = flatIndex === activeIndex;
                                     const displayName = getDisplayName(s);
                                     return (
@@ -410,7 +426,9 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                         aria-selected={isSelected}
                                         data-testid={`anatomy-explorer-option-${flatIndex >= 0 ? flatIndex : s.structureKey}`}
                                         data-index={flatIndex}
-                                        onClick={() => handleSelect(s)}
+                                        onClick={e =>
+                                          handleSelect(s, e as unknown as React.MouseEvent)
+                                        }
                                         onMouseEnter={() => {
                                           setActiveIndex(flatIndex);
                                           setHoveredStructure({
@@ -426,19 +444,42 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                         className={`cursor-pointer border-b border-slate-700/30 px-3 py-2 pl-8 last:border-b-0 focus-visible:outline-none ${
                                           isSelected
                                             ? 'bg-teal-500/20 text-teal-200'
-                                            : isActive
-                                              ? 'bg-slate-700 text-slate-100'
-                                              : hoveredStructure?.structureKey === s.structureKey
-                                                ? 'bg-slate-700/50 text-slate-100'
-                                                : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
+                                            : isCompared
+                                              ? 'bg-violet-500/20 text-violet-200'
+                                              : isActive
+                                                ? 'bg-slate-700 text-slate-100'
+                                                : hoveredStructure?.structureKey === s.structureKey
+                                                  ? 'bg-slate-700/50 text-slate-100'
+                                                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
                                         }`}
                                       >
                                         <div className="flex items-center justify-between gap-2">
                                           <span className="truncate text-sm font-medium">
                                             {displayName}
                                           </span>
-                                          <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-xs capitalize text-slate-400">
-                                            {getAnatomySystem(s.systemKey as never).label}
+                                          <span className="flex items-center gap-1">
+                                            <button
+                                              type="button"
+                                              onClick={e => {
+                                                e.stopPropagation();
+                                                setCompareStructure({
+                                                  structureKey: s.structureKey,
+                                                  name: s.name,
+                                                  objectName: s.objectName,
+                                                  systemKey: s.systemKey,
+                                                  bodyModel: s.bodyModel,
+                                                  ontologyId: s.ontologyId,
+                                                } as never);
+                                              }}
+                                              aria-label={`Compare ${displayName}`}
+                                              data-testid={`anatomy-explorer-compare-${flatIndex >= 0 ? flatIndex : s.structureKey}`}
+                                              className={`rounded px-1.5 py-0.5 text-xs ${isCompared ? 'bg-violet-500/30 text-violet-200' : 'bg-slate-700 text-slate-400 hover:bg-violet-500/20 hover:text-violet-200'}`}
+                                            >
+                                              Compare
+                                            </button>
+                                            <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-xs capitalize text-slate-400">
+                                              {getAnatomySystem(s.systemKey as never).label}
+                                            </span>
                                           </span>
                                         </div>
                                         {s.ontologyId && (

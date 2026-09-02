@@ -4,7 +4,8 @@ import { searchStructures } from './anatomyRegistry';
 import type { AnatomySearchResult } from './anatomyTypes';
 
 export default function AnatomySearchBox(): JSX.Element {
-  const { registry, selectedBodyModel, selectStructure, setHoveredStructure } = useAnatomyState();
+  const { registry, selectedBodyModel, selectStructure, setHoveredStructure, setCompareStructure } =
+    useAnatomyState();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -29,7 +30,19 @@ export default function AnatomySearchBox(): JSX.Element {
   }, [results]);
 
   const handleSelect = useCallback(
-    (result: AnatomySearchResult) => {
+    (result: AnatomySearchResult, e?: React.MouseEvent) => {
+      const isShift = (e as unknown as { shiftKey?: boolean })?.shiftKey;
+      if (isShift) {
+        setCompareStructure({
+          structureKey: result.structureKey,
+          name: result.name,
+          objectName: result.objectName,
+          systemKey: result.systemKey as never,
+          bodyModel: result.bodyModel,
+          ontologyId: result.ontologyId,
+        } as never);
+        return;
+      }
       selectStructure({
         structureKey: result.structureKey,
         name: result.name,
@@ -41,7 +54,7 @@ export default function AnatomySearchBox(): JSX.Element {
       setIsOpen(false);
       setActiveIndex(-1);
     },
-    [selectStructure]
+    [selectStructure, setCompareStructure]
   );
 
   const handleClear = useCallback(() => {
@@ -164,7 +177,7 @@ export default function AnatomySearchBox(): JSX.Element {
                 role="option"
                 aria-selected={index === activeIndex}
                 data-testid={`anatomy-search-option-${index}`}
-                onClick={() => handleSelect(result)}
+                onClick={e => handleSelect(result, e as unknown as React.MouseEvent)}
                 onMouseEnter={() => {
                   setActiveIndex(index);
                   setHoveredStructure({

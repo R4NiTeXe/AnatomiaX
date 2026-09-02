@@ -77,6 +77,9 @@ interface AnatomyStateValue {
   setHoveredStructure: (structure: SelectedStructure | null) => void;
   recentHistory: SelectedStructure[];
   clearHistory: () => void;
+  compareStructure: SelectedStructure | null;
+  setCompareStructure: (structure: SelectedStructure | null) => void;
+  clearCompare: () => void;
   /** Prepared for shared viewer — /human remains male */
   selectedBodyModel: AnatomyBodyModelKey;
   setSelectedBodyModel: (model: AnatomyBodyModelKey) => void;
@@ -114,6 +117,7 @@ export function AnatomyStateProvider({
   const [selectedStructure, setSelectedStructure] = useState<SelectedStructure | null>(null);
   const [hoveredStructure, setHoveredStructure] = useState<SelectedStructure | null>(null);
   const [recentHistory, setRecentHistory] = useState<SelectedStructure[]>([]);
+  const [compareStructure, setCompareStructure] = useState<SelectedStructure | null>(null);
   const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>(initialBodyModel);
   const [status, setStatus] = useState<SystemLoadStatusMap>(IDLE_STATUS);
   const [errorMessages, setErrorMessages] = useState<Record<AnatomySystemKey, string>>({
@@ -143,8 +147,15 @@ export function AnatomyStateProvider({
   useEffect(() => {
     if (selectedStructure && !visibleSystems[selectedStructure.systemKey]) {
       setSelectedStructure(null);
+      setCompareStructure(null);
     }
-  }, [visibleSystems, selectedStructure]);
+    if (compareStructure && !visibleSystems[compareStructure.systemKey]) {
+      setCompareStructure(null);
+    }
+    if (hoveredStructure && !visibleSystems[hoveredStructure.systemKey]) {
+      setHoveredStructure(null);
+    }
+  }, [visibleSystems, selectedStructure, compareStructure, hoveredStructure]);
 
   // Also clear highlight when isolated system hides previous selection
   useEffect(() => {
@@ -165,6 +176,7 @@ export function AnatomyStateProvider({
       setSelectedStructure(null);
       setHoveredStructure(null);
       setRecentHistory([]);
+      setCompareStructure(null);
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
       setStatus(IDLE_STATUS);
@@ -245,19 +257,51 @@ export function AnatomyStateProvider({
     }
   }, [isolatedSnapshot]);
 
-  const selectStructure = useCallback((structure: SelectedStructure | null) => {
-    setSelectedStructure(structure);
-    setHoveredStructure(null);
-    if (structure) {
-      setRecentHistory(prev => {
-        const key = `${structure.bodyModel}:${structure.structureKey}`;
-        const filtered = prev.filter(s => `${s.bodyModel}:${s.structureKey}` !== key);
-        const next = [structure, ...filtered];
-        return next.slice(0, 5);
-      });
-    } else {
+  const selectStructure = useCallback(
+    (structure: SelectedStructure | null) => {
+      setSelectedStructure(structure);
       setHoveredStructure(null);
-    }
+      // If compare is same as new selection, clear compare
+      if (structure && compareStructure) {
+        const selKey = `${structure.bodyModel}:${structure.structureKey}`;
+        const cmpKey = `${compareStructure.bodyModel}:${compareStructure.structureKey}`;
+        if (selKey === cmpKey) setCompareStructure(null);
+      }
+      if (!structure) {
+        setCompareStructure(null);
+        setHoveredStructure(null);
+      }
+      if (structure) {
+        setRecentHistory(prev => {
+          const key = `${structure.bodyModel}:${structure.structureKey}`;
+          const filtered = prev.filter(s => `${s.bodyModel}:${s.structureKey}` !== key);
+          const next = [structure, ...filtered];
+          return next.slice(0, 5);
+        });
+      }
+    },
+    [compareStructure]
+  );
+
+  const setCompareStructureSafe = useCallback(
+    (structure: SelectedStructure | null) => {
+      if (!structure) {
+        setCompareStructure(null);
+        return;
+      }
+      if (selectedStructure) {
+        const selKey = `${selectedStructure.bodyModel}:${selectedStructure.structureKey}`;
+        const cmpKey = `${structure.bodyModel}:${structure.structureKey}`;
+        if (selKey === cmpKey) return;
+      }
+      setCompareStructure(structure);
+      setHoveredStructure(null);
+    },
+    [selectedStructure]
+  );
+
+  const clearCompare = useCallback(() => {
+    setCompareStructure(null);
   }, []);
 
   const clearHistory = useCallback(() => {
@@ -336,7 +380,8 @@ export function AnatomyStateProvider({
     (window as unknown as Record<string, unknown>).__ANATOMIA_SELECTION = selectedStructure;
     (window as unknown as Record<string, unknown>).__ANATOMIA_HOVERED = hoveredStructure;
     (window as unknown as Record<string, unknown>).__ANATOMIA_HISTORY = recentHistory;
-  }, [selectedStructure, hoveredStructure, recentHistory]);
+    (window as unknown as Record<string, unknown>).__ANATOMIA_COMPARE = compareStructure;
+  }, [selectedStructure, hoveredStructure, recentHistory, compareStructure]);
 
   const value = useMemo<AnatomyStateValue>(
     () => ({
@@ -355,6 +400,9 @@ export function AnatomyStateProvider({
       setHoveredStructure,
       recentHistory,
       clearHistory,
+      compareStructure,
+      setCompareStructure: setCompareStructureSafe,
+      clearCompare,
       selectedBodyModel,
       setSelectedBodyModel,
       status,
@@ -387,6 +435,9 @@ export function AnatomyStateProvider({
       setHoveredStructure,
       recentHistory,
       clearHistory,
+      compareStructure,
+      setCompareStructureSafe,
+      clearCompare,
       selectedBodyModel,
       status,
       setSystemStatus,
