@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import AnatomyComparePanel from '@/components/anatomy/AnatomyComparePanel';
 import AnatomyInformationPanel from '@/components/anatomy/AnatomyInformationPanel';
+import AnatomyQuiz from '@/components/anatomy/AnatomyQuiz';
 import AnatomySearchBox from '@/components/anatomy/AnatomySearchBox';
 import AnatomyStructureExplorer from '@/components/anatomy/AnatomyStructureExplorer';
 import AnatomyViewer from '@/components/anatomy/AnatomyViewer';
@@ -154,6 +155,7 @@ export default function HumanPage(): JSX.Element {
             <AnatomyStructureExplorer />
             <AnatomyInformationPanel />
             <AnatomyComparePanel />
+            <AnatomyQuiz />
             <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>

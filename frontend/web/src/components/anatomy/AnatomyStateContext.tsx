@@ -25,6 +25,18 @@ import {
 
 export type SelectedStructure = AnatomySelection;
 
+export interface AnatomyQuizQuestion {
+  id: string;
+  canonicalName: string;
+  bodyModel: AnatomyBodyModelKey;
+  systemKey: AnatomySystemKey;
+  ontologyId: string | null;
+  structureKey: string;
+  question: string;
+  choices: string[];
+  correctIndex: number;
+}
+
 export type SystemLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
 export type SystemLoadStatusMap = Record<AnatomySystemKey, SystemLoadStatus>;
@@ -80,6 +92,17 @@ interface AnatomyStateValue {
   compareStructure: SelectedStructure | null;
   setCompareStructure: (structure: SelectedStructure | null) => void;
   clearCompare: () => void;
+  quizQuestions: AnatomyQuizQuestion[];
+  quizIndex: number;
+  quizScore: number;
+  quizSelectedChoice: number | null;
+  quizAnswered: boolean;
+  quizCompleted: boolean;
+  startQuiz: () => void;
+  answerQuiz: (choiceIndex: number) => void;
+  nextQuizQuestion: () => void;
+  retryQuiz: () => void;
+  resetQuiz: () => void;
   /** Prepared for shared viewer — /human remains male */
   selectedBodyModel: AnatomyBodyModelKey;
   setSelectedBodyModel: (model: AnatomyBodyModelKey) => void;
@@ -118,6 +141,11 @@ export function AnatomyStateProvider({
   const [hoveredStructure, setHoveredStructure] = useState<SelectedStructure | null>(null);
   const [recentHistory, setRecentHistory] = useState<SelectedStructure[]>([]);
   const [compareStructure, setCompareStructure] = useState<SelectedStructure | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<AnatomyQuizQuestion[]>([]);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizSelectedChoice, setQuizSelectedChoice] = useState<number | null>(null);
+  const [quizAnswered, setQuizAnswered] = useState(false);
   const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>(initialBodyModel);
   const [status, setStatus] = useState<SystemLoadStatusMap>(IDLE_STATUS);
   const [errorMessages, setErrorMessages] = useState<Record<AnatomySystemKey, string>>({
@@ -177,6 +205,11 @@ export function AnatomyStateProvider({
       setHoveredStructure(null);
       setRecentHistory([]);
       setCompareStructure(null);
+      setQuizQuestions([]);
+      setQuizIndex(0);
+      setQuizScore(0);
+      setQuizSelectedChoice(null);
+      setQuizAnswered(false);
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
       setStatus(IDLE_STATUS);
@@ -308,6 +341,139 @@ export function AnatomyStateProvider({
     setRecentHistory([]);
   }, []);
 
+  const generateQuizQuestions = useCallback((): AnatomyQuizQuestion[] => {
+    // Use only verified anatomyInformation
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    let getSeed:
+      | (() => readonly {
+          canonicalName: string;
+          function: string;
+          systemKey: AnatomySystemKey;
+          bodyModel: AnatomyBodyModelKey;
+          ontologyId: string | null;
+          structureKey: string;
+        }[])
+      | null = null;
+    try {
+      const mod = require('./anatomyInformation');
+      getSeed = mod.getAnatomyInformationSeed;
+    } catch {
+      return [];
+    }
+    if (!getSeed) return [];
+    const seed = getSeed();
+    // Filter by selectedBodyModel where possible, but allow all if selectedStructure is null
+    // Prefer selectedStructure's verified info as first question when available
+    let pool = [...seed];
+    // Filter to current bodyModel where possible, but keep at least 5
+    const bodyFiltered = pool.filter(s => s.bodyModel === selectedBodyModel);
+    if (bodyFiltered.length >= 5) pool = bodyFiltered;
+    // Deduplicate by canonicalName for distractors (avoid same canonical)
+    const uniqueByCanonical = new Map<string, (typeof pool)[number]>();
+    for (const s of pool) {
+      if (!uniqueByCanonical.has(s.canonicalName)) uniqueByCanonical.set(s.canonicalName, s);
+    }
+    const uniquePool = [...uniqueByCanonical.values()];
+    if (uniquePool.length < 4) return [];
+    // Shuffle deterministically per call (use Date.now as seed for variety, but keep deterministic for tests via sort)
+    const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
+    // Prefer selectedStructure as first if available and has verified info
+    let ordered: typeof uniquePool = [];
+    if (selectedStructure) {
+      const selInfo = (() => {
+        try {
+          const mod = require('./anatomyInformation');
+          return mod.getAnatomyInformationByStructureKey(selectedStructure.structureKey);
+        } catch {
+          return null;
+        }
+      })();
+      if (selInfo) {
+        const selEntry = uniquePool.find(s => s.structureKey === selInfo.structureKey);
+        if (selEntry) {
+          ordered.push(selEntry);
+          const remaining = shuffled.filter(s => s.structureKey !== selEntry.structureKey);
+          ordered = [...ordered, ...remaining];
+        } else {
+          ordered = shuffled;
+        }
+      } else {
+        ordered = shuffled;
+      }
+    } else {
+      ordered = shuffled;
+    }
+    const questions: AnatomyQuizQuestion[] = [];
+    for (let i = 0; i < Math.min(5, ordered.length); i++) {
+      const correct = ordered[i];
+      const distractors = ordered
+        .filter(s => s.canonicalName !== correct.canonicalName && s.function !== correct.function)
+        .slice(0, 10);
+      // Shuffle distractors and take 3
+      const shuffledDistractors = [...distractors].sort(() => Math.random() - 0.5).slice(0, 3);
+      if (shuffledDistractors.length < 3) continue;
+      const choices = [correct.function, ...shuffledDistractors.map(s => s.function)];
+      // Shuffle choices deterministically
+      const shuffledChoices = [...choices].sort(() => Math.random() - 0.5);
+      const correctIndex = shuffledChoices.indexOf(correct.function);
+      questions.push({
+        id: `${correct.structureKey}-${i}`,
+        canonicalName: correct.canonicalName,
+        bodyModel: correct.bodyModel,
+        systemKey: correct.systemKey,
+        ontologyId: correct.ontologyId,
+        structureKey: correct.structureKey,
+        question: `What is the function of the ${correct.canonicalName}${correct.bodyModel !== selectedBodyModel ? ` (${correct.bodyModel})` : ''}?`,
+        choices: shuffledChoices,
+        correctIndex,
+      });
+      if (questions.length >= 5) break;
+    }
+    return questions.slice(0, 5);
+  }, [selectedBodyModel, selectedStructure]);
+
+  const startQuiz = useCallback(() => {
+    const qs = generateQuizQuestions();
+    setQuizQuestions(qs);
+    setQuizIndex(0);
+    setQuizScore(0);
+    setQuizSelectedChoice(null);
+    setQuizAnswered(false);
+  }, [generateQuizQuestions]);
+
+  const answerQuiz = useCallback(
+    (choiceIndex: number) => {
+      if (quizAnswered) return;
+      setQuizSelectedChoice(choiceIndex);
+      setQuizAnswered(true);
+      const q = quizQuestions[quizIndex];
+      if (q && choiceIndex === q.correctIndex) {
+        setQuizScore(s => s + 1);
+      }
+    },
+    [quizAnswered, quizQuestions, quizIndex]
+  );
+
+  const nextQuizQuestion = useCallback(() => {
+    if (quizIndex < quizQuestions.length - 1) {
+      setQuizIndex(i => i + 1);
+      setQuizSelectedChoice(null);
+      setQuizAnswered(false);
+    }
+  }, [quizIndex, quizQuestions.length]);
+
+  const retryQuiz = useCallback(() => {
+    startQuiz();
+  }, [startQuiz]);
+
+  const resetQuiz = useCallback(() => {
+    setQuizQuestions([]);
+    setQuizIndex(0);
+    setQuizScore(0);
+    setQuizSelectedChoice(null);
+    setQuizAnswered(false);
+  }, []);
+
   const setSystemStatus = useCallback((key: AnatomySystemKey, next: SystemLoadStatus) => {
     setStatus(prev => (prev[key] === next ? prev : { ...prev, [key]: next }));
   }, []);
@@ -381,7 +547,24 @@ export function AnatomyStateProvider({
     (window as unknown as Record<string, unknown>).__ANATOMIA_HOVERED = hoveredStructure;
     (window as unknown as Record<string, unknown>).__ANATOMIA_HISTORY = recentHistory;
     (window as unknown as Record<string, unknown>).__ANATOMIA_COMPARE = compareStructure;
-  }, [selectedStructure, hoveredStructure, recentHistory, compareStructure]);
+    (window as unknown as Record<string, unknown>).__ANATOMIA_QUIZ = {
+      questions: quizQuestions,
+      index: quizIndex,
+      score: quizScore,
+      selectedChoice: quizSelectedChoice,
+      answered: quizAnswered,
+    };
+  }, [
+    selectedStructure,
+    hoveredStructure,
+    recentHistory,
+    compareStructure,
+    quizQuestions,
+    quizIndex,
+    quizScore,
+    quizSelectedChoice,
+    quizAnswered,
+  ]);
 
   const value = useMemo<AnatomyStateValue>(
     () => ({
@@ -403,6 +586,18 @@ export function AnatomyStateProvider({
       compareStructure,
       setCompareStructure: setCompareStructureSafe,
       clearCompare,
+      quizQuestions,
+      quizIndex,
+      quizScore,
+      quizSelectedChoice,
+      quizAnswered,
+      quizCompleted:
+        quizQuestions.length > 0 && quizIndex === quizQuestions.length - 1 && quizAnswered,
+      startQuiz,
+      answerQuiz,
+      nextQuizQuestion,
+      retryQuiz,
+      resetQuiz,
       selectedBodyModel,
       setSelectedBodyModel,
       status,
@@ -438,6 +633,16 @@ export function AnatomyStateProvider({
       compareStructure,
       setCompareStructureSafe,
       clearCompare,
+      quizQuestions,
+      quizIndex,
+      quizScore,
+      quizSelectedChoice,
+      quizAnswered,
+      startQuiz,
+      answerQuiz,
+      nextQuizQuestion,
+      retryQuiz,
+      resetQuiz,
       selectedBodyModel,
       status,
       setSystemStatus,
