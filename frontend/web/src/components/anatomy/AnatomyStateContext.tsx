@@ -22,6 +22,10 @@ import {
   extractOntologyId,
   resolveObjectName,
 } from './anatomyRegistry';
+import {
+  getAnatomyInformationByStructureKey as getInfoByStructureKey,
+  getAnatomyInformationSeed,
+} from './anatomyInformation';
 
 export type SelectedStructure = AnatomySelection;
 
@@ -342,25 +346,7 @@ export function AnatomyStateProvider({
   }, []);
 
   const generateQuizQuestions = useCallback((): AnatomyQuizQuestion[] => {
-    let getSeed:
-      | (() => readonly {
-          canonicalName: string;
-          function: string;
-          systemKey: AnatomySystemKey;
-          bodyModel: AnatomyBodyModelKey;
-          ontologyId: string | null;
-          structureKey: string;
-        }[])
-      | null = null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const mod = require('./anatomyInformation');
-      getSeed = mod.getAnatomyInformationSeed;
-    } catch {
-      return [];
-    }
-    if (!getSeed) return [];
-    const seed = getSeed();
+    const seed = getAnatomyInformationSeed();
     // Guarantee exactly 5 when >=5 unique canonical are available
     const uniqueByCanonical = new Map<string, (typeof seed)[number]>();
     for (const s of seed) {
@@ -372,26 +358,19 @@ export function AnatomyStateProvider({
     let ordered: typeof uniquePool = [];
     let selectedEntry: (typeof uniquePool)[number] | null = null;
     if (selectedStructure) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const mod = require('./anatomyInformation');
-        const selInfo = mod.getAnatomyInformationByStructureKey(selectedStructure.structureKey);
-        if (selInfo) {
-          const found = uniquePool.find(
-            s => s.structureKey === selInfo.structureKey && s.bodyModel === selInfo.bodyModel
-          );
-          if (found) selectedEntry = found;
-          else {
-            // Fallback: try exact structureKey match in full seed (not deduped) then map to canonical
-            const raw = seed.find(s => s.structureKey === selectedStructure.structureKey);
-            if (raw) {
-              const canon = uniquePool.find(c => c.canonicalName === raw.canonicalName);
-              if (canon) selectedEntry = canon;
-            }
+      const selInfo = getInfoByStructureKey(selectedStructure.structureKey);
+      if (selInfo) {
+        const found = uniquePool.find(
+          s => s.structureKey === selInfo.structureKey && s.bodyModel === selInfo.bodyModel
+        );
+        if (found) selectedEntry = found;
+        else {
+          const raw = seed.find(s => s.structureKey === selectedStructure.structureKey);
+          if (raw) {
+            const canon = uniquePool.find(c => c.canonicalName === raw.canonicalName);
+            if (canon) selectedEntry = canon;
           }
         }
-      } catch {
-        selectedEntry = null;
       }
     }
     const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
