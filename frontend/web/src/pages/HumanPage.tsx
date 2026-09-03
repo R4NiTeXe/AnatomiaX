@@ -3,6 +3,7 @@ import AnatomyComparePanel from '@/components/anatomy/AnatomyComparePanel';
 import AnatomyInformationPanel from '@/components/anatomy/AnatomyInformationPanel';
 import AnatomyQuiz from '@/components/anatomy/AnatomyQuiz';
 import AnatomySearchBox from '@/components/anatomy/AnatomySearchBox';
+import AnatomySessionPanel from '@/components/anatomy/AnatomySessionPanel';
 import AnatomyStructureExplorer from '@/components/anatomy/AnatomyStructureExplorer';
 import AnatomyViewer from '@/components/anatomy/AnatomyViewer';
 import AnatomySystemPanel from '@/components/anatomy/AnatomySystemPanel';
@@ -156,6 +157,7 @@ export default function HumanPage(): JSX.Element {
             <AnatomyInformationPanel />
             <AnatomyComparePanel />
             <AnatomyQuiz />
+            <AnatomySessionPanel />
             <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>

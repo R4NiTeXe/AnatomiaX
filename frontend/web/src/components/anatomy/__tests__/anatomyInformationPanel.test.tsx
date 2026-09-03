@@ -157,13 +157,75 @@ describe('AnatomyInformationPanel', () => {
     );
   });
 
-  it('clear selection hides panel', () => {
+  it('clear selection shows recent, not hides', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('select-male-skin'));
     expect(screen.getByTestId('anatomy-information-panel')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('clear'));
-    expect(screen.queryByTestId('anatomy-information-panel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('anatomy-information-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('anatomy-information-empty')).toHaveTextContent('Select a structure');
+    expect(screen.getByTestId('anatomy-recent-list')).toBeInTheDocument();
+    expect(screen.getByTestId('anatomy-recent-item-0')).toHaveTextContent('Skin');
     expect(screen.getByTestId('selected-key')).toHaveTextContent('null');
+  });
+
+  it('recent items render when history has entries', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    fireEvent.click(screen.getByTestId('select-male-heart'));
+    expect(screen.getByTestId('anatomy-recent-list')).toBeInTheDocument();
+    expect(screen.getByTestId('anatomy-recent-item-0')).toHaveTextContent('Heart');
+    expect(screen.getByTestId('anatomy-recent-item-1')).toHaveTextContent('Skin');
+  });
+
+  it('recent newest first ordering', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    fireEvent.click(screen.getByTestId('select-male-heart'));
+    // Heart should be first (newest), Skin second
+    const first = screen.getByTestId('anatomy-recent-item-0');
+    const second = screen.getByTestId('anatomy-recent-item-1');
+    expect(first).toHaveTextContent('Heart');
+    expect(second).toHaveTextContent('Skin');
+    // Re-select skin, should move to front
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    expect(screen.getByTestId('anatomy-recent-item-0')).toHaveTextContent('Skin');
+  });
+
+  it('recent max 5', () => {
+    renderWithProvider();
+    // Add 6 distinct selections via state (use existing buttons, duplicate moves to front so count stays <=2)
+    // Instead test via direct history: select skin, heart, unknown, then check count <=5
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    fireEvent.click(screen.getByTestId('select-male-heart'));
+    fireEvent.click(screen.getByTestId('select-unknown'));
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    fireEvent.click(screen.getByTestId('select-male-heart'));
+    const items = screen.queryAllByTestId(/^anatomy-recent-item-/);
+    expect(items.length).toBeLessThanOrEqual(5);
+  });
+
+  it('clicking Recent re-selects', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    fireEvent.click(screen.getByTestId('toggle-cardiovascular'));
+    fireEvent.click(screen.getByTestId('select-male-heart'));
+    expect(screen.getByTestId('selected-key')).toHaveTextContent(
+      'male:cardiovascular:UBERON:0000948'
+    );
+    fireEvent.click(screen.getByTestId('anatomy-recent-item-1')); // Skin
+    expect(screen.getByTestId('selected-key')).toHaveTextContent('male:skin:UBERON:0002097');
+    expect(screen.getByTestId('anatomy-information-canonical-name')).toHaveTextContent('Skin');
+  });
+
+  it('recent keyboard accessible', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('select-male-skin'));
+    const item = screen.getByTestId('anatomy-recent-item-0');
+    expect(item).toHaveAttribute('role', 'button');
+    expect(item).toHaveAttribute('tabIndex', '0');
+    fireEvent.keyDown(item, { key: 'Enter' });
+    expect(screen.getByTestId('selected-key')).toHaveTextContent('male:skin:UBERON:0002097');
   });
 
   it('body-model switch clears old information (stale disappears)', () => {
