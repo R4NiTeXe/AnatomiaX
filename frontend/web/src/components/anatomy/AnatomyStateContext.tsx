@@ -12,10 +12,11 @@ import * as THREE from 'three';
 import { initialVisibleSystems } from './anatomyAssetConfig';
 import type {
   AnatomyBodyModelKey,
+  AnatomyQuizQuestion,
   AnatomySelection,
   AnatomyStructure,
   AnatomySystemKey,
-} from './anatomyTypes';
+} from '@anatomiax/shared-types';
 import {
   AnatomyStructureRegistry,
   createStructureKey,
@@ -28,18 +29,7 @@ import {
 } from './anatomyInformation';
 
 export type SelectedStructure = AnatomySelection;
-
-export interface AnatomyQuizQuestion {
-  id: string;
-  canonicalName: string;
-  bodyModel: AnatomyBodyModelKey;
-  systemKey: AnatomySystemKey;
-  ontologyId: string | null;
-  structureKey: string;
-  question: string;
-  choices: string[];
-  correctIndex: number;
-}
+export type { AnatomyQuizQuestion } from '@anatomiax/shared-types';
 
 export type SystemLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
 

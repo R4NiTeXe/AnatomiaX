@@ -1,16 +1,23 @@
-export type AnatomySystemKey =
-  | 'skin'
-  | 'musculoskeletal'
-  | 'nervous'
-  | 'cardiovascular'
-  | 'respiratory'
-  | 'digestive'
-  | 'urinary'
-  | 'reproductive'
-  | 'lymphatic';
+// Canonical serializable types — single source in @anatomiax/shared-types.
+// This file re-exports for backward compatibility so existing `from './anatomyTypes'` imports keep working.
+export type {
+  AnatomySystemKey,
+  AnatomySystemType,
+  AnatomyBodyModelKey,
+  AnatomyStructure,
+  AnatomySelection,
+  SelectedStructure,
+  AnatomySearchResult,
+  AnatomySearchOptions,
+} from '@anatomiax/shared-types';
 
-export type AnatomySystemType = 'body' | 'system';
+import type {
+  AnatomyBodyModelKey,
+  AnatomySystemKey,
+  AnatomySystemType,
+} from '@anatomiax/shared-types';
 
+// Frontend-specific asset definitions (paths/availability) — not shared with backend.
 export interface AnatomySystemAsset {
   key: AnatomySystemKey;
   label: string;
@@ -27,57 +34,9 @@ export interface AnatomySystemDefinition {
   displayOrder: number;
 }
 
-export type AnatomyBodyModelKey = 'male' | 'female';
-
 export interface AnatomyBodyModelDefinition {
   key: AnatomyBodyModelKey;
   label: string;
   systems: Record<AnatomySystemKey, AnatomySystemAsset>;
   available: boolean;
-}
-
-/**
- * Canonical runtime representation of an anatomical structure derived from
- * the loaded GLB. `id` and `structureKey` are identical — the stable
- * identifier for highlight / AI mapping. Prefer ontology-derived keys.
- */
-export interface AnatomyStructure {
-  /** Stable key: `${systemKey}:${ontologyId}` or fallback `${systemKey}:object:${objectName}` — body-model-qualified when needed */
-  id: string;
-  structureKey: string;
-  name: string;
-  objectName: string;
-  systemKey: AnatomySystemKey;
-  /** Body model that owns this structure — defaults to male when omitted for backward compat */
-  bodyModel: AnatomyBodyModelKey;
-  ontologyId: string | null;
-  /**
-   * Fallback lineage: verified node/mesh names encountered while walking
-   * up the scene graph (closest first). Preserved for debugging duplicate handling.
-   */
-  lineage: string[];
-}
-
-export interface AnatomySelection {
-  structureKey: string;
-  name: string;
-  objectName: string;
-  systemKey: AnatomySystemKey;
-  bodyModel: AnatomyBodyModelKey;
-  ontologyId: string | null;
-}
-
-export interface AnatomySearchResult {
-  structureKey: string;
-  bodyModel: AnatomyBodyModelKey;
-  systemKey: AnatomySystemKey;
-  name: string;
-  objectName: string;
-  ontologyId: string | null;
-}
-
-export interface AnatomySearchOptions {
-  bodyModel?: AnatomyBodyModelKey | 'all';
-  systemKey?: AnatomySystemKey | 'all';
-  limit?: number;
 }

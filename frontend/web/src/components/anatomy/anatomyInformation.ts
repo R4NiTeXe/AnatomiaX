@@ -1,53 +1,15 @@
-import type { AnatomyBodyModelKey, AnatomySelection, AnatomySystemKey } from './anatomyTypes';
+import type {
+  AnatomyBodyModelKey,
+  AnatomyInformation,
+  AnatomySelection,
+} from '@anatomiax/shared-types';
 
-// ---------------------------------------------------------------------------
-// Source / provenance
-// ---------------------------------------------------------------------------
-
-export type AnatomyInformationSourceCategory =
-  'Human Reference Atlas' | 'NIH' | 'FMA' | 'Uberon' | 'authoritative anatomy reference';
-
-export interface AnatomyInformationProvenance {
-  /** Human-readable source name, e.g., "Human Reference Atlas" or "NIH MedlinePlus" */
-  source: AnatomyInformationSourceCategory | string;
-  /** URL to the verified source record */
-  sourceUrl: string;
-  /** ISO date YYYY-MM-DD of last verification */
-  lastVerified: string;
-  /** Short license/attribution string, e.g., "CC BY 4.0" or "Public domain" */
-  license?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Information model — deterministic source of truth, no AI generation
-// ---------------------------------------------------------------------------
-
-/**
- * Verified anatomy information linked to the existing identity:
- * `bodyModel + structureKey (+ ontologyId when available)`.
- * `structureKey` is the primary key and already bodyModel-qualified
- * (`${bodyModel}:${systemKey}:${ontologyId}`), so male/female with the same
- * ontology never collide.
- *
- * Only fields justified by the architecture are included.
- * If no verified content exists, no record is stored — callers receive
- * `undefined` and should render "information unavailable" rather than
- * fabricated text.
- */
-export interface AnatomyInformation extends AnatomyInformationProvenance {
-  /** Primary key — bodyModel-qualified, e.g., "male:skin:UBERON:0002097" */
-  structureKey: string;
-  bodyModel: AnatomyBodyModelKey;
-  systemKey: AnatomySystemKey;
-  /** Verified ontologyId when available (preserved from `AnatomyStructure`) */
-  ontologyId: string | null;
-  /** Canonical human-readable name for display */
-  canonicalName: string;
-  /** Concise factual summary (not long copyrighted text) */
-  description: string;
-  /** Brief function summary */
-  function: string;
-}
+// Re-export for backward compatibility — canonical lives in @anatomiax/shared-types
+export type {
+  AnatomyInformation,
+  AnatomyInformationProvenance,
+  AnatomyInformationSourceCategory,
+} from '@anatomiax/shared-types';
 
 // ---------------------------------------------------------------------------
 // Local structured source — small verified seed, no network, no GLB
