@@ -152,7 +152,7 @@ export default function AnatomyQuiz(): JSX.Element {
                   data-testid="anatomy-quiz-retry"
                   className="flex-1 rounded-lg bg-teal-500/20 px-3 py-1.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30"
                 >
-                  Retry
+                  Retry Quiz
                 </button>
                 <button
                   type="button"
@@ -160,7 +160,7 @@ export default function AnatomyQuiz(): JSX.Element {
                   data-testid="anatomy-quiz-reset"
                   className="flex-1 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800"
                 >
-                  Reset
+                  New Quiz
                 </button>
               </div>
             )}

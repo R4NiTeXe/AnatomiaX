@@ -342,8 +342,6 @@ export function AnatomyStateProvider({
   }, []);
 
   const generateQuizQuestions = useCallback((): AnatomyQuizQuestion[] => {
-    // Use only verified anatomyInformation
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     let getSeed:
       | (() => readonly {
           canonicalName: string;
@@ -355,6 +353,7 @@ export function AnatomyStateProvider({
         }[])
       | null = null;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mod = require('./anatomyInformation');
       getSeed = mod.getAnatomyInformationSeed;
     } catch {
@@ -362,62 +361,100 @@ export function AnatomyStateProvider({
     }
     if (!getSeed) return [];
     const seed = getSeed();
-    // Filter by selectedBodyModel where possible, but allow all if selectedStructure is null
-    // Prefer selectedStructure's verified info as first question when available
-    let pool = [...seed];
-    // Filter to current bodyModel where possible, but keep at least 5
-    const bodyFiltered = pool.filter(s => s.bodyModel === selectedBodyModel);
-    if (bodyFiltered.length >= 5) pool = bodyFiltered;
-    // Deduplicate by canonicalName for distractors (avoid same canonical)
-    const uniqueByCanonical = new Map<string, (typeof pool)[number]>();
-    for (const s of pool) {
+    // Guarantee exactly 5 when >=5 unique canonical are available
+    const uniqueByCanonical = new Map<string, (typeof seed)[number]>();
+    for (const s of seed) {
       if (!uniqueByCanonical.has(s.canonicalName)) uniqueByCanonical.set(s.canonicalName, s);
     }
-    const uniquePool = [...uniqueByCanonical.values()];
-    if (uniquePool.length < 4) return [];
-    // Shuffle deterministically per call (use Date.now as seed for variety, but keep deterministic for tests via sort)
-    const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
-    // Prefer selectedStructure as first if available and has verified info
+    let uniquePool = [...uniqueByCanonical.values()];
+    if (uniquePool.length < 5) return [];
+    // Resolve selectedStructure by exact bodyModel + structureKey, independent of canonical dedup
     let ordered: typeof uniquePool = [];
+    let selectedEntry: (typeof uniquePool)[number] | null = null;
     if (selectedStructure) {
-      const selInfo = (() => {
-        try {
-          const mod = require('./anatomyInformation');
-          return mod.getAnatomyInformationByStructureKey(selectedStructure.structureKey);
-        } catch {
-          return null;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('./anatomyInformation');
+        const selInfo = mod.getAnatomyInformationByStructureKey(selectedStructure.structureKey);
+        if (selInfo) {
+          const found = uniquePool.find(
+            s => s.structureKey === selInfo.structureKey && s.bodyModel === selInfo.bodyModel
+          );
+          if (found) selectedEntry = found;
+          else {
+            // Fallback: try exact structureKey match in full seed (not deduped) then map to canonical
+            const raw = seed.find(s => s.structureKey === selectedStructure.structureKey);
+            if (raw) {
+              const canon = uniquePool.find(c => c.canonicalName === raw.canonicalName);
+              if (canon) selectedEntry = canon;
+            }
+          }
         }
-      })();
-      if (selInfo) {
-        const selEntry = uniquePool.find(s => s.structureKey === selInfo.structureKey);
-        if (selEntry) {
-          ordered.push(selEntry);
-          const remaining = shuffled.filter(s => s.structureKey !== selEntry.structureKey);
-          ordered = [...ordered, ...remaining];
-        } else {
-          ordered = shuffled;
-        }
-      } else {
-        ordered = shuffled;
+      } catch {
+        selectedEntry = null;
       }
+    }
+    const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
+    if (selectedEntry) {
+      ordered = [
+        selectedEntry,
+        ...shuffled.filter(s => s.structureKey !== selectedEntry!.structureKey),
+      ];
     } else {
       ordered = shuffled;
     }
+    // Ensure we have at least 5 unique canonical for questions
+    if (ordered.length < 5) return [];
     const questions: AnatomyQuizQuestion[] = [];
-    for (let i = 0; i < Math.min(5, ordered.length); i++) {
+    for (let i = 0; i < 5; i++) {
       const correct = ordered[i];
-      const distractors = ordered
-        .filter(s => s.canonicalName !== correct.canonicalName && s.function !== correct.function)
-        .slice(0, 10);
-      // Shuffle distractors and take 3
-      const shuffledDistractors = [...distractors].sort(() => Math.random() - 0.5).slice(0, 3);
-      if (shuffledDistractors.length < 3) continue;
-      const choices = [correct.function, ...shuffledDistractors.map(s => s.function)];
-      // Shuffle choices deterministically
+      if (!correct) break;
+      // Prefer distractors from different systems
+      const sameSystemDistractors: typeof uniquePool = [];
+      const diffSystemDistractors: typeof uniquePool = [];
+      for (const s of ordered) {
+        if (s.canonicalName === correct.canonicalName) continue;
+        if (s.function === correct.function) continue;
+        if (s.systemKey === correct.systemKey) sameSystemDistractors.push(s);
+        else diffSystemDistractors.push(s);
+      }
+      // Prefer different system, fallback to same system only if needed
+      let distractors: typeof uniquePool = [];
+      const diffShuffled = [...diffSystemDistractors].sort(() => Math.random() - 0.5);
+      distractors = diffShuffled.slice(0, 3);
+      if (distractors.length < 3) {
+        const sameShuffled = [...sameSystemDistractors].sort(() => Math.random() - 0.5);
+        distractors = [...distractors, ...sameShuffled].slice(0, 3);
+      }
+      if (distractors.length < 3) continue;
+      // Ensure distinct function and canonical
+      const distinctFunctions = new Set<string>();
+      const distinctCanonical = new Set<string>([correct.canonicalName]);
+      const finalDistractors: typeof uniquePool = [];
+      for (const d of distractors) {
+        if (distinctFunctions.has(d.function) || distinctCanonical.has(d.canonicalName)) continue;
+        distinctFunctions.add(d.function);
+        distinctCanonical.add(d.canonicalName);
+        finalDistractors.push(d);
+        if (finalDistractors.length >= 3) break;
+      }
+      if (finalDistractors.length < 3) {
+        // Fallback: take any distinct
+        for (const s of ordered) {
+          if (s.canonicalName === correct.canonicalName) continue;
+          if (finalDistractors.length >= 3) break;
+          if (finalDistractors.some(d => d.canonicalName === s.canonicalName)) continue;
+          if (finalDistractors.some(d => d.function === s.function)) continue;
+          finalDistractors.push(s);
+        }
+      }
+      if (finalDistractors.length < 3) continue;
+      const choices = [correct.function, ...finalDistractors.slice(0, 3).map(s => s.function)];
       const shuffledChoices = [...choices].sort(() => Math.random() - 0.5);
       const correctIndex = shuffledChoices.indexOf(correct.function);
+      if (correctIndex < 0) continue;
       questions.push({
-        id: `${correct.structureKey}-${i}`,
+        id: `${correct.structureKey}-${i}-${Date.now()}-${Math.random()}`,
         canonicalName: correct.canonicalName,
         bodyModel: correct.bodyModel,
         systemKey: correct.systemKey,
@@ -428,6 +465,32 @@ export function AnatomyStateProvider({
         correctIndex,
       });
       if (questions.length >= 5) break;
+    }
+    // Guarantee exactly 5 when possible
+    if (questions.length < 5 && uniquePool.length >= 5) {
+      // Fallback: fill remaining with any valid
+      for (const s of shuffled) {
+        if (questions.length >= 5) break;
+        if (questions.some(q => q.canonicalName === s.canonicalName)) continue;
+        const distractors = uniquePool.filter(
+          c => c.canonicalName !== s.canonicalName && c.function !== s.function
+        );
+        if (distractors.length < 3) continue;
+        const d = [...distractors].sort(() => Math.random() - 0.5).slice(0, 3);
+        const ch = [s.function, ...d.map(x => x.function)].sort(() => Math.random() - 0.5);
+        const idx = ch.indexOf(s.function);
+        questions.push({
+          id: `${s.structureKey}-fallback-${questions.length}`,
+          canonicalName: s.canonicalName,
+          bodyModel: s.bodyModel,
+          systemKey: s.systemKey,
+          ontologyId: s.ontologyId,
+          structureKey: s.structureKey,
+          question: `What is the function of the ${s.canonicalName}?`,
+          choices: ch,
+          correctIndex: idx,
+        });
+      }
     }
     return questions.slice(0, 5);
   }, [selectedBodyModel, selectedStructure]);
