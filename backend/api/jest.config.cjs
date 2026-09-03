@@ -1,13 +1,12 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+const path = require('path');
+const tsJestPath = path.join(__dirname, '..', '..', 'node_modules', 'ts-jest');
 module.exports = {
-  preset: 'ts-jest',
+  preset: tsJestPath,
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/*.spec.ts'],
-  moduleNameMapper: {
-    '^src/(.*)$': '<rootDir>/src/$1',
-  },
+  moduleFileExtensions: ['ts', 'js', 'json'],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { diagnostics: false }],
+    '^.+\\.tsx?$': [tsJestPath, { diagnostics: false }],
   },
 };
