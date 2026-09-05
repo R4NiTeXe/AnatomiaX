@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useAnatomyState } from './AnatomyStateContext';
 
 export default function AnatomyQuiz(): JSX.Element {
@@ -7,17 +8,30 @@ export default function AnatomyQuiz(): JSX.Element {
     quizScore,
     quizSelectedChoice,
     quizAnswered,
+    quizAnswers,
     startQuiz,
     answerQuiz,
     nextQuizQuestion,
     retryQuiz,
     resetQuiz,
     selectedStructure,
+    selectStructure,
   } = useAnatomyState();
 
   const hasQuiz = quizQuestions.length > 0;
   const current = hasQuiz ? quizQuestions[quizIndex] : null;
   const isLast = hasQuiz && quizIndex === quizQuestions.length - 1 && quizAnswered;
+
+  const [showIncorrectOnly, setShowIncorrectOnly] = useState(false);
+  useEffect(() => {
+    setShowIncorrectOnly(false);
+  }, [quizQuestions]);
+
+  const incorrectCount = quizAnswers.filter(a => a.selectedChoice !== a.correctIndex).length;
+  const correctCount = quizAnswers.filter(a => a.selectedChoice === a.correctIndex).length;
+  const visibleAnswers = showIncorrectOnly
+    ? quizAnswers.filter(a => a.selectedChoice !== a.correctIndex)
+    : quizAnswers;
 
   return (
     <section
@@ -162,6 +176,109 @@ export default function AnatomyQuiz(): JSX.Element {
                 >
                   New Quiz
                 </button>
+              </div>
+            )}
+
+            {isLast && (
+              <div
+                className="flex flex-col gap-2 border-t border-slate-800 pt-3"
+                data-testid="anatomy-quiz-review"
+              >
+                <p
+                  className="text-sm font-medium text-slate-200"
+                  data-testid="anatomy-quiz-review-summary"
+                >
+                  Score {quizScore} / {quizQuestions.length} • {correctCount} correct •{' '}
+                  {incorrectCount} incorrect
+                </p>
+                {incorrectCount === 0 ? (
+                  <p
+                    className="text-sm text-teal-300"
+                    data-testid="anatomy-quiz-review-all-correct"
+                  >
+                    All correct — nice work!
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowIncorrectOnly(v => !v)}
+                    aria-pressed={showIncorrectOnly}
+                    data-testid="anatomy-quiz-review-incorrect"
+                    className="self-start rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                  >
+                    {showIncorrectOnly
+                      ? `Show all (${quizAnswers.length})`
+                      : `Review incorrect (${incorrectCount})`}
+                  </button>
+                )}
+                <ul className="flex flex-col gap-2" data-testid="anatomy-quiz-review-list">
+                  {visibleAnswers.map((answer, visibleIndex) => {
+                    const questionIndex = quizQuestions.findIndex(q => q.id === answer.questionId);
+                    const q = quizQuestions[questionIndex];
+                    if (!q) return null;
+                    const isCorrect = answer.selectedChoice === answer.correctIndex;
+                    const handleRevisit = () => {
+                      selectStructure({
+                        structureKey: q.structureKey,
+                        name: q.canonicalName,
+                        objectName: q.canonicalName,
+                        systemKey: q.systemKey,
+                        bodyModel: q.bodyModel,
+                        ontologyId: q.ontologyId,
+                      });
+                    };
+                    return (
+                      <li
+                        key={answer.questionId}
+                        className="flex flex-col gap-1 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2"
+                        data-testid={`anatomy-quiz-review-item-${visibleIndex}`}
+                      >
+                        <p
+                          className="text-xs font-medium text-slate-200"
+                          data-testid={`anatomy-quiz-review-question-${visibleIndex}`}
+                        >
+                          {q.question}
+                        </p>
+                        <p
+                          className="text-xs text-slate-500"
+                          data-testid={`anatomy-quiz-review-canonical-${visibleIndex}`}
+                        >
+                          {q.canonicalName} • {q.systemKey}
+                        </p>
+                        <p
+                          className="text-xs text-slate-300"
+                          data-testid={`anatomy-quiz-review-selected-${visibleIndex}`}
+                        >
+                          Your answer: {q.choices[answer.selectedChoice] ?? '—'}
+                        </p>
+                        <p
+                          className="text-xs text-slate-400"
+                          data-testid={`anatomy-quiz-review-correct-${visibleIndex}`}
+                        >
+                          Correct answer: {q.choices[answer.correctIndex] ?? '—'}
+                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`text-xs font-medium ${isCorrect ? 'text-teal-300' : 'text-red-300'}`}
+                            data-testid={`anatomy-quiz-review-status-${visibleIndex}`}
+                          >
+                            {isCorrect ? 'Correct' : 'Incorrect'}
+                          </span>
+                          {!isCorrect && (
+                            <button
+                              type="button"
+                              onClick={handleRevisit}
+                              data-testid={`anatomy-quiz-review-structure-${visibleIndex}`}
+                              className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-teal-300 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                            >
+                              Review structure
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             )}
           </div>

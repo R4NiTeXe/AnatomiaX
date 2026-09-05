@@ -31,6 +31,13 @@ import {
 export type SelectedStructure = AnatomySelection;
 export type { AnatomyQuizQuestion } from '@anatomiax/shared-types';
 
+export interface AnatomyQuizAnswer {
+  questionId: string;
+  structureKey: string;
+  selectedChoice: number;
+  correctIndex: number;
+}
+
 export type SystemLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
 export type SystemLoadStatusMap = Record<AnatomySystemKey, SystemLoadStatus>;
@@ -92,6 +99,7 @@ interface AnatomyStateValue {
   quizSelectedChoice: number | null;
   quizAnswered: boolean;
   quizCompleted: boolean;
+  quizAnswers: AnatomyQuizAnswer[];
   startQuiz: () => void;
   answerQuiz: (choiceIndex: number) => void;
   nextQuizQuestion: () => void;
@@ -140,6 +148,7 @@ export function AnatomyStateProvider({
   const [quizScore, setQuizScore] = useState(0);
   const [quizSelectedChoice, setQuizSelectedChoice] = useState<number | null>(null);
   const [quizAnswered, setQuizAnswered] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<AnatomyQuizAnswer[]>([]);
   const [selectedBodyModel, setSelectedBodyModel] = useState<AnatomyBodyModelKey>(initialBodyModel);
   const [status, setStatus] = useState<SystemLoadStatusMap>(IDLE_STATUS);
   const [errorMessages, setErrorMessages] = useState<Record<AnatomySystemKey, string>>({
@@ -204,6 +213,7 @@ export function AnatomyStateProvider({
       setQuizScore(0);
       setQuizSelectedChoice(null);
       setQuizAnswered(false);
+      setQuizAnswers([]);
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
       setStatus(IDLE_STATUS);
@@ -471,6 +481,7 @@ export function AnatomyStateProvider({
     setQuizScore(0);
     setQuizSelectedChoice(null);
     setQuizAnswered(false);
+    setQuizAnswers([]);
   }, [generateQuizQuestions]);
 
   const answerQuiz = useCallback(
@@ -479,9 +490,22 @@ export function AnatomyStateProvider({
       setQuizSelectedChoice(choiceIndex);
       setQuizAnswered(true);
       const q = quizQuestions[quizIndex];
-      if (q && choiceIndex === q.correctIndex) {
+      if (!q) return;
+      if (choiceIndex === q.correctIndex) {
         setQuizScore(s => s + 1);
       }
+      setQuizAnswers(prev => {
+        if (prev.some(a => a.questionId === q.id)) return prev;
+        return [
+          ...prev,
+          {
+            questionId: q.id,
+            structureKey: q.structureKey,
+            selectedChoice: choiceIndex,
+            correctIndex: q.correctIndex,
+          },
+        ];
+      });
     },
     [quizAnswered, quizQuestions, quizIndex]
   );
@@ -504,6 +528,7 @@ export function AnatomyStateProvider({
     setQuizScore(0);
     setQuizSelectedChoice(null);
     setQuizAnswered(false);
+    setQuizAnswers([]);
   }, []);
 
   const setSystemStatus = useCallback((key: AnatomySystemKey, next: SystemLoadStatus) => {
@@ -585,6 +610,7 @@ export function AnatomyStateProvider({
       score: quizScore,
       selectedChoice: quizSelectedChoice,
       answered: quizAnswered,
+      answers: quizAnswers,
     };
   }, [
     selectedStructure,
@@ -596,6 +622,7 @@ export function AnatomyStateProvider({
     quizScore,
     quizSelectedChoice,
     quizAnswered,
+    quizAnswers,
   ]);
 
   const value = useMemo<AnatomyStateValue>(
@@ -625,6 +652,7 @@ export function AnatomyStateProvider({
       quizAnswered,
       quizCompleted:
         quizQuestions.length > 0 && quizIndex === quizQuestions.length - 1 && quizAnswered,
+      quizAnswers,
       startQuiz,
       answerQuiz,
       nextQuizQuestion,
@@ -670,6 +698,7 @@ export function AnatomyStateProvider({
       quizScore,
       quizSelectedChoice,
       quizAnswered,
+      quizAnswers,
       startQuiz,
       answerQuiz,
       nextQuizQuestion,

@@ -8,6 +8,7 @@ export default function AnatomySessionPanel(): JSX.Element {
     quizQuestions,
     quizScore,
     quizCompleted,
+    quizAnswers,
     compareStructure,
     selectedStructure,
     selectedBodyModel,
@@ -19,6 +20,10 @@ export default function AnatomySessionPanel(): JSX.Element {
   const totalQuestions = quizQuestions.length;
   const correct = quizScore;
   const incorrect = hasQuiz ? totalQuestions - quizScore : 0;
+  const reviewIncorrect =
+    quizAnswers.length > 0
+      ? quizAnswers.filter(a => a.selectedChoice !== a.correctIndex).length
+      : incorrect;
 
   return (
     <section
@@ -82,6 +87,9 @@ export default function AnatomySessionPanel(): JSX.Element {
             </p>
             <p className="text-xs text-slate-400" data-testid="anatomy-session-quiz-detail">
               {correct} correct • {incorrect} incorrect
+            </p>
+            <p className="text-xs text-slate-500" data-testid="anatomy-session-review">
+              Review: {reviewIncorrect} incorrect
             </p>
           </div>
         ) : (
