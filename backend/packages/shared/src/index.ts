@@ -13,6 +13,8 @@ export type {
   AnatomyInformationSourceCategory,
   AnatomyInformationProvenance,
   AnatomyInformation,
+  AnatomyRelatedStructure,
+  AnatomyRelationKind,
   AnatomyQuizQuestion,
 } from '@anatomiax/shared-types';
 

@@ -121,9 +121,9 @@ Deterministic layer remains the source of truth. AI must not be implemented now 
 Small local seed, 13 records for 8 concepts (shared structures duplicated per bodyModel):
 
 - **Skin** — `male:skin:UBERON:0002097`, `female:skin:UBERON:0002097` — NIH MedlinePlus `https://medlineplus.gov/ency/article/002363.htm`
-- **Heart** — `male:cardiovascular:UBERON:0000948`, `female:cardiovascular:UBERON:0000948` — NIH `https://medlineplus.gov/ency/article/002280.htm`
-- **Brain** — `male:nervous:UBERON:0000955`, `female:nervous:UBERON:0000955` — NIH `https://medlineplus.gov/ency/article/002344.htm`
-- **Liver** — `male:digestive:UBERON:0002107`, `female:digestive:UBERON:0002107` — NIH `https://medlineplus.gov/ency/article/000242.htm`
+- **Heart** — `male:cardiovascular:UBERON:0000948`, `female:cardiovascular:UBERON:0000948` — NIH `https://medlineplus.gov/ency/imagepages/8804.htm`
+- **Brain** — `male:nervous:UBERON:0000955`, `female:nervous:UBERON:0000955` — NIH `https://medlineplus.gov/ency/imagepages/8738.htm`
+- **Liver** — `male:digestive:UBERON:0002107`, `female:digestive:UBERON:0002107` — NIH `https://medlineplus.gov/ency/imagepages/8848.htm`
 - **Kidney** — `male:urinary:UBERON:0002113`, `female:urinary:UBERON:0002113` — NIH `https://medlineplus.gov/ency/article/002266.htm`
 - **Ovary** — `female:reproductive:UBERON:0000992` — HRA `https://humanatlas.io/asct-b-reporter` (female-only)
 - **Uterus** — `female:reproductive:UBERON:0000995` — HRA (female-only)
@@ -135,8 +135,8 @@ Only these verified entries were stored in 8.14.1.
 
 Reuse of the existing model/repository; no architecture change. Added 13 verified records for commonly used structures present in the 9 GLB systems:
 
-- **Spinal cord** — `male:nervous:UBERON:0002240`, `female:nervous:UBERON:0002240` — NIH `https://medlineplus.gov/ency/article/002249.htm` (nervous)
-- **Lung** — `male:respiratory:UBERON:0002048`, `female:respiratory:UBERON:0002048` — NIH `https://medlineplus.gov/ency/article/002309.htm` (respiratory)
+- **Spinal cord** — `male:nervous:UBERON:0002240`, `female:nervous:UBERON:0002240` — NIH `https://medlineplus.gov/ency/article/001066.htm` (nervous)
+- **Lung** — `male:respiratory:UBERON:0002048`, `female:respiratory:UBERON:0002048` — NIH `https://medlineplus.gov/ency/imagepages/1103.htm` (respiratory)
 - **Stomach** — `male:digestive:UBERON:0000945`, `female:digestive:UBERON:0000945` — NIH `https://medlineplus.gov/ency/article/003121.htm` (digestive)
 - **Urinary bladder** — `male:urinary:UBERON:0001255`, `female:urinary:UBERON:0001255` — NIH `https://medlineplus.gov/ency/article/003246.htm` (urinary)
 - **Femur** — `male:musculoskeletal:UBERON:0000981`, `female:musculoskeletal:UBERON:0000981` — NIH `https://medlineplus.gov/ency/imagepages/19089.htm` (musculoskeletal, longest bone)
@@ -165,10 +165,10 @@ Total: 13 (8.14.1) + 13 (8.14.3) = **26 records** for 16 distinct canonical conc
 
 Inspection of current 26 records vs. actual HRA GLB metadata (`dump-male.txt` 485 structures, `getAllLoadedStructures()` via `window.__ANATOMIA_REGISTRY`) showed whole-organ UBERONs (e.g., `UBERON:0000948` heart, `UBERON:0000955` brain, `UBERON:0002048` lung) are **not** present as meshes — the assets contain substructures (ventricles `UBERON:0002080`, bronchopulmonary segments `FMA:7374`, femur `FMA:24474`, etc.). To keep `Information unavailable` correct and to prioritize high-value **actually present** structures, 8.14.5 adds 12 records with **exact GLB ontology IDs verified present**:
 
-- **Ascending aorta** — `male:cardiovascular:UBERON:0001496`, `female:cardiovascular:UBERON:0001496` — NIH `https://medlineplus.gov/ency/imagepages/19264.htm` — verified `VH_M_ascending_aorta` (cardiovascular)
+- **Ascending aorta** — `male:cardiovascular:UBERON:0001496`, `female:cardiovascular:UBERON:0001496` — NIH `https://medlineplus.gov/ency/article/001119.htm` — verified `VH_M_ascending_aorta` (cardiovascular)
 - **Gallbladder** — `male:digestive:UBERON:0002110`, `female:digestive:UBERON:0002110` — NIH `https://medlineplus.gov/ency/article/000273.htm` — verified `VH_M_gallbladder` (digestive)
 - **Right ventricle** — `male:cardiovascular:UBERON:0002080`, `female:cardiovascular:UBERON:0002080` — NIH `https://medlineplus.gov/ency/imagepages/19612.htm` — verified `VH_M_heart_right_ventricle` (cardiovascular)
-- **Hilum of lung** — `male:respiratory:UBERON:0004887`, `female:respiratory:UBERON:0004887` — NIH `https://medlineplus.gov/ency/imagepages/19380.htm` — verified `VH_M_hilum_L` (respiratory)
+- **Hilum of lung** — `male:respiratory:UBERON:0004887`, `female:respiratory:UBERON:0004887` — Uberon `http://purl.obolibrary.org/obo/UBERON_0004887` (`CC BY 3.0`) — verified `VH_M_hilum_L` (respiratory)
 - **Hilum of spleen** — `male:lymphatic:UBERON:0001248`, `female:lymphatic:UBERON:0001248` — NIH `https://medlineplus.gov/ency/imagepages/19075.htm` — verified `VH_M_hilum_of_spleen` (lymphatic)
 - **Femur (FMA)** — `male:musculoskeletal:FMA:24474`, `female:musculoskeletal:FMA:24474` — NIH `https://medlineplus.gov/ency/imagepages/19089.htm` — verified `VH_M_femur_R_1` `FMA:24474` (musculoskeletal, longest bone; corrects earlier `UBERON:0000981` which is not present as mesh)
 

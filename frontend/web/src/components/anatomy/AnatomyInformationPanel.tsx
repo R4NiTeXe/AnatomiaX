@@ -1,5 +1,6 @@
 import { useAnatomyState } from './AnatomyStateContext';
-import { getAnatomyInformation } from './anatomyInformation';
+import type { AnatomyInformation } from './anatomyInformation';
+import { getAnatomyInformation, getRelatedAnatomyInformation } from './anatomyInformation';
 import { getAnatomySystem } from './anatomyAssetConfig';
 
 export default function AnatomyInformationPanel(): JSX.Element | null {
@@ -97,6 +98,78 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
                   {info.function}
                 </p>
               </div>
+
+              {(() => {
+                const related = getRelatedAnatomyInformation(displayStructure.structureKey);
+                const partOf = related.filter(r => r.relation === 'part_of');
+                const relatedTo = related.filter(r => r.relation === 'related_to');
+                if (partOf.length === 0 && relatedTo.length === 0) return null;
+                const handleRelatedSelect = (target: AnatomyInformation) => {
+                  selectStructure({
+                    structureKey: target.structureKey,
+                    name: target.canonicalName,
+                    objectName: target.canonicalName,
+                    systemKey: target.systemKey,
+                    bodyModel: target.bodyModel,
+                    ontologyId: target.ontologyId,
+                  });
+                };
+                return (
+                  <div
+                    className="border-t border-slate-800 pt-3 flex flex-col gap-3"
+                    data-testid="anatomy-relationships"
+                  >
+                    {partOf.length > 0 && (
+                      <div>
+                        <p
+                          className="text-xs font-semibold uppercase tracking-widest text-slate-500"
+                          data-testid="anatomy-partof-heading"
+                        >
+                          Part of
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {partOf.map((r, index) => (
+                            <button
+                              key={r.info.structureKey}
+                              type="button"
+                              onClick={() => handleRelatedSelect(r.info)}
+                              aria-label={`Part of: ${r.info.canonicalName}`}
+                              data-testid={`anatomy-partof-item-${index}`}
+                              className="rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                            >
+                              Part of: {r.info.canonicalName}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {relatedTo.length > 0 && (
+                      <div>
+                        <p
+                          className="text-xs font-semibold uppercase tracking-widest text-slate-500"
+                          data-testid="anatomy-related-heading"
+                        >
+                          Related structures
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {relatedTo.map((r, index) => (
+                            <button
+                              key={r.info.structureKey}
+                              type="button"
+                              onClick={() => handleRelatedSelect(r.info)}
+                              aria-label={`Related: ${r.info.canonicalName}`}
+                              data-testid={`anatomy-related-item-${index}`}
+                              className="rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                            >
+                              Related: {r.info.canonicalName}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="border-t border-slate-800 pt-3">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">

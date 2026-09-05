@@ -1,6 +1,7 @@
 import type {
   AnatomyBodyModelKey,
   AnatomyInformation,
+  AnatomyRelationKind,
   AnatomySelection,
 } from '@anatomiax/shared-types';
 
@@ -9,6 +10,8 @@ export type {
   AnatomyInformation,
   AnatomyInformationProvenance,
   AnatomyInformationSourceCategory,
+  AnatomyRelatedStructure,
+  AnatomyRelationKind,
 } from '@anatomiax/shared-types';
 
 // ---------------------------------------------------------------------------
@@ -59,8 +62,8 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     function:
       'Maintains blood circulation, delivering oxygen and nutrients to tissues and removing waste.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002280.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8804.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -74,8 +77,8 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     function:
       'Maintains blood circulation, delivering oxygen and nutrients to tissues and removing waste.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002280.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8804.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Brain
@@ -84,14 +87,15 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     bodyModel: 'male',
     systemKey: 'nervous',
     ontologyId: 'UBERON:0000955',
+    relatedStructures: [{ structureKey: 'male:nervous:UBERON:0002240', relation: 'related_to' }],
     canonicalName: 'Brain',
     description:
       'The central organ of the nervous system housed within the cranium, composed of billions of neurons and glia.',
     function:
       'Integrates sensory information, coordinates motor output, and supports cognition, memory, and autonomic regulation.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002344.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8738.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -99,14 +103,15 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     bodyModel: 'female',
     systemKey: 'nervous',
     ontologyId: 'UBERON:0000955',
+    relatedStructures: [{ structureKey: 'female:nervous:UBERON:0002240', relation: 'related_to' }],
     canonicalName: 'Brain',
     description:
       'The central organ of the nervous system housed within the cranium, composed of billions of neurons and glia.',
     function:
       'Integrates sensory information, coordinates motor output, and supports cognition, memory, and autonomic regulation.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002344.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8738.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Liver
@@ -121,8 +126,8 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     function:
       'Processes nutrients, detoxifies blood, produces bile, and regulates glucose and protein metabolism.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/000242.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8848.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -136,8 +141,8 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     function:
       'Processes nutrients, detoxifies blood, produces bile, and regulates glucose and protein metabolism.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/000242.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8848.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Kidney
@@ -182,6 +187,9 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Paired female reproductive glands that produce oocytes and secrete estrogen and progesterone.',
     function:
       'Generates ova and reproductive hormones regulating the menstrual cycle and secondary sexual characteristics.',
+    relatedStructures: [
+      { structureKey: 'female:reproductive:UBERON:0000995', relation: 'related_to' },
+    ],
     source: 'Human Reference Atlas',
     sourceUrl: 'https://humanatlas.io/asct-b-reporter',
     lastVerified: '2026-01-15',
@@ -213,6 +221,9 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description: 'The narrow lower part of the uterus that connects to the vaginal canal.',
     function:
       'Provides passage between uterus and vagina, producing mucus that changes with the menstrual cycle.',
+    relatedStructures: [
+      { structureKey: 'female:reproductive:UBERON:0000995', relation: 'part_of' },
+    ],
     source: 'Human Reference Atlas',
     sourceUrl: 'https://humanatlas.io/asct-b-reporter',
     lastVerified: '2026-01-15',
@@ -229,9 +240,10 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'A column of nervous tissue extending from the brainstem through the vertebral canal, carrying signals between brain and body.',
     function:
       'Transmits sensory and motor signals and coordinates reflexes independent of the brain.',
+    relatedStructures: [{ structureKey: 'male:nervous:UBERON:0000955', relation: 'related_to' }],
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002249.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/article/001066.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -244,9 +256,10 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'A column of nervous tissue extending from the brainstem through the vertebral canal, carrying signals between brain and body.',
     function:
       'Transmits sensory and motor signals and coordinates reflexes independent of the brain.',
+    relatedStructures: [{ structureKey: 'female:nervous:UBERON:0000955', relation: 'related_to' }],
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002249.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/article/001066.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Lungs — respiratory, shared
@@ -260,8 +273,8 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Paired organs in the thorax that facilitate gas exchange between air and blood within alveoli.',
     function: 'Oxygenates blood and removes carbon dioxide through ventilation and diffusion.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002309.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/1103.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -274,8 +287,8 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Paired organs in the thorax that facilitate gas exchange between air and blood within alveoli.',
     function: 'Oxygenates blood and removes carbon dioxide through ventilation and diffusion.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002309.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/1103.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Stomach — digestive, shared
@@ -407,6 +420,10 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Paired tubes connecting ovaries to the uterus that transport oocytes and support fertilization.',
     function:
       'Conveys ova toward the uterus and provides site for fertilization and early embryo transport.',
+    relatedStructures: [
+      { structureKey: 'female:reproductive:UBERON:0000992', relation: 'related_to' },
+      { structureKey: 'female:reproductive:UBERON:0000995', relation: 'related_to' },
+    ],
     source: 'Human Reference Atlas',
     sourceUrl: 'https://humanatlas.io/asct-b-reporter',
     lastVerified: '2026-01-15',
@@ -422,9 +439,12 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The initial segment of the aorta arising from the left ventricle, distributing oxygenated blood to the systemic circulation.',
     function: 'Conveys oxygenated blood from the heart to the aortic arch and systemic arteries.',
+    relatedStructures: [
+      { structureKey: 'male:cardiovascular:UBERON:0002084', relation: 'related_to' },
+    ],
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19264.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/article/001119.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -436,9 +456,12 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The initial segment of the aorta arising from the left ventricle, distributing oxygenated blood to the systemic circulation.',
     function: 'Conveys oxygenated blood from the heart to the aortic arch and systemic arteries.',
+    relatedStructures: [
+      { structureKey: 'female:cardiovascular:UBERON:0002084', relation: 'related_to' },
+    ],
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19264.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/article/001119.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Gallbladder — digestive, shared, verified present as VH_M_gallbladder UBERON:0002110
@@ -451,6 +474,7 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'A small pear-shaped organ beneath the liver that stores and concentrates bile produced by the liver.',
     function: 'Stores bile and releases it into the duodenum to aid fat digestion.',
+    relatedStructures: [{ structureKey: 'male:digestive:UBERON:0002107', relation: 'related_to' }],
     source: 'NIH',
     sourceUrl: 'https://medlineplus.gov/ency/article/000273.htm',
     lastVerified: '2026-01-15',
@@ -465,6 +489,9 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'A small pear-shaped organ beneath the liver that stores and concentrates bile produced by the liver.',
     function: 'Stores bile and releases it into the duodenum to aid fat digestion.',
+    relatedStructures: [
+      { structureKey: 'female:digestive:UBERON:0002107', relation: 'related_to' },
+    ],
     source: 'NIH',
     sourceUrl: 'https://medlineplus.gov/ency/article/000273.htm',
     lastVerified: '2026-01-15',
@@ -480,6 +507,10 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The right lower chamber of the heart that pumps deoxygenated blood to the lungs via the pulmonary trunk.',
     function: 'Drives pulmonary circulation by propelling blood to the lungs for oxygenation.',
+    relatedStructures: [
+      { structureKey: 'male:cardiovascular:UBERON:0000948', relation: 'part_of' },
+      { structureKey: 'male:cardiovascular:UBERON:0002084', relation: 'related_to' },
+    ],
     source: 'NIH',
     sourceUrl: 'https://medlineplus.gov/ency/imagepages/19612.htm',
     lastVerified: '2026-01-15',
@@ -494,6 +525,10 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The right lower chamber of the heart that pumps deoxygenated blood to the lungs via the pulmonary trunk.',
     function: 'Drives pulmonary circulation by propelling blood to the lungs for oxygenation.',
+    relatedStructures: [
+      { structureKey: 'female:cardiovascular:UBERON:0000948', relation: 'part_of' },
+      { structureKey: 'female:cardiovascular:UBERON:0002084', relation: 'related_to' },
+    ],
     source: 'NIH',
     sourceUrl: 'https://medlineplus.gov/ency/imagepages/19612.htm',
     lastVerified: '2026-01-15',
@@ -509,10 +544,11 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The medial entry point of each lung where bronchi, vessels, and nerves enter and exit.',
     function: 'Anchors pulmonary structures and provides conduit for airways and vasculature.',
-    source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19380.htm',
-    lastVerified: '2026-01-15',
-    license: 'Public domain (NIH)',
+    relatedStructures: [{ structureKey: 'male:respiratory:UBERON:0002048', relation: 'part_of' }],
+    source: 'Uberon',
+    sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0004887',
+    lastVerified: '2026-09-05',
+    license: 'CC BY 3.0 (Uberon)',
   },
   {
     structureKey: 'female:respiratory:UBERON:0004887',
@@ -523,10 +559,11 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The medial entry point of each lung where bronchi, vessels, and nerves enter and exit.',
     function: 'Anchors pulmonary structures and provides conduit for airways and vasculature.',
-    source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/imagepages/19380.htm',
-    lastVerified: '2026-01-15',
-    license: 'Public domain (NIH)',
+    relatedStructures: [{ structureKey: 'female:respiratory:UBERON:0002048', relation: 'part_of' }],
+    source: 'Uberon',
+    sourceUrl: 'http://purl.obolibrary.org/obo/UBERON_0004887',
+    lastVerified: '2026-09-05',
+    license: 'CC BY 3.0 (Uberon)',
   },
   // Hilum of spleen — lymphatic, shared, verified present as VH_M_hilum_of_spleen UBERON:0001248
   {
@@ -626,6 +663,9 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Paired female reproductive glands that produce oocytes and secrete estrogen and progesterone.',
     function:
       'Generates ova and reproductive hormones regulating the menstrual cycle and secondary sexual characteristics.',
+    relatedStructures: [
+      { structureKey: 'female:reproductive:UBERON:0000995', relation: 'related_to' },
+    ],
     source: 'Human Reference Atlas',
     sourceUrl: 'https://humanatlas.io/asct-b-reporter',
     lastVerified: '2026-01-15',
@@ -641,6 +681,9 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
       'Paired female reproductive glands that produce oocytes and secrete estrogen and progesterone.',
     function:
       'Generates ova and reproductive hormones regulating the menstrual cycle and secondary sexual characteristics.',
+    relatedStructures: [
+      { structureKey: 'female:reproductive:UBERON:0000995', relation: 'related_to' },
+    ],
     source: 'Human Reference Atlas',
     sourceUrl: 'https://humanatlas.io/asct-b-reporter',
     lastVerified: '2026-01-15',
@@ -656,6 +699,9 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     description:
       'The main part of the uterus above the cervix where implantation and fetal growth occur.',
     function: 'Supports embryo implantation and provides muscular expansion during pregnancy.',
+    relatedStructures: [
+      { structureKey: 'female:reproductive:UBERON:0000995', relation: 'part_of' },
+    ],
     source: 'Human Reference Atlas',
     sourceUrl: 'https://humanatlas.io/asct-b-reporter',
     lastVerified: '2026-01-15',
@@ -670,6 +716,11 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     canonicalName: 'Left ventricle',
     description: 'The left lower chamber of the heart that pumps oxygenated blood into the aorta.',
     function: 'Drives systemic circulation by ejecting blood at high pressure to the body.',
+    relatedStructures: [
+      { structureKey: 'male:cardiovascular:UBERON:0000948', relation: 'part_of' },
+      { structureKey: 'male:cardiovascular:UBERON:0002080', relation: 'related_to' },
+      { structureKey: 'male:cardiovascular:UBERON:0001496', relation: 'related_to' },
+    ],
     source: 'NIH',
     sourceUrl: 'https://medlineplus.gov/ency/imagepages/19612.htm',
     lastVerified: '2026-01-15',
@@ -683,6 +734,11 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     canonicalName: 'Left ventricle',
     description: 'The left lower chamber of the heart that pumps oxygenated blood into the aorta.',
     function: 'Drives systemic circulation by ejecting blood at high pressure to the body.',
+    relatedStructures: [
+      { structureKey: 'female:cardiovascular:UBERON:0000948', relation: 'part_of' },
+      { structureKey: 'female:cardiovascular:UBERON:0002080', relation: 'related_to' },
+      { structureKey: 'female:cardiovascular:UBERON:0001496', relation: 'related_to' },
+    ],
     source: 'NIH',
     sourceUrl: 'https://medlineplus.gov/ency/imagepages/19612.htm',
     lastVerified: '2026-01-15',
@@ -694,14 +750,15 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     bodyModel: 'male',
     systemKey: 'nervous',
     ontologyId: 'UBERON:0004720',
+    relatedStructures: [{ structureKey: 'male:nervous:UBERON:0002240', relation: 'related_to' }],
     canonicalName: 'Brain',
     description:
       'The central organ of the nervous system housed within the cranium, composed of billions of neurons and glia.',
     function:
       'Integrates sensory information, coordinates motor output, and supports cognition, memory, and autonomic regulation.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002344.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8738.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   {
@@ -709,14 +766,15 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     bodyModel: 'female',
     systemKey: 'nervous',
     ontologyId: 'UBERON:0004720',
+    relatedStructures: [{ structureKey: 'female:nervous:UBERON:0002240', relation: 'related_to' }],
     canonicalName: 'Brain',
     description:
       'The central organ of the nervous system housed within the cranium, composed of billions of neurons and glia.',
     function:
       'Integrates sensory information, coordinates motor output, and supports cognition, memory, and autonomic regulation.',
     source: 'NIH',
-    sourceUrl: 'https://medlineplus.gov/ency/article/002344.htm',
-    lastVerified: '2026-01-15',
+    sourceUrl: 'https://medlineplus.gov/ency/imagepages/8738.htm',
+    lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
   // Putamen — verified present as Allen_putamen_L UBERON:0008884 and Allen_putamen_R UBERON:0008885
@@ -874,6 +932,33 @@ export function getAnatomyInformationByOntologyId(
 /** Exposed for tests — seed size without leaking mutable map. */
 export function getAnatomyInformationSeed(): readonly AnatomyInformation[] {
   return ANATOMY_INFORMATION_SEED;
+}
+
+export interface AnatomyRelatedInformation {
+  relation: AnatomyRelationKind;
+  info: AnatomyInformation;
+}
+
+/**
+ * Returns verified related records for a structureKey, in declared order.
+ * Only same-bodyModel targets that exist in the seed are returned;
+ * dangling, cross-body, or self references are skipped. Pure: no GLB,
+ * no registry, no network.
+ */
+export function getRelatedAnatomyInformation(
+  structureKey: string | null | undefined
+): readonly AnatomyRelatedInformation[] {
+  if (!structureKey) return [];
+  const entry = byStructureKey.get(structureKey);
+  if (!entry || !entry.relatedStructures) return [];
+  const out: AnatomyRelatedInformation[] = [];
+  for (const rel of entry.relatedStructures) {
+    if (!rel || rel.structureKey === structureKey) continue;
+    const target = byStructureKey.get(rel.structureKey);
+    if (!target || target.bodyModel !== entry.bodyModel) continue;
+    out.push({ relation: rel.relation, info: target });
+  }
+  return out;
 }
 
 /** All stored keys — useful for documentation/tests. */

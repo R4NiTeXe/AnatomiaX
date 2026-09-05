@@ -103,6 +103,19 @@ export interface AnatomyInformation extends AnatomyInformationProvenance {
   description: string;
   /** Brief function summary */
   function: string;
+  /**
+   * Explicitly verified outgoing relationships to other records.
+   * Same-bodyModel targets only; validated by tests (target exists, no self-links, no duplicates).
+   */
+  relatedStructures?: readonly AnatomyRelatedStructure[];
+}
+
+export type AnatomyRelationKind = 'part_of' | 'related_to';
+
+export interface AnatomyRelatedStructure {
+  /** Target primary key — bodyModel-qualified, must exist in the same bodyModel */
+  structureKey: string;
+  relation: AnatomyRelationKind;
 }
 
 // ---------------------------------------------------------------------------
