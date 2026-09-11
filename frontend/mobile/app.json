@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "AnatomiaX",
+    "slug": "anatomiax-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "anatomiax",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true
+  }
+}

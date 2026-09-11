@@ -7,6 +7,7 @@
     "frontend/marketing",
     "frontend/web",
     "frontend/admin",
+    "frontend/mobile",
     "frontend/packages/*",
     "backend/api",
     "backend/packages/*"
