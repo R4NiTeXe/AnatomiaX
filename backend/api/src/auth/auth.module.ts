@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleStrategy } from './google.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { PasswordResetDelivery } from './password-reset-delivery';
 import { RolesGuard } from './roles.guard';
 
 @Module({
@@ -27,7 +28,7 @@ import { RolesGuard } from './roles.guard';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy, JwtAuthGuard, RolesGuard],
+  providers: [AuthService, PasswordResetDelivery, GoogleStrategy, JwtAuthGuard, RolesGuard],
   // JwtModule re-exported so feature modules using JwtAuthGuard resolve JwtService.
   exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
 })

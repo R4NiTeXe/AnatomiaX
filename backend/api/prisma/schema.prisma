@@ -37,6 +37,7 @@ model User {
 
   oauthAccounts     OAuthAccount[]
   refreshTokens     RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   cohortsCreated    Cohort[]            @relation("CohortCreator")
   memberships       CohortMember[]
   quizAttempts      QuizAttempt[]
@@ -76,6 +77,21 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Cohort {

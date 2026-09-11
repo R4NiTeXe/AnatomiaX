@@ -36,9 +36,20 @@ describe('AuthService', () => {
   beforeEach(() => {
     process.env.NODE_ENV = 'test';
     tx = {
+      user: {
+        update: jest.fn(async ({ data }: never) => ({ ...(data as object) })),
+        delete: jest.fn(async () => ({})),
+      },
       refreshToken: {
         update: jest.fn(async ({ data }: never) => ({ ...(data as object) })),
         create: jest.fn(async ({ data }: never) => ({ id: 'rt-new', ...(data as object) })),
+        updateMany: jest.fn(async () => ({ count: 1 })),
+      },
+      passwordResetToken: {
+        update: jest.fn(async ({ data }: never) => ({ ...(data as object) })),
+        create: jest.fn(async ({ data }: never) => ({ id: 'prt-new', ...(data as object) })),
+        deleteMany: jest.fn(async () => ({ count: 0 })),
+        updateMany: jest.fn(async () => ({ count: 0 })),
       },
     };
     prisma = {
@@ -47,6 +58,29 @@ describe('AuthService', () => {
         update: jest.fn().mockResolvedValue({}),
         create: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      passwordResetToken: {
+        findUnique: jest.fn(),
+        create: jest.fn(async ({ data }: never) => ({ id: 'prt-1', ...(data as object) })),
+        update: jest.fn(),
+        deleteMany: jest.fn(async () => ({ count: 0 })),
+        updateMany: jest.fn(async () => ({ count: 0 })),
+      },
+      user: {
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
+      cohort: {
+        findMany: jest.fn(async () => []),
+      },
+      cohortMember: {
+        findMany: jest.fn(async () => []),
+      },
+      quizAttempt: {
+        findMany: jest.fn(async () => []),
+      },
+      progressSnapshot: {
+        findUnique: jest.fn(async () => null),
       },
       $transaction: jest.fn(async (fn: (t: unknown) => unknown) => fn(tx)),
     };
@@ -59,11 +93,14 @@ describe('AuthService', () => {
       safeById: jest.fn(),
     };
     jwt = new JwtService({ secret: 'test-secret' });
+    const delivery = { dispatch: jest.fn(async () => undefined) };
+    (prisma as Record<string, unknown>)._delivery = delivery;
     service = new AuthService(
       prisma as never,
       users as never,
       jwt,
-      configFor({ JWT_ACCESS_TTL: '15m', REFRESH_TTL_DAYS: '30' }) as never
+      configFor({ JWT_ACCESS_TTL: '15m', REFRESH_TTL_DAYS: '30' }) as never,
+      delivery as never
     );
   });
 
@@ -296,8 +333,129 @@ describe('AuthService', () => {
     it('refuses to boot in production without JWT_SECRET', () => {
       process.env.NODE_ENV = 'production';
       expect(
-        () => new AuthService(prisma as never, users as never, jwt, configFor({}) as never)
+        () =>
+          new AuthService(
+            prisma as never,
+            users as never,
+            jwt,
+            configFor({}) as never,
+            {
+              dispatch: async () => undefined,
+            } as never
+          )
       ).toThrow('JWT_SECRET is required in production');
+    });
+  });
+
+  describe('change password (8.19.23)', () => {
+    it('changes password with correct current password and revokes sessions', async () => {
+      const hash = await argon2.hash('old-password-1');
+      users.findLiveById.mockResolvedValue(makeUser({ passwordHash: hash }));
+      await service.changePassword('user-1', 'old-password-1', 'new-password-1');
+      const stored = tx.user.update.mock.calls[0][0].data.passwordHash as string;
+      expect(stored).not.toContain('new-password-1');
+      expect(await argon2.verify(stored, 'new-password-1')).toBe(true);
+      expect(tx.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+      expect(tx.passwordResetToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
+    });
+
+    it('rejects wrong current password with generic 401', async () => {
+      const hash = await argon2.hash('old-password-1');
+      users.findLiveById.mockResolvedValue(makeUser({ passwordHash: hash }));
+      await expect(
+        service.changePassword('user-1', 'wrong-password', 'new-password-1')
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects missing current password when one is set', async () => {
+      const hash = await argon2.hash('old-password-1');
+      users.findLiveById.mockResolvedValue(makeUser({ passwordHash: hash }));
+      await expect(
+        service.changePassword('user-1', undefined, 'new-password-1')
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('allows OAuth-only accounts to set an initial password', async () => {
+      users.findLiveById.mockResolvedValue(makeUser({ passwordHash: null }));
+      await service.changePassword('user-1', undefined, 'brand-new-pass');
+      expect(tx.user.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('password reset (8.19.23)', () => {
+    it('request is silent for unknown emails (no enumeration)', async () => {
+      users.findLiveByEmail.mockResolvedValue(null);
+      await expect(service.requestPasswordReset('ghost@example.com')).resolves.toBeUndefined();
+      expect(
+        (prisma.passwordResetToken as unknown as { create: jest.Mock }).create
+      ).not.toHaveBeenCalled();
+    });
+
+    it('confirm rejects unknown token consistently', async () => {
+      (
+        prisma.passwordResetToken as unknown as { findUnique: jest.Mock }
+      ).findUnique.mockResolvedValue(null);
+      await expect(
+        service.confirmPasswordReset(
+          'a@example.com',
+          'bogus-token-value-1234567890',
+          'new-password-1'
+        )
+      ).rejects.toThrow('Invalid or expired reset token');
+    });
+
+    it('confirm rejects email mismatch (cannot target another account)', async () => {
+      const record = {
+        id: 'prt-1',
+        tokenHash: 'h',
+        userId: 'user-1',
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: makeUser({ email: 'owner@example.com' }),
+      };
+      (
+        prisma.passwordResetToken as unknown as { findUnique: jest.Mock }
+      ).findUnique.mockResolvedValue(record);
+      await expect(
+        service.confirmPasswordReset(
+          'attacker@example.com',
+          'valid-token-value-1234567890',
+          'new-password-1'
+        )
+      ).rejects.toThrow('Invalid or expired reset token');
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('export and deletion (8.19.23)', () => {
+    it('export contains only allowed user-owned data', async () => {
+      users.findLiveById.mockResolvedValue(
+        makeUser({ email: 'me@example.com', passwordHash: 'secret-hash' })
+      );
+      const out = await service.exportUserData('user-1');
+      expect(out.account).toMatchObject({ id: 'user-1', email: 'me@example.com' });
+      expect(out.account).not.toHaveProperty('passwordHash');
+      expect(JSON.stringify(out)).not.toContain('secret-hash');
+      expect(JSON.stringify(out)).not.toContain('tokenHash');
+      expect(out).toHaveProperty('memberships');
+      expect(out).toHaveProperty('quizAttempts');
+      expect(out).toHaveProperty('exportedAt');
+    });
+
+    it('delete removes the account in a transaction', async () => {
+      users.findLiveById.mockResolvedValue(makeUser());
+      await service.deleteAccount('user-1');
+      expect(tx.refreshToken.updateMany).toHaveBeenCalled();
+      expect(tx.passwordResetToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
+      expect(tx.user.delete).toHaveBeenCalledWith({ where: { id: 'user-1' } });
     });
   });
 });

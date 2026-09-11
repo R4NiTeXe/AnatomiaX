@@ -4,10 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { validateProductionEnv } from './config/validate-env';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // 8.19.23: fail fast on unsafe production secrets/config.
+  validateProductionEnv(configService);
 
   app.setGlobalPrefix('api');
 
