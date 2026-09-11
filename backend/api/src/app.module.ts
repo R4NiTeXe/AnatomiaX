@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { CohortsModule } from './cohorts/cohorts.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProgressModule } from './progress/progress.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     CohortsModule,
+    ProgressModule,
     HealthModule,
   ],
 })

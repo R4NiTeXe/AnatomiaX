@@ -114,12 +114,13 @@ model CohortMember {
 }
 
 model QuizAttempt {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   bodyModel   String
   score       Int
   total       Int
   answers     Json
-  completedAt DateTime @default(now())
+  startedAt   DateTime?
+  completedAt DateTime  @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
