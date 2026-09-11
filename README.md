@@ -11,20 +11,20 @@ AnatomiaX helps students and professionals explore human anatomy through interac
 - **marketing/** — Public marketing site (11ty + Tailwind CSS + daisyUI + GSAP + Lenis + Barba.js)
 - **web/** — Main application (React + TypeScript + Vite + Tailwind CSS + shadcn/ui + TanStack Query + Three.js / React Three Fiber + GSAP + Lenis)
 - **admin/** — Admin dashboard (Next.js + TypeScript + Turbopack + Tailwind CSS + shadcn/ui)
-- **packages/** — Shared frontend packages (`ui`, `anatomy-engine`, `simulation-engine`, `ai-core`, `shared-types`)
+- **packages/** — Shared frontend packages (`shared-types`)
 
 ## Backend
 
-- **api/** — Core API (Node.js + TypeScript + NestJS + MongoDB + Mongoose + Redis + BullMQ)
-- **packages/** — Shared backend packages (`ai-core`, `medical-core`, `shared`)
+- **api/** — Core API (Node.js + TypeScript + NestJS)
+- **packages/** — Shared backend packages (`shared`)
 
 ## 3D
 
-3D assets are stored in `3d-assets/` (male, female, organs, systems, pathology, animations) and rendered via Three.js / React Three Fiber / WebGL in `frontend/web` and `frontend/packages/anatomy-engine`.
+3D assets are stored in `3d-assets/` (male, female, organs, systems, pathology, animations) and rendered via Three.js / React Three Fiber / WebGL in `frontend/web`.
 
 ## AI
 
-AI features use Gemini API with RAG, embeddings, medical knowledge retrieval, and an AI safety layer. Core logic lives in `frontend/packages/ai-core` and `backend/packages/ai-core`.
+AI-assisted learning (knowledge retrieval with a medical safety layer) is planned for a later phase. No AI implementation exists yet.
 
 ## Current Status
 

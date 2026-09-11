@@ -14,6 +14,8 @@ dist
 build
 out
 _site
+# Next.js generated TypeScript declarations
+**/next-env.d.ts
 .11ty
 .next
 .nuxt
