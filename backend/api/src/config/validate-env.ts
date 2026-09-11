@@ -48,6 +48,14 @@ export function validateProductionEnv(config: ConfigService): void {
     failures.push('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together in production');
   }
 
+  // 8.19.24: FCM stays optional (sender stubs without it), but a project id
+  // without a server key is always a misconfiguration.
+  const fcmKey = config.get<string>('FCM_SERVER_KEY');
+  const fcmProject = config.get<string>('FIREBASE_PROJECT_ID');
+  if (!fcmKey && fcmProject) {
+    failures.push('FCM_SERVER_KEY is required when FIREBASE_PROJECT_ID is set in production');
+  }
+
   if (failures.length > 0) {
     throw new Error(`Invalid production configuration: ${failures.join('; ')}`);
   }

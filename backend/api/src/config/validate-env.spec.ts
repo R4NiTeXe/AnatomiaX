@@ -62,4 +62,22 @@ describe('validateProductionEnv (8.19.23)', () => {
       'REFRESH_TTL_DAYS'
     );
   });
+
+  it('keeps FCM optional but rejects project id without server key (8.19.24)', () => {
+    process.env.NODE_ENV = 'production';
+    const base = {
+      JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/anatomiax',
+      CORS_ORIGIN: 'https://app.example.com',
+    };
+    expect(() => validateProductionEnv(configFor(base))).not.toThrow();
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, FIREBASE_PROJECT_ID: 'my-project' }))
+    ).toThrow('FCM_SERVER_KEY');
+    expect(() =>
+      validateProductionEnv(
+        configFor({ ...base, FCM_SERVER_KEY: 'key', FIREBASE_PROJECT_ID: 'my-project' })
+      )
+    ).not.toThrow();
+  });
 });
