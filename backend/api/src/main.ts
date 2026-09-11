@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -25,6 +26,7 @@ async function bootstrap() {
   );
 
   app.use(helmet());
+  app.use(cookieParser());
 
   // Convenience non-prefixed health check — same deterministic payload as GET /api/health
   // Avoids duplicating controller logic; keeps both GET /health and GET /api/health available.

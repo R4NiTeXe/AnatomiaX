@@ -59,6 +59,13 @@ describe('Health (e2e)', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  it('GET /api/health/db reports database status without throwing', async () => {
+    const res = await request(app.getHttpServer()).get('/api/health/db');
+    expect(res.status).toBe(200);
+    expect(['connected', 'disconnected']).toContain(res.body.database);
+    expect(res.body.status).toBe(res.body.database === 'connected' ? 'ok' : 'degraded');
+  });
+
   it('bootstrap does not throw and app is defined', () => {
     expect(app).toBeDefined();
   });

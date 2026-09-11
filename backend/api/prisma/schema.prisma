@@ -1,0 +1,152 @@
+// AnatomiaX production data model (STEP 8.19.18).
+//
+// Stores ONLY identity, cohorts, learning records, and push subscriptions.
+// Static anatomy content (seed, provenance, relationships), GLBs/meshes,
+// registry/lineage data, and client UI state (camera, hover, layers) are
+// intentionally NOT modeled here and must never be added to this schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum CohortMemberRole {
+  STUDENT
+  TEACHER
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String?   @unique
+  passwordHash String?
+  name         String?
+  role         UserRole  @default(STUDENT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  oauthAccounts     OAuthAccount[]
+  refreshTokens     RefreshToken[]
+  cohortsCreated    Cohort[]            @relation("CohortCreator")
+  memberships       CohortMember[]
+  quizAttempts      QuizAttempt[]
+  progressSnapshot  ProgressSnapshot?
+  pushSubscriptions PushSubscription[]
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model OAuthAccount {
+  id          String   @id @default(uuid())
+  provider    String
+  providerSub String
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSub])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  tokenHash   String    @unique
+  deviceLabel String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Cohort {
+  id               String    @id @default(uuid())
+  name             String
+  institutionLabel String?
+  inviteCode       String    @unique @default(uuid())
+  archivedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  createdById String?
+  createdBy   User?   @relation("CohortCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  members CohortMember[]
+
+  @@index([createdById])
+  @@map("cohorts")
+}
+
+model CohortMember {
+  id       String            @id @default(uuid())
+  role     CohortMemberRole  @default(STUDENT)
+  joinedAt DateTime          @default(now())
+
+  cohortId String
+  cohort   Cohort  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cohortId, userId])
+  @@index([userId])
+  @@index([cohortId])
+  @@map("cohort_members")
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  bodyModel   String
+  score       Int
+  total       Int
+  answers     Json
+  completedAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+  @@map("quiz_attempts")
+}
+
+model ProgressSnapshot {
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studiedKeys  String[]
+  bodyModel    String?
+  updatedAt    DateTime @updatedAt
+
+  @@map("progress_snapshots")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
