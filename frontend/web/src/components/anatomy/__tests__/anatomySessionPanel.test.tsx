@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithAppProviders as render } from '@/test-utils';
 import '@testing-library/jest-dom';
 import { AnatomyStateProvider, useAnatomyState } from '../AnatomyStateContext';
 import AnatomySessionPanel from '../AnatomySessionPanel';
@@ -187,5 +188,42 @@ describe('AnatomySessionPanel', () => {
     expect(screen.getByTestId('anatomy-session-body-model')).toHaveTextContent('male');
     fireEvent.click(screen.getByTestId('switch-female'));
     expect(screen.getByTestId('anatomy-session-body-model')).toHaveTextContent('female');
+  });
+
+  it('shows the last saved result with no local quiz running', async () => {
+    const { __resetAuthForTests } = await import('@/lib/auth');
+    __resetAuthForTests();
+    const user = {
+      id: 'u-1',
+      email: 'a@b.c',
+      name: null,
+      role: 'STUDENT',
+      createdAt: '2026-01-01',
+    };
+    const json = (data: unknown, status = 200) => ({
+      ok: status >= 200 && status < 300,
+      status,
+      statusText: 'OK',
+      headers: { get: () => 'application/json' },
+      json: async () => data,
+      text: async () => JSON.stringify(data),
+    });
+    global.fetch = jest.fn((url: string) => {
+      const u = url as string;
+      if (u.endsWith('/api/v1/auth/me')) return Promise.resolve(json(user));
+      if (u.endsWith('/api/v1/progress/snapshot'))
+        return Promise.resolve(
+          json({ userId: 'u-1', studiedKeys: [], bodyModel: null, updatedAt: null })
+        );
+      if (u.includes('/api/v1/progress/quiz-attempts'))
+        return Promise.resolve(json([{ id: 'a1', score: 4, total: 5 }]));
+      return Promise.resolve(json({}, 404));
+    }) as unknown as typeof fetch;
+    renderWithProvider();
+    await screen.findByTestId('anatomy-session-synced-quiz', {}, { timeout: 4000 });
+    expect(screen.getByTestId('anatomy-session-synced-quiz')).toHaveTextContent('4 / 5');
+    // Local quiz state is untouched: still shows the empty state alongside.
+    expect(screen.getByTestId('anatomy-session-quiz-empty')).toBeInTheDocument();
+    (global.fetch as jest.Mock).mockRestore?.();
   });
 });

@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithAppProviders as render } from '@/test-utils';
 import '@testing-library/jest-dom';
 import { AnatomyStateProvider, useAnatomyState } from '../AnatomyStateContext';
 import AnatomyQuiz from '../AnatomyQuiz';

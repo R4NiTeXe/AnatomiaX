@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
+import AccountPanel from '@/components/auth/AccountPanel';
 import AnatomyComparePanel from '@/components/anatomy/AnatomyComparePanel';
 import AnatomyInformationPanel from '@/components/anatomy/AnatomyInformationPanel';
+import AnatomyProgressSync from '@/components/anatomy/AnatomyProgressSync';
 import AnatomyQuiz from '@/components/anatomy/AnatomyQuiz';
 import AnatomySearchBox from '@/components/anatomy/AnatomySearchBox';
 import AnatomySessionPanel from '@/components/anatomy/AnatomySessionPanel';
@@ -136,6 +138,7 @@ export default function HumanPage(): JSX.Element {
 
   return (
     <AnatomyStateProvider>
+      <AnatomyProgressSync />
       <main className="flex h-screen min-h-screen flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-900 px-4 py-3 sm:px-6">
           <p className="text-xs uppercase tracking-widest text-slate-500">AnatomiaX</p>
@@ -158,6 +161,7 @@ export default function HumanPage(): JSX.Element {
             <AnatomyComparePanel />
             <AnatomyQuiz />
             <AnatomySessionPanel />
+            <AccountPanel />
             <AnatomySystemPanel onResetCamera={handleResetCamera} />
           </aside>
         </div>

@@ -1,3 +1,5 @@
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useQuizAttempts } from '@/hooks/useProgress';
 import { useAnatomyState } from './AnatomyStateContext';
 import { getAnatomyInformation } from './anatomyInformation';
 import { getAnatomySystem } from './anatomyAssetConfig';
@@ -13,6 +15,17 @@ export default function AnatomySessionPanel(): JSX.Element {
     selectedStructure,
     selectedBodyModel,
   } = useAnatomyState();
+  const { status: authStatus } = useAuth();
+  const attemptsQuery = useQuizAttempts();
+  const latestSyncedAttempt =
+    authStatus === 'authenticated' && attemptsQuery.data && attemptsQuery.data.length > 0
+      ? attemptsQuery.data[0]
+      : null;
+  const syncedQuizLine = latestSyncedAttempt ? (
+    <p className="text-xs text-slate-500" data-testid="anatomy-session-synced-quiz">
+      Last saved result: {latestSyncedAttempt.score} / {latestSyncedAttempt.total}
+    </p>
+  ) : null;
 
   const studiedCount = recentHistory.length;
   const hasQuiz = quizQuestions.length > 0;
@@ -77,9 +90,12 @@ export default function AnatomySessionPanel(): JSX.Element {
       <div className="border-t border-slate-800 pt-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Quiz</p>
         {!hasQuiz ? (
-          <p className="mt-1 text-xs text-slate-500" data-testid="anatomy-session-quiz-empty">
-            No quiz yet
-          </p>
+          <div className="mt-1 flex flex-col gap-1">
+            <p className="text-xs text-slate-500" data-testid="anatomy-session-quiz-empty">
+              No quiz yet
+            </p>
+            {syncedQuizLine}
+          </div>
         ) : quizCompleted ? (
           <div className="mt-1 flex flex-col gap-1" data-testid="anatomy-session-quiz-summary">
             <p className="text-sm text-slate-200" data-testid="anatomy-session-quiz-score">
@@ -91,11 +107,15 @@ export default function AnatomySessionPanel(): JSX.Element {
             <p className="text-xs text-slate-500" data-testid="anatomy-session-review">
               Review: {reviewIncorrect} incorrect
             </p>
+            {syncedQuizLine}
           </div>
         ) : (
-          <p className="mt-1 text-xs text-slate-400" data-testid="anatomy-session-quiz-progress">
-            In progress • {totalQuestions} questions
-          </p>
+          <div className="mt-1 flex flex-col gap-1">
+            <p className="text-xs text-slate-400" data-testid="anatomy-session-quiz-progress">
+              In progress • {totalQuestions} questions
+            </p>
+            {syncedQuizLine}
+          </div>
         )}
       </div>
 

@@ -1,5 +1,48 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useSubmitQuizAttempt } from '@/hooks/useProgress';
+import type { SubmitAttemptInput } from '@/lib/progress';
 import { useAnatomyState } from './AnatomyStateContext';
+
+export interface AttemptQuestionLike {
+  id: string;
+  structureKey: string;
+  canonicalName: string;
+}
+
+export interface AttemptAnswerLike {
+  questionId: string;
+  selectedChoice: number;
+  correctIndex: number;
+}
+
+export function buildAttemptInput(
+  questions: AttemptQuestionLike[],
+  answers: AttemptAnswerLike[],
+  score: number,
+  bodyModel: 'male' | 'female'
+): SubmitAttemptInput | null {
+  if (questions.length === 0 || answers.length !== questions.length) return null;
+  const byId = new Map(questions.map(q => [q.id, q]));
+  const payloadAnswers = [];
+  for (const answer of answers) {
+    const question = byId.get(answer.questionId);
+    if (!question) return null;
+    payloadAnswers.push({
+      structureKey: question.structureKey,
+      canonicalName: question.canonicalName,
+      selected: answer.selectedChoice,
+      correct: answer.correctIndex,
+    });
+  }
+  return {
+    bodyModel,
+    score,
+    total: questions.length,
+    answers: payloadAnswers,
+    startedAt: new Date().toISOString(),
+  };
+}
 
 export default function AnatomyQuiz(): JSX.Element {
   const {
@@ -16,7 +59,12 @@ export default function AnatomyQuiz(): JSX.Element {
     resetQuiz,
     selectedStructure,
     selectStructure,
+    selectedBodyModel,
   } = useAnatomyState();
+  const { user, status } = useAuth();
+  const submitAttempt = useSubmitQuizAttempt();
+  const submittedKey = useRef<string | null>(null);
+  const [syncNote, setSyncNote] = useState<string | null>(null);
 
   const hasQuiz = quizQuestions.length > 0;
   const current = hasQuiz ? quizQuestions[quizIndex] : null;
@@ -26,6 +74,40 @@ export default function AnatomyQuiz(): JSX.Element {
   useEffect(() => {
     setShowIncorrectOnly(false);
   }, [quizQuestions]);
+
+  // Ownership of the question set: only quizzes started under the current
+  // session may be submitted. An anonymously started quiz is never silently
+  // attributed to an account created or logged into afterwards.
+  const quizOwnerRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (quizQuestions.length === 0) {
+      quizOwnerRef.current = undefined;
+      submittedKey.current = null;
+    } else if (quizOwnerRef.current === undefined && status !== 'loading') {
+      quizOwnerRef.current = status === 'authenticated' ? (user?.id ?? null) : null;
+    }
+  }, [quizQuestions, status, user?.id]);
+
+  // Persist completed attempts exactly once per quiz (authenticated owner only).
+  // The key derives from the question set + user, so rerenders, retries of
+  // the effect, and new quizzes can never duplicate a submission.
+  useEffect(() => {
+    setSyncNote(null);
+    if (!isLast || status !== 'authenticated' || !user) return;
+    if (quizOwnerRef.current !== user.id) return;
+    const key = `${user.id}:${quizQuestions.map(q => q.id).join(',')}`;
+    if (submittedKey.current === key) return;
+    const input = buildAttemptInput(quizQuestions, quizAnswers, quizScore, selectedBodyModel);
+    if (!input) return;
+    submittedKey.current = key;
+    submitAttempt.mutate(input, {
+      onError: () => {
+        submittedKey.current = null;
+        setSyncNote('Result could not be saved. Check your connection.');
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLast, status, user?.id, quizQuestions, quizScore, selectedBodyModel]);
 
   const incorrectCount = quizAnswers.filter(a => a.selectedChoice !== a.correctIndex).length;
   const correctCount = quizAnswers.filter(a => a.selectedChoice === a.correctIndex).length;
@@ -157,6 +239,16 @@ export default function AnatomyQuiz(): JSX.Element {
                 </span>
               )}
             </div>
+
+            {syncNote && (
+              <p
+                className="text-xs text-slate-500"
+                data-testid="anatomy-quiz-sync-note"
+                role="status"
+              >
+                {syncNote}
+              </p>
+            )}
 
             {isLast && (
               <div className="flex gap-2">

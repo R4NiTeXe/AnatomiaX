@@ -90,6 +90,7 @@ interface AnatomyStateValue {
   setHoveredStructure: (structure: SelectedStructure | null) => void;
   recentHistory: SelectedStructure[];
   clearHistory: () => void;
+  hydrateHistory: (items: SelectedStructure[]) => void;
   compareStructure: SelectedStructure | null;
   setCompareStructure: (structure: SelectedStructure | null) => void;
   clearCompare: () => void;
@@ -343,6 +344,22 @@ export function AnatomyStateProvider({
 
   const clearHistory = useCallback(() => {
     setRecentHistory([]);
+  }, []);
+
+  const hydrateHistory = useCallback((items: SelectedStructure[]) => {
+    if (items.length === 0) return;
+    setRecentHistory(prev => {
+      const seen = new Set(prev.map(s => `${s.bodyModel}:${s.structureKey}`));
+      const merged = [...prev];
+      for (const item of items) {
+        const key = `${item.bodyModel}:${item.structureKey}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          merged.push(item);
+        }
+      }
+      return merged.slice(0, 5);
+    });
   }, []);
 
   const generateQuizQuestions = useCallback((): AnatomyQuizQuestion[] => {
@@ -642,6 +659,7 @@ export function AnatomyStateProvider({
       setHoveredStructure,
       recentHistory,
       clearHistory,
+      hydrateHistory,
       compareStructure,
       setCompareStructure: setCompareStructureSafe,
       clearCompare,
@@ -690,6 +708,7 @@ export function AnatomyStateProvider({
       setHoveredStructure,
       recentHistory,
       clearHistory,
+      hydrateHistory,
       compareStructure,
       setCompareStructureSafe,
       clearCompare,
