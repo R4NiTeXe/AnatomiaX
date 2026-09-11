@@ -1,50 +1,80 @@
-import { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { JSX } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
 import AccountScreen from '../screens/AccountScreen';
+import CohortDetailScreen from '../screens/CohortDetailScreen';
+import CohortsScreen from '../screens/CohortsScreen';
 import LearningScreen from '../screens/LearningScreen';
 import LoginScreen from '../screens/LoginScreen';
+import QuizHistoryScreen from '../screens/QuizHistoryScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import type { AppStackParamList, AuthStackParamList, TabsParamList } from './types';
 
-type AppTab = 'account' | 'learn';
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const AppStack = createNativeStackNavigator<AppStackParamList>();
+const Tabs = createBottomTabNavigator<TabsParamList>();
+
+function AuthFlow(): JSX.Element {
+  return (
+    <AuthStack.Navigator>
+      <AuthStack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in' }} />
+      <AuthStack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={{ title: 'Register' }}
+      />
+    </AuthStack.Navigator>
+  );
+}
+
+function MainTabs(): JSX.Element {
+  return (
+    <Tabs.Navigator>
+      <Tabs.Screen name="Cohorts" component={CohortsScreen} options={{ title: 'My Cohorts' }} />
+      <Tabs.Screen name="Learn" component={LearningScreen} options={{ title: 'Learn' }} />
+      <Tabs.Screen name="History" component={QuizHistoryScreen} options={{ title: 'History' }} />
+      <Tabs.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
+    </Tabs.Navigator>
+  );
+}
+
+function AppFlow(): JSX.Element {
+  return (
+    <AppStack.Navigator>
+      <AppStack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
+      <AppStack.Screen
+        name="CohortDetail"
+        component={CohortDetailScreen}
+        options={{ title: 'Cohort' }}
+      />
+    </AppStack.Navigator>
+  );
+}
 
 /**
- * Minimal navigation: unauthenticated users see login/register, authenticated
- * users switch between the account proof and the learning placeholder.
- * No navigation library yet — conditional rendering keeps this foundation tiny.
+ * Minimal production-structured navigation: auth stack while anonymous,
+ * tabbed app stack (with pushed detail screens) while authenticated.
+ * Switching stacks unmounts the other flow, so no screen state leaks.
  */
 export default function RootNavigator(): JSX.Element {
   const { status } = useAuth();
-  const [tab, setTab] = useState<AppTab>('account');
 
   if (status === 'loading') {
     return (
       <View style={styles.center} testID="mobile-splash">
-        <Text>AnatomiaX</Text>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
-  if (status === 'anonymous') {
-    return <LoginScreen />;
-  }
-
   return (
-    <View style={styles.root} testID="mobile-app-stack">
-      <View style={styles.content}>
-        {tab === 'account' ? <AccountScreen /> : <LearningScreen />}
-      </View>
-      <View style={styles.tabs} testID="mobile-tabs">
-        <Button title="Account" onPress={() => setTab('account')} testID="mobile-tab-account" />
-        <Button title="Learn" onPress={() => setTab('learn')} testID="mobile-tab-learn" />
-      </View>
-    </View>
+    <NavigationContainer>{status === 'anonymous' ? <AuthFlow /> : <AppFlow />}</NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  tabs: { flexDirection: 'row', justifyContent: 'space-evenly', paddingVertical: 12 },
 });

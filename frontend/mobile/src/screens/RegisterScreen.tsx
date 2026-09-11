@@ -1,21 +1,18 @@
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import type { JSX } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import type { AuthStackParamList } from '../navigation/types';
 
 function friendlyError(error: unknown): string {
   if (error instanceof ApiError && error.message) return error.message;
   return 'Something went wrong. Please try again.';
 }
 
-export default function LoginScreen(): JSX.Element {
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-  const { login } = useAuth();
+export default function RegisterScreen(): JSX.Element {
+  const { register } = useAuth();
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +22,7 @@ export default function LoginScreen(): JSX.Element {
     setBusy(true);
     setError(null);
     try {
-      await login(email.trim(), password);
+      await register(email.trim(), password, name.trim() || undefined);
       setPassword('');
     } catch (err) {
       setError(friendlyError(err));
@@ -35,9 +32,8 @@ export default function LoginScreen(): JSX.Element {
   };
 
   return (
-    <View style={styles.container} testID="mobile-login-screen">
-      <Text style={styles.title}>AnatomiaX</Text>
-      <Text style={styles.subtitle}>Sign in to continue learning</Text>
+    <View style={styles.container} testID="mobile-register-screen">
+      <Text style={styles.title}>Create account</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -45,30 +41,33 @@ export default function LoginScreen(): JSX.Element {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        testID="mobile-login-email"
+        testID="mobile-register-email"
       />
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Name (optional)"
+        value={name}
+        onChangeText={setName}
+        autoCapitalize="words"
+        testID="mobile-register-name"
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password (min 8 characters)"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        testID="mobile-login-password"
+        testID="mobile-register-password"
       />
       {error ? (
-        <Text style={styles.error} testID="mobile-login-error">
+        <Text style={styles.error} testID="mobile-register-error">
           {error}
         </Text>
       ) : null}
       <Button
-        title={busy ? 'Signing in…' : 'Login'}
+        title={busy ? 'Creating…' : 'Register'}
         onPress={() => void submit()}
         disabled={busy}
-      />
-      <Button
-        title="Create an account"
-        onPress={() => navigation.navigate('Register')}
-        testID="mobile-goto-register"
       />
     </View>
   );
@@ -76,8 +75,7 @@ export default function LoginScreen(): JSX.Element {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24, gap: 12 },
-  title: { fontSize: 28, fontWeight: '700', textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center', opacity: 0.7 },
+  title: { fontSize: 24, fontWeight: '700', textAlign: 'center' },
   input: { borderWidth: 1, borderColor: '#888', borderRadius: 8, padding: 12 },
   error: { color: '#b91c1c', textAlign: 'center' },
 });

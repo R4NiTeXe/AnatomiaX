@@ -8,6 +8,7 @@ import {
   register as registerRequest,
   type AuthUser,
 } from '../api/auth';
+import { clearCachedUserState } from '../query/client';
 
 export type AuthStatus = 'loading' | 'anonymous' | 'authenticated';
 
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     let alive = true;
     const unsubscribe = onUnauthenticated(() => {
       if (!alive) return;
+      clearCachedUserState();
       setUser(null);
       setStatus('anonymous');
     });
@@ -49,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
   const login = useCallback(async (email: string, password: string) => {
     const next = await loginRequest(email, password);
+    // Fresh account session: drop anything cached before the switch.
+    clearCachedUserState();
     setUser(next);
     setStatus('authenticated');
     return next;
@@ -56,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
   const register = useCallback(async (email: string, password: string, name?: string) => {
     const next = await registerRequest(email, password, name);
+    clearCachedUserState();
     setUser(next);
     setStatus('authenticated');
     return next;
@@ -63,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
   const logout = useCallback(async () => {
     await logoutRequest();
+    clearCachedUserState();
     setUser(null);
     setStatus('anonymous');
   }, []);
