@@ -136,4 +136,102 @@ describe('api client', () => {
       await expect(promise).rejects.toBeInstanceOf(Error);
     });
   });
+
+  describe('8.19.25 error contract', () => {
+    const contractResponse = (body: Record<string, unknown>, requestId = 'req-123') =>
+      ({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: { get: (name: string) => (name === 'x-request-id' ? requestId : null) },
+        text: jest.fn().mockResolvedValue(JSON.stringify(body)),
+      }) as unknown as Response;
+
+    it('surfaces the contract message, code, and request id', async () => {
+      process.env.VITE_API_BASE_URL = 'http://localhost:3000';
+      global.fetch = jest.fn().mockResolvedValue(
+        contractResponse({
+          code: 'UNAUTHORIZED',
+          message: 'Invalid credentials',
+          requestId: 'req-123',
+        })
+      );
+
+      try {
+        await getHealth();
+        throw new Error('should have thrown');
+      } catch (e) {
+        const err = e as ApiError;
+        expect(err).toBeInstanceOf(ApiError);
+        expect(err.message).toBe('Invalid credentials');
+        expect(err.status).toBe(401);
+        expect(err.code).toBe('UNAUTHORIZED');
+        expect(err.requestId).toBe('req-123');
+      }
+    });
+
+    it('attaches validation details', async () => {
+      process.env.VITE_API_BASE_URL = 'http://localhost:3000';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: { get: () => 'req-400' },
+        text: jest.fn().mockResolvedValue(
+          JSON.stringify({
+            code: 'VALIDATION_ERROR',
+            message: 'Validation failed',
+            details: ['email must be an email'],
+            requestId: 'req-400',
+          })
+        ),
+      } as unknown as Response);
+
+      try {
+        await getHealth();
+        throw new Error('should have thrown');
+      } catch (e) {
+        const err = e as ApiError;
+        expect(err.code).toBe('VALIDATION_ERROR');
+        expect(err.details).toEqual(['email must be an email']);
+        expect(err.requestId).toBe('req-400');
+      }
+    });
+
+    it('falls back to the header request id when the body lacks one', async () => {
+      process.env.VITE_API_BASE_URL = 'http://localhost:3000';
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          contractResponse({ code: 'NOT_FOUND', message: 'Cohort not found' }, 'req-hdr')
+        );
+
+      try {
+        await getHealth();
+        throw new Error('should have thrown');
+      } catch (e) {
+        expect((e as ApiError).requestId).toBe('req-hdr');
+      }
+    });
+
+    it('keeps the legacy fallback for non-contract payloads', async () => {
+      process.env.VITE_API_BASE_URL = 'http://localhost:3000';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: { get: () => null },
+        text: jest.fn().mockResolvedValue('boom'),
+      } as unknown as Response);
+
+      try {
+        await getHealth();
+        throw new Error('should have thrown');
+      } catch (e) {
+        const err = e as ApiError;
+        expect(err.message).toMatch(/Request failed 500/);
+        expect(err.code).toBeUndefined();
+      }
+    });
+  });
 });

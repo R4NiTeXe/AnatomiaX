@@ -30,19 +30,65 @@ export function buildApiUrl(path: string): string {
 // Typed error
 // ---------------------------------------------------------------------------
 
+/** 8.19.25 canonical API error body: { code, message, details?, requestId }. */
+export interface ApiErrorBody {
+  code?: string;
+  message?: string;
+  details?: string[];
+  requestId?: string;
+}
+
 export class ApiError extends Error {
   status?: number;
   url: string;
+  /** Stable machine-readable code from the API contract (e.g. UNAUTHORIZED). */
+  code?: string;
+  /** Correlation id matching the x-request-id response header. */
+  requestId?: string;
+  /** Validation details, present only for VALIDATION_ERROR. */
+  details?: string[];
 
-  constructor(message: string, opts: { status?: number; url: string; cause?: unknown }) {
+  constructor(
+    message: string,
+    opts: {
+      status?: number;
+      url: string;
+      code?: string;
+      requestId?: string;
+      details?: string[];
+      cause?: unknown;
+    }
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = opts.status;
     this.url = opts.url;
+    if (opts.code !== undefined) this.code = opts.code;
+    if (opts.requestId !== undefined) this.requestId = opts.requestId;
+    if (opts.details !== undefined) this.details = opts.details;
     if (opts.cause !== undefined) {
       // @ts-expect-error cause is ES2022
       this.cause = opts.cause;
     }
+  }
+}
+
+/** Prefer the contract body; fall back to the raw text for legacy payloads. */
+function parseErrorBody(raw: string): ApiErrorBody | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const body: ApiErrorBody = {};
+    if (typeof parsed.code === 'string') body.code = parsed.code;
+    if (typeof parsed.message === 'string') body.message = parsed.message;
+    if (Array.isArray(parsed.details) && parsed.details.every(d => typeof d === 'string')) {
+      body.details = parsed.details as string[];
+    }
+    if (typeof parsed.requestId === 'string') body.requestId = parsed.requestId;
+    return body.code !== undefined || body.message !== undefined ? body : null;
+  } catch {
+    return null;
   }
 }
 
@@ -76,12 +122,25 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     } catch {
       // ignore
     }
+    const contract = parseErrorBody(detail);
+    const headerRequestId = response.headers?.get?.('x-request-id') ?? undefined;
+    const requestId = contract?.requestId ?? headerRequestId ?? undefined;
+    if (contract?.message) {
+      throw new ApiError(contract.message, {
+        status: response.status,
+        url,
+        code: contract.code,
+        requestId,
+        details: contract.details,
+      });
+    }
     const suffix = detail ? ` — ${detail.slice(0, 200)}` : '';
     throw new ApiError(
       `Request failed ${response.status} ${response.statusText} for ${url}${suffix}`,
       {
         status: response.status,
         url,
+        requestId,
       }
     );
   }
