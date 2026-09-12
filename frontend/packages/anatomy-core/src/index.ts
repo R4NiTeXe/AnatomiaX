@@ -3,6 +3,7 @@
  * No React, no Three.js, no DOM. Depends only on @anatomiax/shared-types.
  */
 export * from './anatomyInformation';
+export * from './assetManifest';
 export * from './anatomySystems';
 export * from './anatomyAssets';
 export * from './anatomyAssetConfig';

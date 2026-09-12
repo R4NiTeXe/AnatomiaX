@@ -29,6 +29,16 @@ describe('anatomy systems catalog', () => {
     );
   });
 
+  it('preserves the exact legacy dev URLs from the manifest', () => {
+    expect(getBodyModelDefinition('male').systems.skin.path).toBe('/models-dev/skin-meshopt.glb');
+    expect(getBodyModelDefinition('female').systems.skin.path).toBe(
+      '/models-dev/female-skin-meshopt.glb'
+    );
+    expect(getAnatomySystemAssetForBody('female', 'lymphatic').path).toBe(
+      '/models-dev/female-lymphatic-meshopt.glb'
+    );
+  });
+
   it('throws on unknown systems and keeps the legacy placeholder map', () => {
     expect(() => getAnatomySystem('bogus' as never)).toThrow('Unknown anatomy system');
     expect(getAnatomyAsset('male')?.available).toBe(false);

@@ -3,6 +3,7 @@ import type {
   AnatomySystemKey,
   AnatomySystemType,
 } from '@anatomiax/shared-types';
+import { devAssetFilename, findManifestEntry } from './assetManifest';
 
 // Asset definitions (paths/availability) — serializable and platform-neutral,
 // shared by web and mobile. Not part of the backend contract.
@@ -58,20 +59,31 @@ function defineSystem(
 }
 
 /**
+ * Canonical production filename for a body system, from the verified asset
+ * manifest. Throws loudly when an entry is missing so a bad manifest fails
+ * fast instead of producing a 404 at runtime.
+ */
+function manifestFile(bodyModel: AnatomyBodyModelKey, system: AnatomySystemKey): string {
+  const entry = findManifestEntry(bodyModel, system);
+  if (!entry) throw new Error(`Missing asset manifest entry: ${bodyModel}/${system}`);
+  return entry.file;
+}
+
+/**
  * Canonical system metadata — single source of truth.
  * `asset.available` mirrors `available` for consumers that only inspect the asset.
  * All nine male systems are Meshopt-optimized and staged under /models-dev/ for local dev.
  */
 export const ANATOMY_SYSTEM_DEFINITIONS: readonly AnatomySystemDefinition[] = [
-  defineSystem('skin', 'Skin', 'skin-meshopt.glb', 0),
-  defineSystem('musculoskeletal', 'Musculoskeletal', 'musculoskeletal-meshopt.glb', 1),
-  defineSystem('nervous', 'Nervous', 'nervous-meshopt.glb', 2),
-  defineSystem('cardiovascular', 'Cardiovascular', 'cardiovascular-meshopt.glb', 3),
-  defineSystem('respiratory', 'Respiratory', 'respiratory-meshopt.glb', 4),
-  defineSystem('digestive', 'Digestive', 'digestive-meshopt.glb', 5),
-  defineSystem('urinary', 'Urinary', 'urinary-meshopt.glb', 6),
-  defineSystem('reproductive', 'Reproductive', 'reproductive-meshopt.glb', 7),
-  defineSystem('lymphatic', 'Lymphatic', 'lymphatic-meshopt.glb', 8),
+  defineSystem('skin', 'Skin', manifestFile('male', 'skin'), 0),
+  defineSystem('musculoskeletal', 'Musculoskeletal', manifestFile('male', 'musculoskeletal'), 1),
+  defineSystem('nervous', 'Nervous', manifestFile('male', 'nervous'), 2),
+  defineSystem('cardiovascular', 'Cardiovascular', manifestFile('male', 'cardiovascular'), 3),
+  defineSystem('respiratory', 'Respiratory', manifestFile('male', 'respiratory'), 4),
+  defineSystem('digestive', 'Digestive', manifestFile('male', 'digestive'), 5),
+  defineSystem('urinary', 'Urinary', manifestFile('male', 'urinary'), 6),
+  defineSystem('reproductive', 'Reproductive', manifestFile('male', 'reproductive'), 7),
+  defineSystem('lymphatic', 'Lymphatic', manifestFile('male', 'lymphatic'), 8),
 ];
 
 export const ANATOMY_SYSTEMS_BY_KEY: Readonly<Record<AnatomySystemKey, AnatomySystemDefinition>> =
@@ -112,44 +124,35 @@ function defineBodySystem(
 
 const MALE_SYSTEMS = ANATOMY_SYSTEM_DEFINITIONS;
 
+// Female entries resolve through the manifest plus the local-dev flat-layout
+// rule, preserving the exact served filenames (female-<file>).
+const devFemale = (system: AnatomySystemKey): string =>
+  devAssetFilename('female', manifestFile('female', system));
+
 const FEMALE_SYSTEMS: readonly AnatomySystemDefinition[] = [
-  defineBodySystem('female', 'skin', 'Skin', 'female-skin-meshopt.glb', 0, true),
+  defineBodySystem('female', 'skin', 'Skin', devFemale('skin'), 0, true),
   defineBodySystem(
     'female',
     'musculoskeletal',
     'Musculoskeletal',
-    'female-musculoskeletal-meshopt.glb',
+    devFemale('musculoskeletal'),
     1,
     true
   ),
-  defineBodySystem('female', 'nervous', 'Nervous', 'female-nervous-meshopt.glb', 2, true),
+  defineBodySystem('female', 'nervous', 'Nervous', devFemale('nervous'), 2, true),
   defineBodySystem(
     'female',
     'cardiovascular',
     'Cardiovascular',
-    'female-cardiovascular-meshopt.glb',
+    devFemale('cardiovascular'),
     3,
     true
   ),
-  defineBodySystem(
-    'female',
-    'respiratory',
-    'Respiratory',
-    'female-respiratory-meshopt.glb',
-    4,
-    true
-  ),
-  defineBodySystem('female', 'digestive', 'Digestive', 'female-digestive-meshopt.glb', 5, true),
-  defineBodySystem('female', 'urinary', 'Urinary', 'female-urinary-meshopt.glb', 6, true),
-  defineBodySystem(
-    'female',
-    'reproductive',
-    'Reproductive',
-    'female-reproductive-meshopt.glb',
-    7,
-    true
-  ),
-  defineBodySystem('female', 'lymphatic', 'Lymphatic', 'female-lymphatic-meshopt.glb', 8, true),
+  defineBodySystem('female', 'respiratory', 'Respiratory', devFemale('respiratory'), 4, true),
+  defineBodySystem('female', 'digestive', 'Digestive', devFemale('digestive'), 5, true),
+  defineBodySystem('female', 'urinary', 'Urinary', devFemale('urinary'), 6, true),
+  defineBodySystem('female', 'reproductive', 'Reproductive', devFemale('reproductive'), 7, true),
+  defineBodySystem('female', 'lymphatic', 'Lymphatic', devFemale('lymphatic'), 8, true),
 ];
 
 export const ANATOMY_BODY_MODELS: Readonly<
