@@ -87,7 +87,7 @@ export async function getMeshoptDecoder(): Promise<
     return { supported: true, hasWebAssembly, via: 'wasm', decoder: produced as ReadyDecoder };
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fallback = require('./vendor/meshoptDecoderReference.js') as {
+  const fallback = require('../vendor/meshoptDecoderReference.js') as {
     MeshoptDecoder?: Partial<ReadyDecoder>;
   };
   const candidate = fallback.MeshoptDecoder;

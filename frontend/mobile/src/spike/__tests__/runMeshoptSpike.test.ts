@@ -86,6 +86,8 @@ const DEV_ASSET = path.join(
   '..',
   '..',
   '..',
+  '..',
+  'frontend',
   'web',
   'public',
   'models-dev',

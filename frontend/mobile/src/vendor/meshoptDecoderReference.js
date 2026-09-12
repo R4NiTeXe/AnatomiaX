@@ -1,7 +1,10 @@
-// TEMPORARY SPIKE VENDOR (8.19.30) - delete with src/spike/.
+// Vendored Hermes-safe Meshopt decoder (moved from the 8.19.29/30 spike).
 // Upstream: meshoptimizer meshopt_decoder_reference.js (MIT, (c) Arseny Kapoulkine).
 // Byte-identical logic except the final ESM export, adapted to CJS so Metro (Hermes)
-// and ts-jest/Node require it without a transform step. Production placement TBD.
+// and ts-jest/Node require it without a transform step.
+// Pure JS, no WebAssembly: the fallback when the bundled WASM decoder reports
+// unsupported (Hermes). Upstream documents it as a drop-in decoder replacement;
+// prefer the WASM path wherever supported for speed.
 // This file is part of meshoptimizer library and is distributed under the terms of MIT License.
 // Copyright (C) 2016-2026, by Arseny Kapoulkine (arseny.kapoulkine@gmail.com)
 
