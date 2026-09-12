@@ -1,4 +1,9 @@
 import * as THREE from 'three';
+import {
+  computeCameraPosition as computeCameraPositionCore,
+  computeFocusDistance as computeFocusDistanceCore,
+  type FocusVec3,
+} from '@anatomiax/anatomy-core';
 
 /**
  * Computes world-space bounding box for a set of objects.
@@ -40,29 +45,10 @@ export function getBoundingSphereRadius(box: THREE.Box3): number {
 
 /**
  * Calculates suitable camera distance from a bounding sphere radius + camera FOV.
- * Uses perspective geometry: distance = (radius / sin(fov/2)) * padding.
- * Adds sensible padding so structure is clearly visible with margin.
- * Handles small/large bounds, finite outputs, and degenerate FOV.
+ * Delegates to the single @anatomiax/anatomy-core implementation.
  */
 export function computeFocusDistance(radius: number, fovDegrees: number, padding = 1.35): number {
-  if (!Number.isFinite(radius) || radius <= 0) return 0;
-  if (!Number.isFinite(padding) || padding <= 0) padding = 1.35;
-  if (!Number.isFinite(fovDegrees) || fovDegrees <= 0 || fovDegrees >= 180) {
-    const fallback = radius * 2 * padding;
-    return Number.isFinite(fallback) ? fallback : radius * 2;
-  }
-  const halfFovRad = THREE.MathUtils.degToRad(fovDegrees * 0.5);
-  const sin = Math.sin(halfFovRad);
-  if (!Number.isFinite(sin) || sin <= 1e-6) {
-    return radius * 2 * padding;
-  }
-  const distance = (radius / sin) * padding;
-  if (!Number.isFinite(distance) || distance <= 0) {
-    return radius * 2 * padding;
-  }
-  // Ensure tiny structures remain visible and avoid camera clipping inside mesh.
-  const minDistance = Math.max(radius * 3, 0.15);
-  return Math.max(distance, minDistance);
+  return computeFocusDistanceCore(radius, fovDegrees, padding);
 }
 
 /**
@@ -83,8 +69,7 @@ export function computeFocusMetrics(
 /**
  * Calculates new camera position given a target center, current camera/target,
  * and desired distance along the existing view direction.
- * Preserves direction; falls back to +Z when direction is degenerate.
- * No hardcoded anatomy coordinates — direction derived from current view.
+ * Delegates to the single @anatomiax/anatomy-core implementation.
  */
 export function computeCameraPosition(
   targetCenter: THREE.Vector3,
@@ -92,15 +77,12 @@ export function computeCameraPosition(
   currentTarget: THREE.Vector3,
   distance: number
 ): THREE.Vector3 {
-  const dir = new THREE.Vector3().subVectors(currentCameraPosition, currentTarget);
-  const len = dir.length();
-  if (!Number.isFinite(len) || len < 1e-6) {
-    dir.set(0, 0, 1);
-  } else {
-    dir.divideScalar(len);
-  }
-  if (!Number.isFinite(distance) || distance <= 0) {
-    return targetCenter.clone();
-  }
-  return new THREE.Vector3().copy(targetCenter).addScaledVector(dir, distance);
+  const toVec = (v: THREE.Vector3): FocusVec3 => ({ x: v.x, y: v.y, z: v.z });
+  const result = computeCameraPositionCore(
+    toVec(targetCenter),
+    toVec(currentCameraPosition),
+    toVec(currentTarget),
+    distance
+  );
+  return new THREE.Vector3(result.x, result.y, result.z);
 }

@@ -1,48 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useSubmitQuizAttempt } from '@/hooks/useProgress';
-import type { SubmitAttemptInput } from '@/lib/progress';
 import { useAnatomyState } from './AnatomyStateContext';
+import {
+  buildAttemptInput,
+  type AttemptAnswerLike,
+  type AttemptQuestionLike,
+} from '@anatomiax/anatomy-core';
 
-export interface AttemptQuestionLike {
-  id: string;
-  structureKey: string;
-  canonicalName: string;
-}
-
-export interface AttemptAnswerLike {
-  questionId: string;
-  selectedChoice: number;
-  correctIndex: number;
-}
-
-export function buildAttemptInput(
-  questions: AttemptQuestionLike[],
-  answers: AttemptAnswerLike[],
-  score: number,
-  bodyModel: 'male' | 'female'
-): SubmitAttemptInput | null {
-  if (questions.length === 0 || answers.length !== questions.length) return null;
-  const byId = new Map(questions.map(q => [q.id, q]));
-  const payloadAnswers = [];
-  for (const answer of answers) {
-    const question = byId.get(answer.questionId);
-    if (!question) return null;
-    payloadAnswers.push({
-      structureKey: question.structureKey,
-      canonicalName: question.canonicalName,
-      selected: answer.selectedChoice,
-      correct: answer.correctIndex,
-    });
-  }
-  return {
-    bodyModel,
-    score,
-    total: questions.length,
-    answers: payloadAnswers,
-    startedAt: new Date().toISOString(),
-  };
-}
+export type { AttemptAnswerLike, AttemptQuestionLike };
+export { buildAttemptInput };
 
 export default function AnatomyQuiz(): JSX.Element {
   const {

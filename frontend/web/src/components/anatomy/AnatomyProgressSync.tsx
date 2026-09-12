@@ -1,45 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useMergeStudied, useProgressSnapshot } from '@/hooks/useProgress';
-import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 import { useAnatomyState, type SelectedStructure } from './AnatomyStateContext';
-import type { AnatomyBodyModelKey, AnatomySystemKey } from './anatomyTypes';
 
 const STUDIED_SYNC_DEBOUNCE_MS = 1500;
 const MAX_LOCAL_HISTORY = 5;
 
-/**
- * Maps a persisted body-qualified structureKey back to a selection.
- * Returns null for keys that cannot be understood; never throws.
- */
-export function parseStudiedKey(key: string): SelectedStructure | null {
-  if (typeof key !== 'string' || key.length === 0 || key.length > 256) return null;
-  const parts = key.split(':');
-  if (parts.length < 3) return null;
-  const [bodyModel, systemKey, ...rest] = parts;
-  if (bodyModel !== 'male' && bodyModel !== 'female') return null;
-  if (!systemKey) return null;
-  const remainder = rest.join(':');
-  let ontologyId: string | null = null;
-  let objectName = remainder;
-  if (!remainder.startsWith('object:')) {
-    ontologyId = remainder || null;
-    objectName = remainder;
-  } else {
-    objectName = remainder.slice('object:'.length) || key;
-  }
-  const info = getAnatomyInformationByStructureKey(key);
-  const name = info?.canonicalName ?? objectName;
-  return {
-    structureKey: key,
-    name,
-    objectName,
-    systemKey: systemKey as AnatomySystemKey,
-    bodyModel: bodyModel as AnatomyBodyModelKey,
-    ontologyId,
-  };
-}
+// Canonical implementation lives in @anatomiax/anatomy-core (single source).
+// Re-exported here so existing imports keep working.
+export { parseStudiedKey };
 
 /**
  * Bridges server progress with local anatomy state. Renders nothing.
