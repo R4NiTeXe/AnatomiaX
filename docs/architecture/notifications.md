@@ -48,7 +48,7 @@ purge policy). Nothing here touches cohorts, progress, anatomy, or auth.
 HTTP path, zero new dependencies):
 
 - No `FCM_SERVER_KEY` → resolves `{ delivered: 0, skipped, reason:
-  'fcm-unconfigured' }`; nothing is sent, nothing throws.
+'fcm-unconfigured' }`; nothing is sent, nothing throws.
 - With a key → attempts only FCM-routed endpoints
   (`https://fcm.googleapis.com/fcm/send/<token>`), per-subscription
   try/catch with 5s timeout; failures count as `skipped`.
