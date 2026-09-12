@@ -11,10 +11,12 @@ import {
 import type { AnatomySelection, AnatomySystemKey } from '@anatomiax/shared-types';
 import { fetchVerifiedAsset } from '../lib/assetCache';
 import { decodeModel } from './meshoptLoader';
-import { disposeObject } from './dispose';
+import { createFrameScheduler } from './frameScheduler';
 import { createStageRenderer } from './glContext';
 import { collectSceneRecords, resolveTapSelection } from './sceneRegistry';
+import { createSlowNotice } from './slowNotice';
 import { frameSelection } from './stageFraming';
+import { StageLoadError, StageSystemManager } from './stageSystemManager';
 import { DEFAULT_STAGE_SYSTEM, SUPPORTED_STAGE_SYSTEMS } from './supportedScope';
 
 export type StageStatus = 'idle' | 'loading' | 'ready' | 'error' | 'unsupported';
@@ -23,6 +25,7 @@ export interface StageTimings {
   downloadMs: number;
   decodeMs: number;
   firstVisibleMs: number;
+  focusMs?: number;
 }
 
 interface MobileAnatomyStageProps {
@@ -35,16 +38,18 @@ interface Highlight {
 }
 
 /**
- * Production mobile anatomy stage (8.19.35): expo-gl + plain Three.js,
+ * Production mobile anatomy stage (8.19.35/36): expo-gl + plain Three.js,
  * one resident male system (<=5MB), demand rendering, tap-to-select with
  * anatomy-core identity, core-math focus, native info UI.
- * No R3F/Drei, no hover model, no continuous render loop.
+ * Load orchestration (guards, disposal-before-load, stale protection) lives
+ * in StageSystemManager; frame scheduling is single-slot; no R3F/Drei.
  */
 export default function MobileAnatomyStage({
   onSelectionChange,
 }: MobileAnatomyStageProps): JSX.Element {
   const [status, setStatus] = useState<StageStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [slowVisible, setSlowVisible] = useState(false);
   const [system, setSystem] = useState<AnatomySystemKey>(DEFAULT_STAGE_SYSTEM);
   const [selection, setSelection] = useState<AnatomySelection | null>(null);
   const [timings, setTimings] = useState<StageTimings | null>(null);
@@ -53,32 +58,48 @@ export default function MobileAnatomyStage({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const registryRef = useRef(new AnatomyStructureRegistry());
-  const rootRef = useRef<THREE.Group | null>(null);
-  const highlightRef = useRef<Highlight | null>(null);
   const orbitRef = useRef({ theta: 0, phi: Math.PI / 2, radius: 3, target: new THREE.Vector3() });
-  const tweenRef = useRef<number | null>(null);
-  const generationRef = useRef(0);
   const layoutRef = useRef({ width: 0, height: 0 });
   const touchRef = useRef({ x: 0, y: 0, at: 0, moved: false });
   const mountedRef = useRef(true);
   const systemRef = useRef<AnatomySystemKey>(DEFAULT_STAGE_SYSTEM);
   systemRef.current = system;
 
+  const managerRef = useRef<StageSystemManager | null>(null);
+  if (!managerRef.current) {
+    managerRef.current = new StageSystemManager({
+      fetchAsset: async entry => {
+        const started = Date.now();
+        const bytes = await fetchVerifiedAsset(entry);
+        return { bytes, downloadMs: Date.now() - started };
+      },
+      decodeAsset: async bytes => decodeModel(bytes),
+      collectRecords: (scene, systemKey, bodyModel) =>
+        collectSceneRecords(scene, systemKey, bodyModel),
+      registry: new AnatomyStructureRegistry(),
+      now: () => Date.now(),
+    });
+  }
+  const schedulerRef = useRef(
+    createFrameScheduler(
+      callback => requestAnimationFrame(callback),
+      handle => cancelAnimationFrame(handle)
+    )
+  );
+  const slowRef = useRef(createSlowNotice(() => setSlowVisible(true)));
+  const highlightRef = useRef<Highlight | null>(null);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      if (tweenRef.current !== null) {
-        cancelAnimationFrame(tweenRef.current);
-        tweenRef.current = null;
+      schedulerRef.current.cancel();
+      slowRef.current.settle();
+      const manager = managerRef.current;
+      const scene = sceneRef.current;
+      if (manager && scene) {
+        manager.unload({ attach: () => undefined, detach: root => scene.remove(root) });
       }
-      if (rootRef.current && sceneRef.current) {
-        sceneRef.current.remove(rootRef.current);
-        disposeObject(rootRef.current);
-        rootRef.current = null;
-      }
-      registryRef.current.clear();
       try {
         rendererRef.current?.dispose();
         rendererRef.current?.forceContextLoss();
@@ -113,48 +134,32 @@ export default function MobileAnatomyStage({
     onSelectionChange?.(next);
   };
 
-  const unloadCurrentSystem = (): void => {
-    if (tweenRef.current !== null) {
-      cancelAnimationFrame(tweenRef.current);
-      tweenRef.current = null;
-    }
-    clearHighlight();
-    if (rootRef.current && sceneRef.current) {
-      sceneRef.current.remove(rootRef.current);
-      disposeObject(rootRef.current);
-      rootRef.current = null;
-    }
-    registryRef.current.clear();
-    applySelection(null);
-  };
-
   const loadSystem = async (next: AnatomySystemKey): Promise<void> => {
-    const renderer = rendererRef.current;
+    const manager = managerRef.current;
     const scene = sceneRef.current;
     const camera = cameraRef.current;
-    if (!renderer || !scene || !camera) return;
-    const generation = (generationRef.current += 1);
-    const alive = (): boolean => mountedRef.current && generation === generationRef.current;
+    if (!manager || !scene || !camera) return;
     setStatus('loading');
     setError(null);
+    setSlowVisible(false);
     setTimings(null);
-    unloadCurrentSystem();
+    slowRef.current.start();
+    clearHighlight();
+    applySelection(null);
     try {
       const entry = findManifestEntry('male', next);
       if (!entry) throw new Error(`Unsupported system for this stage: ${next}`);
-      const downloadStarted = Date.now();
-      const bytes = await fetchVerifiedAsset(entry);
-      if (!alive()) return;
-      const downloadMs = Date.now() - downloadStarted;
-      const decoded = await decodeModel(bytes.buffer as ArrayBuffer);
-      if (!alive()) return;
-      for (const record of collectSceneRecords(decoded.scene, next, 'male')) {
-        registryRef.current.register(record);
-      }
-      rootRef.current = decoded.scene;
-      scene.add(decoded.scene);
-
-      const box = new THREE.Box3().setFromObject(decoded.scene);
+      const loadStarted = Date.now();
+      const { downloadMs, decodeMs } = await manager.load(entry, {
+        attach: root => scene.add(root),
+        // Detach only: the manager disposes the previous root itself.
+        detach: root => scene.remove(root),
+      });
+      if (!mountedRef.current) return;
+      // NOTE: manager already disposed + detached the previous root above.
+      const root = manager.resident?.root;
+      if (!root) throw new Error('Loaded system has no scene.');
+      const box = new THREE.Box3().setFromObject(root);
       const center = box.getCenter(new THREE.Vector3());
       const radius = Math.max(0.15, box.getBoundingSphere(new THREE.Sphere()).radius);
       const orbit = orbitRef.current;
@@ -166,28 +171,27 @@ export default function MobileAnatomyStage({
       camera.lookAt(center);
 
       renderOnce();
-      if (!alive()) return;
+      if (!mountedRef.current) return;
       setTimings({
         downloadMs,
-        decodeMs: decoded.decodeMs,
-        firstVisibleMs: Date.now() - downloadStarted,
+        decodeMs,
+        firstVisibleMs: Date.now() - loadStarted,
       });
       setStatus('ready');
     } catch (err) {
-      if (!alive()) return;
+      // Superseded loads stay silent: the newer load owns the UI.
+      if (err instanceof StageLoadError && err.code === 'STALE') return;
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load the 3D model.');
       setStatus('error');
+    } finally {
+      slowRef.current.settle();
     }
   };
 
   const focusOn = (point: THREE.Vector3, radius: number): void => {
-    const renderer = rendererRef.current;
     const camera = cameraRef.current;
-    if (!renderer || !camera) return;
-    if (tweenRef.current !== null) {
-      cancelAnimationFrame(tweenRef.current);
-      tweenRef.current = null;
-    }
+    if (!camera) return;
     const orbit = orbitRef.current;
     const framing = frameSelection({
       center: { x: point.x, y: point.y, z: point.z },
@@ -202,6 +206,7 @@ export default function MobileAnatomyStage({
     const toTarget = point.clone();
     const started = Date.now();
     const durationMs = 300;
+    const scheduler = schedulerRef.current;
     const step = (): void => {
       if (!mountedRef.current) return;
       const t = Math.min(1, (Date.now() - started) / durationMs);
@@ -212,19 +217,23 @@ export default function MobileAnatomyStage({
       camera.lookAt(orbit.target);
       renderOnce();
       if (t < 1) {
-        tweenRef.current = requestAnimationFrame(step);
+        scheduler.schedule(step);
       } else {
-        tweenRef.current = null;
+        setTimings(previous =>
+          previous ? { ...previous, focusMs: Date.now() - started } : previous
+        );
       }
     };
-    tweenRef.current = requestAnimationFrame(step);
+    scheduler.schedule(step);
   };
 
   const handleTap = (x: number, y: number): void => {
-    const root = rootRef.current;
+    const manager = managerRef.current;
     const camera = cameraRef.current;
     const { width, height } = layoutRef.current;
-    if (!root || !camera || width <= 0 || height <= 0) return;
+    if (!manager || !camera || width <= 0 || height <= 0) return;
+    const root = manager.resident?.root;
+    if (!root) return;
     const pointer = new THREE.Vector2((x / width) * 2 - 1, -(y / height) * 2 + 1);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(pointer, camera);
@@ -236,7 +245,7 @@ export default function MobileAnatomyStage({
       return;
     }
     const mesh = hit.object as THREE.Mesh;
-    const next = resolveTapSelection(mesh, registryRef.current, systemRef.current, 'male');
+    const next = resolveTapSelection(mesh, manager.registry, systemRef.current, 'male');
     if (!next) {
       // Unmapped mesh: deselect safely, never crash.
       applySelection(null);
@@ -265,13 +274,12 @@ export default function MobileAnatomyStage({
 
   const responder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => rendererRef.current !== null && rootRef.current !== null,
-      onMoveShouldSetPanResponder: () => rendererRef.current !== null && rootRef.current !== null,
+      onStartShouldSetPanResponder: () =>
+        rendererRef.current !== null && managerRef.current?.resident !== null,
+      onMoveShouldSetPanResponder: () =>
+        rendererRef.current !== null && managerRef.current?.resident !== null,
       onPanResponderGrant: event => {
-        if (tweenRef.current !== null) {
-          cancelAnimationFrame(tweenRef.current);
-          tweenRef.current = null;
-        }
+        schedulerRef.current.cancel();
         touchRef.current = {
           x: event.nativeEvent.locationX,
           y: event.nativeEvent.locationY,
@@ -280,9 +288,8 @@ export default function MobileAnatomyStage({
         };
       },
       onPanResponderMove: (_event, gesture) => {
-        const renderer = rendererRef.current;
         const camera = cameraRef.current;
-        if (!renderer || !camera) return;
+        if (!camera) return;
         const start = touchRef.current;
         if (Math.abs(gesture.dx) + Math.abs(gesture.dy) > 10) start.moved = true;
         const orbit = orbitRef.current;
@@ -386,6 +393,11 @@ export default function MobileAnatomyStage({
           <View style={styles.overlay} testID="mobile-stage-loading">
             <ActivityIndicator size="large" />
             <Text>Loading 3D anatomy…</Text>
+            {slowVisible ? (
+              <Text style={styles.note} testID="mobile-stage-slow">
+                Still loading — large asset or slow connection…
+              </Text>
+            ) : null}
           </View>
         ) : null}
         {status === 'error' || status === 'unsupported' ? (
@@ -403,7 +415,7 @@ export default function MobileAnatomyStage({
       </View>
       {timings ? (
         <Text style={styles.timings} testID="mobile-stage-timings">
-          {`load ${(timings.downloadMs + timings.decodeMs).toFixed(0)}ms · first frame ${timings.firstVisibleMs.toFixed(0)}ms`}
+          {`load ${(timings.downloadMs + timings.decodeMs).toFixed(0)}ms · first frame ${timings.firstVisibleMs.toFixed(0)}ms${timings.focusMs !== undefined ? ` · focus ${timings.focusMs.toFixed(0)}ms` : ''}`}
         </Text>
       ) : null}
       {selection ? (
