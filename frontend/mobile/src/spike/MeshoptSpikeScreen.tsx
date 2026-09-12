@@ -12,13 +12,14 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { useRef, useState } from 'react';
 import type { JSX } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, PanResponder, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as THREE from 'three';
 import {
   decodeSpikeAsset,
   disposeSpikeObject,
   fetchSpikeBytes,
   getMeshoptDecoder,
+  withHiddenWebGL1Global,
 } from './runMeshoptSpike';
 import { evaluateSpike, formatDuration, type SpikeVerdictInput } from './spikeReport';
 
@@ -58,8 +59,70 @@ export default function MeshoptSpikeScreen(): JSX.Element {
     `Asset: ${assetUrl()}`,
   ]);
   const running = useRef(false);
+  const disposable = useRef<{
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Object3D;
+    verdict: SpikeVerdictInput;
+    startedAll: number;
+  } | null>(null);
+  const [disposed, setDisposed] = useState(false);
+  // TEMPORARY spike-only orbit rig (drag to orbit after render; not production).
+  const orbit = useRef<{
+    renderer: THREE.WebGLRenderer;
+    camera: THREE.PerspectiveCamera;
+    scene: THREE.Scene;
+    endFrame: () => void;
+    target: THREE.Vector3;
+    radius: number;
+    theta: number;
+    phi: number;
+    frames: number;
+    firstDragAt: number | null;
+    firstMoveAt: number | null;
+  } | null>(null);
 
   const log = (line: string) => setLines(previous => [...previous, line]);
+
+  const orbitResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => orbit.current !== null,
+      onMoveShouldSetPanResponder: () => orbit.current !== null,
+      onPanResponderMove: (_event, gesture) => {
+        const rig = orbit.current;
+        if (!rig) return;
+        if (rig.firstDragAt === null) {
+          rig.firstDragAt = Date.now();
+          rig.firstMoveAt = Date.now();
+          setLines(previous => [...previous, 'Orbit: first drag received']);
+        }
+        rig.theta -= gesture.dx * 0.006;
+        rig.phi = Math.min(Math.PI - 0.15, Math.max(0.15, rig.phi - gesture.dy * 0.006));
+        rig.camera.position.set(
+          rig.target.x + rig.radius * Math.sin(rig.phi) * Math.sin(rig.theta),
+          rig.target.y + rig.radius * Math.cos(rig.phi),
+          rig.target.z + rig.radius * Math.sin(rig.phi) * Math.cos(rig.theta)
+        );
+        rig.camera.lookAt(rig.target);
+        rig.renderer.render(rig.scene, rig.camera);
+        rig.endFrame();
+        rig.frames += 1;
+      },
+      onPanResponderRelease: () => {
+        const rig = orbit.current;
+        if (rig && rig.firstDragAt !== null) {
+          const elapsedSec = Math.max(0.001, (Date.now() - (rig.firstMoveAt ?? Date.now())) / 1000);
+          const fps = (rig.frames / elapsedSec).toFixed(1);
+          setLines(previous => [
+            ...previous,
+            `Orbit: ${rig.frames} drag frames in ${elapsedSec.toFixed(2)}s (${fps} fps)`,
+          ]);
+          rig.firstDragAt = null;
+          rig.firstMoveAt = null;
+          rig.frames = 0;
+        }
+      },
+    })
+  ).current;
 
   const run = async (gl: ExpoWebGLRenderingContext) => {
     if (running.current) return;
@@ -70,6 +133,22 @@ export default function MeshoptSpikeScreen(): JSX.Element {
     const ctx = asSpikeGL(gl);
     try {
       log(`GL buffer: ${ctx.drawingBufferWidth}x${ctx.drawingBufferHeight}`);
+      try {
+        // Structural cast: lib WebGL types here are capability-thin.
+        const raw = gl as unknown as {
+          getExtension(name: string): { UNMASKED_RENDERER_WEBGL: number } | null;
+          getParameter(p: number): unknown;
+          RENDERER: number;
+          VERSION: number;
+        };
+        const debugInfo = raw.getExtension('WEBGL_debug_renderer_info');
+        const rendererName = debugInfo
+          ? raw.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          : raw.getParameter(raw.RENDERER);
+        log(`GPU: ${String(rendererName)} | ${String(raw.getParameter(raw.VERSION))}`);
+      } catch {
+        log('GPU: unavailable (parameter query failed)');
+      }
       verdict.webgl2 = isWebGL2Context(gl);
       log(`WebGL2 context: ${verdict.webgl2 ? 'YES' : 'NO'}`);
 
@@ -82,11 +161,23 @@ export default function MeshoptSpikeScreen(): JSX.Element {
         removeEventListener: () => undefined,
         getContext: () => gl,
       };
-      const renderer = new THREE.WebGLRenderer({
-        context: gl as unknown as WebGLRenderingContext,
-        canvas: canvasStub as unknown as HTMLCanvasElement,
-        antialias: true,
-      });
+      // SPIKE FINDING (emulator run 1): expo-gl's context is instanceof BOTH
+      // WebGLRenderingContext and WebGL2RenderingContext shims, so three
+      // r163+ throws "WebGL 1 is not supported" for any custom context.
+      // Hiding the v1 global during construction lets the WebGL2 path through
+      // (three hardcodes capabilities.isWebGL2=true afterwards).
+      const host = globalThis as Record<string, unknown>;
+      const realV1 = host.WebGLRenderingContext;
+      log(`V1 global before hide: ${typeof realV1}`);
+      const renderer = withHiddenWebGL1Global(
+        () =>
+          new THREE.WebGLRenderer({
+            context: gl as unknown as WebGLRenderingContext,
+            canvas: canvasStub as unknown as HTMLCanvasElement,
+            antialias: true,
+          })
+      );
+      log(`V1 global after restore: ${typeof realV1 === 'undefined' ? 'was-absent' : 'restored'}`);
       verdict.rendererCreated = true;
       log(
         `Renderer created (three r${THREE.REVISION}, isWebGL2=${renderer.capabilities.isWebGL2})`
@@ -115,7 +206,9 @@ export default function MeshoptSpikeScreen(): JSX.Element {
       const url = assetUrl();
       log(`Fetching ${url}`);
       const fetched = await fetchSpikeBytes(url);
-      log(`Fetched ${fetched.byteLength} bytes via ${fetched.via}`);
+      log(
+        `Downloaded ${fetched.byteLength} bytes via ${fetched.via} in ${formatDuration(fetched.ms)}`
+      );
       const decoderStatus = await getMeshoptDecoder();
       log(
         `Decoder: supported=${decoderStatus.supported} via=${decoderStatus.via} ` +
@@ -146,23 +239,35 @@ export default function MeshoptSpikeScreen(): JSX.Element {
         await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
         renderer.render(scene, camera);
         ctx.endFrameEXP();
+        if (frame === 0) {
+          log(`First visible frame at ${formatDuration(Date.now() - startedAll)} after start`);
+        }
       }
       verdict.rendered = true;
       log(`Rendered ${RENDER_FRAMES} frames in ${formatDuration(Date.now() - renderStarted)}`);
-
-      scene.remove(decoded.scene);
-      const disposed = disposeSpikeObject(decoded.scene);
-      renderer.dispose();
-      try {
-        renderer.forceContextLoss();
-      } catch {
-        // Optional: context-loss path is best-effort on expo-gl.
-      }
-      verdict.disposed = true;
       log(
-        `Disposed ${disposed.geometriesDisposed} geometries, ` +
-          `${disposed.materialsDisposed} materials in ${formatDuration(Date.now() - startedAll)} total`
+        `Renderer info: calls=${renderer.info.render.calls} ` +
+          `triangles=${renderer.info.render.triangles} ` +
+          `geometries=${renderer.info.memory.geometries} textures=${renderer.info.memory.textures}`
       );
+      // Arm the temporary drag-orbit rig for the interaction check.
+      orbit.current = {
+        renderer,
+        camera,
+        scene,
+        endFrame: () => ctx.endFrameEXP(),
+        target: center.clone(),
+        radius: radius * 2.2,
+        theta: 0,
+        phi: Math.PI / 2,
+        frames: 0,
+        firstDragAt: null,
+        firstMoveAt: null,
+      };
+      log('Drag on the model to test orbit responsiveness, then tap Dispose.');
+
+      // Disposal is operator-triggered so orbit runs against the live model.
+      disposable.current = { renderer, scene: decoded.scene, verdict, startedAll };
       setStatus('done');
     } catch (error) {
       verdict.fatal = error instanceof Error ? error.message : String(error);
@@ -175,16 +280,50 @@ export default function MeshoptSpikeScreen(): JSX.Element {
     }
   };
 
+  const dispose = () => {
+    const target = disposable.current;
+    if (!target || disposed) return;
+    const counts = disposeSpikeObject(target.scene);
+    target.renderer.dispose();
+    try {
+      target.renderer.forceContextLoss();
+    } catch {
+      // Optional: context-loss path is best-effort on expo-gl.
+    }
+    target.verdict.disposed = true;
+    disposable.current = null;
+    orbit.current = null;
+    setDisposed(true);
+    setLines(previous => [
+      ...previous,
+      `Disposed ${counts.geometriesDisposed} geometries, ` +
+        `${counts.materialsDisposed} materials in ` +
+        `${formatDuration(Date.now() - target.startedAll)} total`,
+      `Renderer info after dispose: geometries=${target.renderer.info.memory.geometries} ` +
+        `textures=${target.renderer.info.memory.textures}`,
+      `VERDICT: ${evaluateSpike(target.verdict).gate} — ` +
+        `${evaluateSpike(target.verdict).reasons.join('; ')}`,
+    ]);
+  };
+
   return (
     <View style={styles.root} testID="mobile-spike-screen">
       <Text style={styles.title}>Meshopt spike (temporary)</Text>
       <Text testID="mobile-spike-status">Status: {status}</Text>
-      <GLView
-        style={styles.gl}
-        onContextCreate={gl => {
-          void run(gl);
-        }}
-        testID="mobile-spike-glview"
+      <View {...orbitResponder.panHandlers} testID="mobile-spike-orbit">
+        <GLView
+          style={styles.gl}
+          onContextCreate={gl => {
+            void run(gl);
+          }}
+          testID="mobile-spike-glview"
+        />
+      </View>
+      <Button
+        title="Dispose asset"
+        onPress={dispose}
+        disabled={disposed}
+        testID="mobile-spike-dispose"
       />
       <ScrollView style={styles.log} testID="mobile-spike-log">
         {lines.map((line, index) => (

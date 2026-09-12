@@ -6,6 +6,7 @@ import {
   disposeSpikeObject,
   fetchSpikeBytes,
   summarizeSpikeScene,
+  withHiddenWebGL1Global,
 } from '../runMeshoptSpike';
 
 function boxMesh(material?: THREE.Material): THREE.Mesh {
@@ -132,4 +133,47 @@ const DEV_ASSET = path.join(
       jest.resetModules();
     }
   }, 120000);
+});
+
+describe('WebGL1 guard shim (8.19.31)', () => {
+  // Mirrors three r163+ WebGLRenderer guard semantics:
+  // `typeof WebGLRenderingContext !== 'undefined' && context instanceof WebGLRenderingContext`
+  const threeStyleGuard = (context: unknown): boolean => {
+    const v1 = (globalThis as Record<string, unknown>).WebGLRenderingContext;
+    return typeof v1 !== 'undefined' && context instanceof (v1 as new () => object);
+  };
+
+  it('reproduces the device FATAL with dual-shim contexts and skips it while hidden', () => {
+    const host = globalThis as Record<string, unknown>;
+    const realV1 = host.WebGLRenderingContext;
+    // expo-gl style: one context object instanceof both the v1 and v2 shims.
+    class FakeV1 {}
+    class FakeGLContext extends FakeV1 {}
+    try {
+      host.WebGLRenderingContext = FakeV1;
+      const context = new FakeGLContext();
+      expect(threeStyleGuard(context)).toBe(true);
+
+      let seenDuringHide: string | undefined;
+      withHiddenWebGL1Global(() => {
+        seenDuringHide = typeof (globalThis as Record<string, unknown>).WebGLRenderingContext;
+        expect(threeStyleGuard(context)).toBe(false);
+      });
+      expect(seenDuringHide).toBe('undefined');
+      expect(host.WebGLRenderingContext).toBe(FakeV1);
+    } finally {
+      host.WebGLRenderingContext = realV1;
+    }
+  });
+
+  it('restores the global even when construction throws', () => {
+    const host = globalThis as Record<string, unknown>;
+    const realV1 = host.WebGLRenderingContext;
+    expect(() =>
+      withHiddenWebGL1Global(() => {
+        throw new Error('renderer boom');
+      })
+    ).toThrow('renderer boom');
+    expect(host.WebGLRenderingContext).toBe(realV1);
+  });
 });

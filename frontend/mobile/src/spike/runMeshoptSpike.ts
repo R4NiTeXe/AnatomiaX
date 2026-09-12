@@ -34,6 +34,26 @@ export interface MeshoptDecoderStatus {
   via: 'wasm' | 'pure-js' | 'none';
 }
 
+/**
+ * Runs `fn` with the WebGL1 global hidden, then restores it (even on throw).
+ *
+ * SPIKE FINDING (device run 1): expo-gl's context is instanceof BOTH the
+ * WebGLRenderingContext and WebGL2RenderingContext shims, so three r163+
+ * throws "WebGL 1 is not supported" for any custom context (it only checks
+ * the v1 side). Hiding the v1 global during renderer construction lets the
+ * WebGL2 path through; three hardcodes capabilities.isWebGL2=true afterwards.
+ */
+export function withHiddenWebGL1Global<T>(fn: () => T): T {
+  const host = globalThis as Record<string, unknown>;
+  const real = host.WebGLRenderingContext;
+  host.WebGLRenderingContext = undefined;
+  try {
+    return fn();
+  } finally {
+    host.WebGLRenderingContext = real;
+  }
+}
+
 interface ReadyDecoder {
   ready: Promise<unknown>;
   supported: boolean;
@@ -192,14 +212,15 @@ export interface FetchLike {
 export async function fetchSpikeBytes(
   url: string,
   fetchImpl: FetchLike = fetch as unknown as FetchLike
-): Promise<{ bytes: ArrayBuffer; byteLength: number; via: string }> {
+): Promise<{ bytes: ArrayBuffer; byteLength: number; via: string; ms: number }> {
+  const started = now();
   const response = await fetchImpl(url);
   if (!response.ok) {
     throw new Error(`asset HTTP ${response.status} for ${url}`);
   }
   if (typeof response.arrayBuffer === 'function') {
     const bytes = await response.arrayBuffer();
-    return { bytes, byteLength: bytes.byteLength, via: 'arrayBuffer' };
+    return { bytes, byteLength: bytes.byteLength, via: 'arrayBuffer', ms: now() - started };
   }
   if (typeof response.blob === 'function' && typeof FileReader !== 'undefined') {
     const blob = (await response.blob()) as Blob;
@@ -209,7 +230,7 @@ export async function fetchSpikeBytes(
       reader.onerror = () => reject(new Error('blob FileReader failed'));
       reader.readAsArrayBuffer(blob);
     });
-    return { bytes, byteLength: bytes.byteLength, via: 'blob+FileReader' };
+    return { bytes, byteLength: bytes.byteLength, via: 'blob+FileReader', ms: now() - started };
   }
   throw new Error('no arrayBuffer/blob+FileReader response path on this runtime');
 }
