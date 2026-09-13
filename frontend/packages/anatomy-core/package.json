@@ -2,7 +2,7 @@
   "name": "@anatomiax/anatomy-core",
   "private": true,
   "version": "0.1.0",
-  "description": "Platform-neutral anatomy logic for web and mobile - no React, no Three.js, no DOM",
+  "description": "Platform-neutral anatomy logic for web - no React, no Three.js, no DOM",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {

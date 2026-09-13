@@ -6,7 +6,7 @@ import type {
 import { devAssetFilename, findManifestEntry } from './assetManifest';
 
 // Asset definitions (paths/availability) — serializable and platform-neutral,
-// shared by web and mobile. Not part of the backend contract.
+// shared by web. Not part of the backend contract.
 export interface AnatomySystemAsset {
   key: AnatomySystemKey;
   label: string;

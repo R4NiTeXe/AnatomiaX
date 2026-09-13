@@ -1,7 +1,7 @@
 /**
  * Platform-neutral camera-focus math on plain vectors — no Three.js, no DOM.
- * Web (`anatomyFocus.ts`) and future mobile wrap these with their own
- * scene/camera types; the formulas here are the single implementation.
+ * Web (`anatomyFocus.ts`) wraps these with its own scene/camera types;
+ * the formulas here are the single implementation.
  */
 
 export interface FocusVec3 {

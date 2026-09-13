@@ -25,8 +25,8 @@ export {
 
 /**
  * Web registry: the pure core registry plus Three.js scene loading.
- * GLB traversal stays platform-specific per 8.19.33 scope; mobile will supply
- * its own walker and register plain records via the inherited register().
+ * GLB traversal is web-specific; the walker registers plain records via the
+ * inherited register().
  */
 export class AnatomyStructureRegistry extends CoreAnatomyStructureRegistry {
   registerSystem(

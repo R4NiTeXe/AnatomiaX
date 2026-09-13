@@ -17,7 +17,7 @@ paid services, or automatic campaigns.
 Unauthenticated requests get `401` from `JwtAuthGuard` (deleted users lose
 access immediately, like every other protected route).
 
-## Subscription contract (web + future Expo/mobile)
+## Subscription contract (web)
 
 Request body:
 
@@ -29,8 +29,8 @@ Request body:
 ```
 
 - `endpoint` is a plain string (not URL-validated): web sends the
-  `PushSubscription.endpoint` https URL; future Expo/mobile clients send the
-  device token (e.g. `ExponentPushToken[…]`) in the same field.
+  `PushSubscription.endpoint` https URL. The field stores the push endpoint
+  for web push subscriptions.
 - `keys` accepts `p256dh` / `auth` / `expirationTime` only; the service
   persists just these into the existing `PushSubscription.keys` Json column.
 - Web clients may forward `PushSubscription.toJSON()` verbatim

@@ -1,5 +1,5 @@
 /**
- * @anatomiax/anatomy-core — platform-neutral anatomy logic for web and mobile.
+ * @anatomiax/anatomy-core — platform-neutral anatomy logic for web.
  * No React, no Three.js, no DOM. Depends only on @anatomiax/shared-types.
  */
 export * from './anatomyInformation';
