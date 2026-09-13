@@ -4,7 +4,7 @@
  * the backend; application code never reads it and nothing is persisted
  * to localStorage.
  */
-import { ApiError, apiRequest } from './api';
+import { ApiError, apiRequest, buildApiUrl } from './api';
 
 export interface AuthUser {
   id: string;
@@ -14,7 +14,7 @@ export interface AuthUser {
   createdAt: string;
 }
 
-interface SessionBody {
+export interface SessionBody {
   user: AuthUser;
   accessToken: string;
   refreshToken: string;
@@ -99,12 +99,11 @@ export async function authedRequest<T>(path: string, init?: RequestInit): Promis
       emitUnauthenticated();
       throw error;
     }
-    try {
-      return await attempt(accessToken);
-    } catch (retryError) {
-      if (retryError instanceof ApiError && retryError.status === 401) emitUnauthenticated();
-      throw retryError;
-    }
+    // A 401 after a successful refresh is a domain rejection (e.g. wrong
+    // current password), not a dead session — the refresh itself proved the
+    // session is alive, so never log out here. Logout happens only when the
+    // refresh itself fails (above).
+    return await attempt(accessToken);
   }
 }
 
@@ -154,4 +153,58 @@ export async function fetchMe(): Promise<AuthUser | null> {
   } catch {
     return null;
   }
+}
+
+/** Backend Google entrypoint — full-page navigation (sets httpOnly cookie). */
+export function googleLoginUrl(): string {
+  return buildApiUrl('/api/v1/auth/google');
+}
+
+/**
+ * Stores a session delivered via the OAuth callback (future-proof query-param
+ * flow). Tokens stay in module memory only — never persisted to storage.
+ */
+export function acceptCallbackSession(body: SessionBody): AuthUser {
+  return storeSession(body);
+}
+
+export async function changePassword(
+  currentPassword: string | undefined,
+  newPassword: string
+): Promise<void> {
+  await authedRequest<{ status: string }>('/api/v1/auth/password/change', {
+    method: 'POST',
+    body: JSON.stringify(currentPassword ? { currentPassword, newPassword } : { newPassword }),
+  });
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiRequest<{ status: string }>('/api/v1/auth/password-reset/request', {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function confirmPasswordReset(
+  email: string,
+  token: string,
+  newPassword: string
+): Promise<void> {
+  await apiRequest<{ status: string }>('/api/v1/auth/password-reset/confirm', {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify({ email, token, newPassword }),
+  });
+}
+
+/** Fetches the caller's own export payload (JSON-serializable). */
+export async function exportAccountData(): Promise<unknown> {
+  return authedRequest<unknown>('/api/v1/auth/account/export');
+}
+
+export async function deleteAccount(): Promise<void> {
+  await authedRequest<{ status: string }>('/api/v1/auth/account', {
+    method: 'DELETE',
+  });
 }

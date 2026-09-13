@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import RequireAuth from '@/components/auth/RequireAuth';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 const HomePage = lazy(() => import('@/pages/HomePage'));
@@ -10,6 +11,12 @@ const MedicalLabPage = lazy(() => import('@/pages/MedicalLabPage'));
 const SimulationPage = lazy(() => import('@/pages/SimulationPage'));
 const ClinicalCasesPage = lazy(() => import('@/pages/ClinicalCasesPage'));
 const LearnPage = lazy(() => import('@/pages/LearnPage'));
+const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
+const AccountPage = lazy(() => import('@/pages/AccountPage'));
+const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage'));
 
 function RouteFallback(): JSX.Element {
   return (
@@ -31,6 +38,19 @@ export default function App(): JSX.Element {
         <Route path="/simulation" element={<SimulationPage />} />
         <Route path="/clinical-cases" element={<ClinicalCasesPage />} />
         <Route path="/learn" element={<LearnPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/account"
+          element={
+            <RequireAuth>
+              <AccountPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
