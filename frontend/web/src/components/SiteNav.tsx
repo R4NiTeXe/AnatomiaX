@@ -33,6 +33,11 @@ export default function SiteNav(): JSX.Element {
             Progress
           </NavLink>
           {status === 'authenticated' && user ? (
+            <NavLink to="/cohorts" className={linkClass} data-testid="nav-cohorts">
+              Cohorts
+            </NavLink>
+          ) : null}
+          {status === 'authenticated' && user ? (
             <NavLink to="/account" className={linkClass} data-testid="nav-account">
               Account
             </NavLink>

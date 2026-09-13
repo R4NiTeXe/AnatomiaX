@@ -7,18 +7,25 @@ export interface FriendlyAuthError {
   status?: number;
 }
 
-function statusMessage(status: number | undefined, override401?: string): string {
+export interface FriendlyErrorOverrides {
+  override401?: string;
+  override403?: string;
+  override404?: string;
+  override409?: string;
+}
+
+function statusMessage(status: number | undefined, overrides?: FriendlyErrorOverrides): string {
   switch (status) {
     case 400:
       return 'Please check the highlighted fields.';
     case 401:
-      return override401 ?? 'Authentication failed. Please sign in again.';
+      return overrides?.override401 ?? 'Authentication failed. Please sign in again.';
     case 403:
-      return 'You do not have permission to do that.';
+      return overrides?.override403 ?? 'You do not have permission to do that.';
     case 404:
-      return 'Account not found. Please check the details and try again.';
+      return overrides?.override404 ?? 'Account not found. Please check the details and try again.';
     case 409:
-      return 'An account with this email already exists.';
+      return overrides?.override409 ?? 'An account with this email already exists.';
     case 429:
       return 'Too many attempts. Please wait a minute and retry.';
     default:
@@ -32,11 +39,11 @@ function statusMessage(status: number | undefined, override401?: string): string
  */
 export function friendlyAuthError(
   error: unknown,
-  opts?: { override401?: string }
+  opts?: FriendlyErrorOverrides
 ): FriendlyAuthError {
   if (error instanceof ApiError) {
     const base = error.message?.trim();
-    const mapped = statusMessage(error.status, opts?.override401);
+    const mapped = statusMessage(error.status, opts);
     // Prefer the server message for validation errors (it carries specifics),
     // otherwise use the friendly mapping so auth failures stay generic.
     const message =
@@ -59,6 +66,15 @@ export function friendlyAuthError(
   return { message: 'Something went wrong. Please try again.' };
 }
 
-export function friendlyAuthMessage(error: unknown, opts?: { override401?: string }): string {
+export function friendlyAuthMessage(error: unknown, opts?: FriendlyErrorOverrides): string {
   return friendlyAuthError(error, opts).message;
+}
+
+/** Cohort-flavoured mapping that preserves status/requestId/details. */
+export function friendlyCohortError(error: unknown): FriendlyAuthError {
+  return friendlyAuthError(error, {
+    override403: 'Only the cohort owner (or an admin) can do that.',
+    override404: 'Cohort not found. Check the link or invite code and try again.',
+    override409: 'You are already a member of this cohort.',
+  });
 }

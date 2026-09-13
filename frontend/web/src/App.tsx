@@ -17,6 +17,8 @@ const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage'));
+const CohortsPage = lazy(() => import('@/pages/CohortsPage'));
+const CohortDetailPage = lazy(() => import('@/pages/CohortDetailPage'));
 
 function RouteFallback(): JSX.Element {
   return (
@@ -51,6 +53,22 @@ export default function App(): JSX.Element {
           }
         />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route
+          path="/cohorts"
+          element={
+            <RequireAuth>
+              <CohortsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/cohorts/:id"
+          element={
+            <RequireAuth>
+              <CohortDetailPage />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

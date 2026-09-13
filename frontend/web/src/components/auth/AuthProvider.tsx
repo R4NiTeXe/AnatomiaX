@@ -35,8 +35,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function clearProgressCache(queryClient: ReturnType<typeof useQueryClient>): void {
+/** Drops all user-scoped caches so accounts can never leak into each other. */
+function clearUserCache(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.removeQueries({ queryKey: ['progress'] });
+  queryClient.removeQueries({ queryKey: ['cohorts'] });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
@@ -55,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       setUser(null);
       setStatus('anonymous');
       if (hadUser) setSessionExpired(true);
-      clearProgressCache(queryClient);
+      clearUserCache(queryClient);
     });
     fetchMe().then(found => {
       if (!alive) return;
@@ -75,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       setUser(next);
       setStatus('authenticated');
       setSessionExpired(false);
-      queryClient.removeQueries({ queryKey: ['progress'] });
+      clearUserCache(queryClient);
       return next;
     },
     [queryClient]
@@ -87,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       setUser(next);
       setStatus('authenticated');
       setSessionExpired(false);
-      queryClient.removeQueries({ queryKey: ['progress'] });
+      clearUserCache(queryClient);
       return next;
     },
     [queryClient]
@@ -98,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     setUser(null);
     setStatus('anonymous');
     setSessionExpired(false);
-    clearProgressCache(queryClient);
+    clearUserCache(queryClient);
   }, [queryClient]);
 
   const reload = useCallback(async () => {
@@ -107,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     setStatus(found ? 'authenticated' : 'anonymous');
     if (found) setSessionExpired(false);
     else if (userRef.current !== null) setSessionExpired(true);
-    if (!found) clearProgressCache(queryClient);
+    if (!found) clearUserCache(queryClient);
     return found;
   }, [queryClient]);
 

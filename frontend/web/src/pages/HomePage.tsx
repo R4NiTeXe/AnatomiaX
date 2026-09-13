@@ -104,6 +104,7 @@ function PublicHome(): JSX.Element {
 
 function Dashboard(): JSX.Element {
   const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN';
   return (
     <div className="flex flex-col gap-4" data-testid="home-dashboard">
       <div>
@@ -112,6 +113,24 @@ function Dashboard(): JSX.Element {
         </h1>
         <p className="mt-1 text-sm text-slate-400">Here is your learning at a glance.</p>
       </div>
+      <section
+        aria-label="Cohorts"
+        className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+      >
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">Cohorts</h2>
+        <p className="mt-2 text-sm text-slate-300">
+          {isTeacher
+            ? 'Create cohorts for your classes and track members.'
+            : 'Join a cohort with an invite code from your teacher.'}
+        </p>
+        <Link
+          to="/cohorts"
+          data-testid="home-cohorts-link"
+          className="mt-2 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+        >
+          Open My Cohorts
+        </Link>
+      </section>
       <ContinueCard />
       <section
         aria-label="Studied structures"
