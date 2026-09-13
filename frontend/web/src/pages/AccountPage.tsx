@@ -134,11 +134,35 @@ export default function AccountPage(): JSX.Element {
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-8 sm:px-6">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">
-            <Link to="/human" className="hover:text-slate-300">
+            <Link to="/" className="hover:text-slate-300">
               AnatomiaX
             </Link>
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Account</h1>
+          <nav
+            aria-label="Primary"
+            className="mt-2 flex items-center gap-1 text-sm"
+            data-testid="account-nav"
+          >
+            <Link
+              to="/"
+              className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+            >
+              Home
+            </Link>
+            <Link
+              to="/human"
+              className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+            >
+              Anatomy
+            </Link>
+            <Link
+              to="/learn"
+              className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+            >
+              Progress
+            </Link>
+          </nav>
         </div>
 
         {sessionExpired ? (

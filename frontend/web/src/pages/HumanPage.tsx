@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AccountPanel from '@/components/auth/AccountPanel';
 import AnatomyComparePanel from '@/components/anatomy/AnatomyComparePanel';
 import AnatomyInformationPanel from '@/components/anatomy/AnatomyInformationPanel';
 import AnatomyProgressSync from '@/components/anatomy/AnatomyProgressSync';
+import HumanDeepLink from '@/components/anatomy/HumanDeepLink';
 import AnatomyQuiz from '@/components/anatomy/AnatomyQuiz';
 import AnatomySearchBox from '@/components/anatomy/AnatomySearchBox';
 import AnatomySessionPanel from '@/components/anatomy/AnatomySessionPanel';
@@ -139,10 +141,39 @@ export default function HumanPage(): JSX.Element {
   return (
     <AnatomyStateProvider>
       <AnatomyProgressSync />
+      <HumanDeepLink />
       <main className="flex h-screen min-h-screen flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-900 px-4 py-3 sm:px-6">
-          <p className="text-xs uppercase tracking-widest text-slate-500">AnatomiaX</p>
-          <h1 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">Human anatomy</h1>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-slate-500">AnatomiaX</p>
+              <h1 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">Human anatomy</h1>
+            </div>
+            <nav
+              aria-label="Primary"
+              className="flex items-center gap-1 text-sm"
+              data-testid="human-nav"
+            >
+              <Link
+                to="/"
+                className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+              >
+                Home
+              </Link>
+              <Link
+                to="/learn"
+                className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+              >
+                Progress
+              </Link>
+              <Link
+                to="/account"
+                className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+              >
+                Account
+              </Link>
+            </nav>
+          </div>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden sm:p-6">
