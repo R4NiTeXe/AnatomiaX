@@ -1,12 +1,22 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { useEffect, useRef, useState } from 'react';
 import type { JSX } from 'react';
-import { ActivityIndicator, Button, PanResponder, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Button,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import * as THREE from 'three';
 import {
   AnatomyStructureRegistry,
   findManifestEntry,
   getAnatomyInformation,
+  getRelatedAnatomyInformation,
 } from '@anatomiax/anatomy-core';
 import type { AnatomySelection, AnatomySystemKey } from '@anatomiax/shared-types';
 import { fetchVerifiedAsset } from '../lib/assetCache';
@@ -30,6 +40,8 @@ export interface StageTimings {
 
 interface MobileAnatomyStageProps {
   onSelectionChange?: (selection: AnatomySelection | null) => void;
+  onSystemChange?: (system: AnatomySystemKey) => void;
+  onStatusChange?: (status: StageStatus, system: AnatomySystemKey) => void;
 }
 
 interface Highlight {
@@ -46,6 +58,8 @@ interface Highlight {
  */
 export default function MobileAnatomyStage({
   onSelectionChange,
+  onSystemChange,
+  onStatusChange,
 }: MobileAnatomyStageProps): JSX.Element {
   const [status, setStatus] = useState<StageStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -134,12 +148,17 @@ export default function MobileAnatomyStage({
     onSelectionChange?.(next);
   };
 
+  const notifyStatus = (next: StageStatus, nextSystem: AnatomySystemKey): void => {
+    onStatusChange?.(next, nextSystem);
+  };
+
   const loadSystem = async (next: AnatomySystemKey): Promise<void> => {
     const manager = managerRef.current;
     const scene = sceneRef.current;
     const camera = cameraRef.current;
     if (!manager || !scene || !camera) return;
     setStatus('loading');
+    notifyStatus('loading', next);
     setError(null);
     setSlowVisible(false);
     setTimings(null);
@@ -178,12 +197,14 @@ export default function MobileAnatomyStage({
         firstVisibleMs: Date.now() - loadStarted,
       });
       setStatus('ready');
+      notifyStatus('ready', next);
     } catch (err) {
       // Superseded loads stay silent: the newer load owns the UI.
       if (err instanceof StageLoadError && err.code === 'STALE') return;
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load the 3D model.');
       setStatus('error');
+      notifyStatus('error', next);
     } finally {
       slowRef.current.settle();
     }
@@ -323,6 +344,7 @@ export default function MobileAnatomyStage({
       if (!webgl2) {
         setError('This device does not support WebGL2, which the 3D viewer requires.');
         setStatus('unsupported');
+        notifyStatus('unsupported', systemRef.current);
         return;
       }
       const buffer = gl as unknown as { drawingBufferWidth: number; drawingBufferHeight: number };
@@ -335,6 +357,7 @@ export default function MobileAnatomyStage({
         renderer.dispose();
         setError('This device does not support WebGL2, which the 3D viewer requires.');
         setStatus('unsupported');
+        notifyStatus('unsupported', systemRef.current);
         return;
       }
       const scene = new THREE.Scene();
@@ -351,32 +374,72 @@ export default function MobileAnatomyStage({
       void loadSystem(systemRef.current);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start the 3D viewer.');
-      setStatus(rendererRef.current ? 'error' : 'unsupported');
+      const next: StageStatus = rendererRef.current ? 'error' : 'unsupported';
+      setStatus(next);
+      notifyStatus(next, systemRef.current);
     }
   };
 
   const info = selection ? getAnatomyInformation(selection) : undefined;
+  const related = selection ? getRelatedAnatomyInformation(selection.structureKey) : [];
+  const isLoading = status === 'loading';
 
   return (
     <View style={styles.root} testID="mobile-anatomy-stage">
-      <View style={styles.picker} testID="mobile-stage-systems">
-        {SUPPORTED_STAGE_SYSTEMS.map(entry => (
-          <View key={entry.system} style={styles.pickerButton}>
-            <Button
-              title={entry.system}
+      <View style={styles.pickerHeader}>
+        <Text style={styles.pickerLabel}>System</Text>
+        <Text style={styles.pickerHint} testID="mobile-stage-picker-hint">
+          {isLoading ? `Loading ${system}…` : `Active: ${system}`}
+        </Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.pickerScrollContent}
+        style={styles.pickerScroll}
+        testID="mobile-stage-systems"
+      >
+        {SUPPORTED_STAGE_SYSTEMS.map(entry => {
+          const active = entry.system === system;
+          const disabled = isLoading || active;
+          return (
+            <Pressable
+              key={entry.system}
               onPress={() => {
-                if (entry.system !== systemRef.current && status !== 'loading') {
+                if (!disabled && entry.system !== systemRef.current) {
                   setSystem(entry.system);
+                  onSystemChange?.(entry.system);
                   void loadSystem(entry.system);
                 }
               }}
-              disabled={status === 'loading' || entry.system === system}
+              disabled={disabled}
               testID={`mobile-stage-system-${entry.system}`}
-            />
-          </View>
-        ))}
-      </View>
-      <Text style={styles.note}>Male model · more systems later</Text>
+              style={({ pressed }) => [
+                styles.chip,
+                active && styles.chipActive,
+                disabled && !active && styles.chipDisabled,
+                pressed && !disabled && styles.chipPressed,
+              ]}
+              accessibilityState={{ selected: active, disabled }}
+              accessibilityLabel={`${entry.system}${active ? ' active' : ''}${isLoading ? ' loading' : ''}`}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  active && styles.chipTextActive,
+                  disabled && !active && styles.chipTextDisabled,
+                ]}
+                numberOfLines={1}
+              >
+                {entry.system}
+              </Text>
+              {active && isLoading ? <ActivityIndicator size="small" color="#0f172a" /> : null}
+              {active && !isLoading ? <View style={styles.chipDot} /> : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      <Text style={styles.note}>Male model · tap a structure to focus · more systems later</Text>
       <View
         style={styles.viewport}
         onLayout={event => {
@@ -392,7 +455,10 @@ export default function MobileAnatomyStage({
         {status === 'loading' ? (
           <View style={styles.overlay} testID="mobile-stage-loading">
             <ActivityIndicator size="large" />
-            <Text>Loading 3D anatomy…</Text>
+            <Text style={styles.overlayTitle} testID="mobile-stage-loading-system">
+              Loading {system}…
+            </Text>
+            <Text style={styles.note}>Preparing 3D anatomy</Text>
             {slowVisible ? (
               <Text style={styles.note} testID="mobile-stage-slow">
                 Still loading — large asset or slow connection…
@@ -402,7 +468,9 @@ export default function MobileAnatomyStage({
         ) : null}
         {status === 'error' || status === 'unsupported' ? (
           <View style={styles.overlay} testID="mobile-stage-error">
-            <Text style={styles.error}>{error ?? '3D viewer unavailable.'}</Text>
+            <Text style={styles.error} testID="mobile-stage-error-message">
+              {error ?? '3D viewer unavailable.'}
+            </Text>
             {status === 'error' ? (
               <Button
                 title="Retry"
@@ -420,9 +488,59 @@ export default function MobileAnatomyStage({
       ) : null}
       {selection ? (
         <View style={styles.info} testID="mobile-stage-info">
-          <Text style={styles.infoTitle}>{info?.canonicalName ?? selection.name}</Text>
-          {info ? <Text>{info.description}</Text> : null}
-          {info ? <Text style={styles.infoSource}>Source: {info.source}</Text> : null}
+          <Text style={styles.infoTitle} testID="mobile-stage-info-name">
+            {info?.canonicalName ?? selection.name}
+          </Text>
+          <Text style={styles.infoMeta} testID="mobile-stage-info-meta">
+            {selection.systemKey} · {selection.bodyModel}
+            {selection.ontologyId ? ` · ${selection.ontologyId}` : ''}
+          </Text>
+          {info ? (
+            <>
+              <Text style={styles.infoDescription} testID="mobile-stage-info-description">
+                {info.description}
+              </Text>
+              <Text style={styles.infoFunction} testID="mobile-stage-info-function">
+                {info.function}
+              </Text>
+              <View style={styles.provenance} testID="mobile-stage-provenance">
+                <Text style={styles.provenanceLabel}>Source</Text>
+                <Text style={styles.provenanceText} testID="mobile-stage-source">
+                  {info.source}
+                </Text>
+                <Text style={styles.provenanceUrl} testID="mobile-stage-source-url">
+                  {info.sourceUrl}
+                </Text>
+                <Text style={styles.provenanceText} testID="mobile-stage-last-verified">
+                  Last verified: {info.lastVerified}
+                </Text>
+                {info.license ? (
+                  <Text style={styles.provenanceText} testID="mobile-stage-license">
+                    License: {info.license}
+                  </Text>
+                ) : null}
+              </View>
+              {related.length > 0 ? (
+                <View style={styles.relations} testID="mobile-stage-relationships">
+                  <Text style={styles.relationsTitle}>Relationships</Text>
+                  {related.map(r => (
+                    <View
+                      key={r.info.structureKey}
+                      style={styles.relationRow}
+                      testID="mobile-stage-relation-item"
+                    >
+                      <Text style={styles.relationKind}>{r.relation.replace('_', ' ')}</Text>
+                      <Text style={styles.relationName}>{r.info.canonicalName}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </>
+          ) : (
+            <Text style={styles.note} testID="mobile-stage-info-unavailable">
+              Verified information unavailable for this structure.
+            </Text>
+          )}
           <Button
             title="Deselect"
             onPress={() => {
@@ -433,29 +551,114 @@ export default function MobileAnatomyStage({
             testID="mobile-stage-deselect"
           />
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.empty} testID="mobile-stage-empty">
+          <Text style={styles.emptyTitle}>No structure selected</Text>
+          <Text style={styles.emptyText}>
+            Tap any highlighted structure in the 3D view to see details.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { gap: 8 },
-  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  pickerButton: { minWidth: 100 },
+  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pickerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    opacity: 0.6,
+  },
+  pickerHint: { fontSize: 12, opacity: 0.7 },
+  pickerScroll: { flexGrow: 0 },
+  pickerScrollContent: { gap: 8, paddingVertical: 4, paddingRight: 8 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#f8fafc',
+    minWidth: 72,
+    justifyContent: 'center',
+  },
+  chipActive: { backgroundColor: '#0f172a', borderColor: '#0f172a' },
+  chipDisabled: { opacity: 0.5 },
+  chipPressed: { opacity: 0.8 },
+  chipText: { fontSize: 13, fontWeight: '600', color: '#334155', textTransform: 'capitalize' },
+  chipTextActive: { color: '#ffffff' },
+  chipTextDisabled: { color: '#94a3b8' },
+  chipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2dd4bf' },
   note: { opacity: 0.6, fontSize: 12 },
-  viewport: { height: 380, backgroundColor: '#0b1220', borderRadius: 8, overflow: 'hidden' },
+  viewport: { height: 400, backgroundColor: '#0b1220', borderRadius: 12, overflow: 'hidden' },
   gl: { flex: 1 },
   overlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     gap: 8,
     padding: 16,
   },
-  error: { color: '#b91c1c', textAlign: 'center' },
-  timings: { opacity: 0.6, fontSize: 12 },
-  info: { borderWidth: 1, borderColor: '#888', borderRadius: 8, padding: 12, gap: 6 },
-  infoTitle: { fontSize: 18, fontWeight: '700' },
-  infoSource: { opacity: 0.6, fontSize: 12 },
+  overlayTitle: { fontSize: 16, fontWeight: '700', textTransform: 'capitalize' },
+  error: { color: '#b91c1c', textAlign: 'center', fontWeight: '600' },
+  timings: { opacity: 0.6, fontSize: 11 },
+  info: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+    backgroundColor: '#ffffff',
+  },
+  infoTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  infoMeta: { fontSize: 11, opacity: 0.6, textTransform: 'capitalize' },
+  infoDescription: { fontSize: 14, lineHeight: 20, color: '#334155' },
+  infoFunction: { fontSize: 13, lineHeight: 18, color: '#475569', fontStyle: 'italic' },
+  provenance: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 8, gap: 2 },
+  provenanceLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    opacity: 0.5,
+  },
+  provenanceText: { fontSize: 11, opacity: 0.7 },
+  provenanceUrl: { fontSize: 11, color: '#0ea5e9' },
+  relations: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 8, gap: 6 },
+  relationsTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    opacity: 0.5,
+  },
+  relationRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  relationKind: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+    color: '#64748b',
+    minWidth: 70,
+  },
+  relationName: { fontSize: 13, fontWeight: '500', color: '#0f172a', flex: 1 },
+  empty: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 16,
+    gap: 6,
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#334155' },
+  emptyText: { fontSize: 12, opacity: 0.6, textAlign: 'center' },
 });
