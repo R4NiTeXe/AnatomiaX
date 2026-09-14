@@ -3,7 +3,7 @@ import type {
   AnatomySystemKey,
   AnatomySystemType,
 } from '@anatomiax/shared-types';
-import { devAssetFilename, findManifestEntry } from './assetManifest';
+import { buildAssetUrl, findManifestEntry } from './assetManifest';
 
 // Asset definitions (paths/availability) — serializable and platform-neutral,
 // shared by web. Not part of the backend contract.
@@ -30,7 +30,7 @@ export interface AnatomyBodyModelDefinition {
   available: boolean;
 }
 
-const ASSET_BASE_URL: string = (() => {
+export const ASSET_BASE_URL: string = (() => {
   try {
     // Vite provides import.meta.env at build/dev; Jest (CJS) does not support import.meta syntax.
     // Use indirection to avoid static parse error in ts-jest CJS transform.
@@ -42,6 +42,10 @@ const ASSET_BASE_URL: string = (() => {
   }
 })();
 
+function assetPath(bodyModel: AnatomyBodyModelKey, file: string): string {
+  return buildAssetUrl(ASSET_BASE_URL, bodyModel, file);
+}
+
 function defineSystem(
   key: AnatomySystemKey,
   label: string,
@@ -52,7 +56,7 @@ function defineSystem(
     key,
     label,
     type: key === 'skin' ? 'body' : 'system',
-    path: `${ASSET_BASE_URL}${file}`,
+    path: assetPath('male', file),
     available: true,
   };
   return { key, label, asset, available: true, displayOrder };
@@ -105,7 +109,7 @@ export function getAnatomySystemAsset(key: AnatomySystemKey): AnatomySystemAsset
 // ---------------------------------------------------------------------------
 
 function defineBodySystem(
-  _bodyModel: AnatomyBodyModelKey,
+  bodyModel: AnatomyBodyModelKey,
   key: AnatomySystemKey,
   label: string,
   file: string,
@@ -116,7 +120,7 @@ function defineBodySystem(
     key,
     label,
     type: key === 'skin' ? 'body' : 'system',
-    path: `${ASSET_BASE_URL}${file}`,
+    path: assetPath(bodyModel, file),
     available,
   };
   return { key, label, asset, available, displayOrder };
@@ -124,10 +128,10 @@ function defineBodySystem(
 
 const MALE_SYSTEMS = ANATOMY_SYSTEM_DEFINITIONS;
 
-// Female entries resolve through the manifest plus the local-dev flat-layout
-// rule, preserving the exact served filenames (female-<file>).
-const devFemale = (system: AnatomySystemKey): string =>
-  devAssetFilename('female', manifestFile('female', system));
+// Female entries resolve through the manifest plus the buildAssetUrl helper:
+// - dev (/models-dev/) → flat with female- prefix (preserves public/models-dev/*.glb)
+// - prod (HTTPS base) → <base>/<bodyModel>/<file> per docs/architecture/asset-hosting.md
+const devFemale = (system: AnatomySystemKey): string => manifestFile('female', system);
 
 const FEMALE_SYSTEMS: readonly AnatomySystemDefinition[] = [
   defineBodySystem('female', 'skin', 'Skin', devFemale('skin'), 0, true),

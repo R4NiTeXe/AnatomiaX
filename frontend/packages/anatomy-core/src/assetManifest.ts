@@ -7,6 +7,11 @@
  * `bodyModel`). Recommended static-host layout: `<base>/<bodyModel>/<file>`.
  * Local dev serves a flat subset under `/models-dev/` with `female-`-prefixed
  * copies — see devAssetFilename(). No host, backend, or database involved.
+ *
+ * Production vs dev resolution is handled by buildAssetUrl()/getManifestAssetUrl():
+ * - dev base `/models-dev/` → flat with female- prefix (preserves public/models-dev/*.glb)
+ * - any other base (HTTPS static host) → `<base>/<bodyModel>/<file>` (provider-neutral)
+ * See docs/architecture/asset-hosting.md for hosting, caching, and versioning.
  */
 import type { AnatomyBodyModelKey, AnatomySystemKey } from '@anatomiax/shared-types';
 
@@ -164,4 +169,64 @@ export function findManifestEntry(
  */
 export function devAssetFilename(bodyModel: AnatomyBodyModelKey, file: string): string {
   return bodyModel === 'female' ? `female-${file}` : file;
+}
+
+/**
+ * Normalizes a static-host base URL to always end with `/`.
+ * Empty or undefined falls back to `/models-dev/` (local dev).
+ */
+export function normalizeAssetBase(base: string | undefined | null): string {
+  const raw = (base ?? '').trim() || '/models-dev/';
+  return raw.endsWith('/') ? raw : `${raw}/`;
+}
+
+/**
+ * Provider-neutral asset URL builder.
+ * - `/models-dev/` (local dev) → flat layout with female- prefix, preserves existing public/models-dev/*.glb.
+ * - any other base (e.g. https://assets.example/anatomy/) → `<base>/<bodyModel>/<file>` for 18 GLBs.
+ * The manifest carries no host; this function completes identity with bodyModel.
+ */
+export function buildAssetUrl(
+  base: string | undefined | null,
+  bodyModel: AnatomyBodyModelKey,
+  file: string
+): string {
+  const normalized = normalizeAssetBase(base);
+  if (normalized === '/models-dev/') {
+    return `${normalized}${devAssetFilename(bodyModel, file)}`;
+  }
+  return `${normalized}${bodyModel}/${file}`;
+}
+
+/**
+ * Resolves a manifest entry to its full URL under the given base.
+ */
+export function getManifestAssetUrl(
+  base: string | undefined | null,
+  entry: AssetManifestEntry
+): string {
+  return buildAssetUrl(base, entry.bodyModel, entry.file);
+}
+
+/**
+ * All 18 production URLs under the given base — deterministic ordering (male then female, system order).
+ */
+export function getAllProductionUrls(base: string | undefined | null): string[] {
+  return ASSET_MANIFEST.map(e => getManifestAssetUrl(base, e));
+}
+
+/**
+ * Cache-safe versioned URL using the manifest SHA-256.
+ * Filenames are preserved; versioning is via `?v=<shortHash>` query param
+ * (first 8 hex chars) so existing references do not break and immutable
+ * caching can be applied. Full SHA-256 remains in the manifest for integrity.
+ * Example: https://assets.example/anatomy/male/skin-meshopt.glb?v=afe1a889
+ */
+export function getVersionedAssetUrl(
+  base: string | undefined | null,
+  entry: AssetManifestEntry
+): string {
+  const url = getManifestAssetUrl(base, entry);
+  const short = entry.sha256.slice(0, 8);
+  return `${url}?v=${short}`;
 }

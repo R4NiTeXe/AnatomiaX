@@ -11,3 +11,4 @@ export * from './structureRegistry';
 export * from './focusMath';
 export * from './studiedKeys';
 export * from './attemptPayload';
+export * from './assetIntegrity';
