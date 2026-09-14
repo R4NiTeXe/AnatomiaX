@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import RequireAuth from '@/components/auth/RequireAuth';
+import AppShell from '@/components/layout/AppShell';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 const HomePage = lazy(() => import('@/pages/HomePage'));
@@ -40,51 +41,56 @@ export default function App(): JSX.Element {
       </a>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          {/* Public shell — Home, Learn, Anatomy share consistent nav; auth pages keep AuthLayout */}
+          <Route element={<AppShell />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/learn" element={<LearnPage />} />
+            <Route
+              path="/account"
+              element={
+                <RequireAuth>
+                  <AccountPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/cohorts"
+              element={
+                <RequireAuth>
+                  <CohortsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/cohorts/:id/dashboard"
+              element={
+                <RequireAuth>
+                  <CohortDashboardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/cohorts/:id"
+              element={
+                <RequireAuth>
+                  <CohortDetailPage />
+                </RequireAuth>
+              }
+            />
+          </Route>
+
+          {/* Standalone — preserve viewer header, no shell duplication */}
           <Route path="/human" element={<HumanPage />} />
           <Route path="/human-test" element={<HumanTestPage />} />
           <Route path="/ai-health" element={<AiHealthPage />} />
           <Route path="/medical-lab" element={<MedicalLabPage />} />
           <Route path="/simulation" element={<SimulationPage />} />
           <Route path="/clinical-cases" element={<ClinicalCasesPage />} />
-          <Route path="/learn" element={<LearnPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route
-            path="/account"
-            element={
-              <RequireAuth>
-                <AccountPage />
-              </RequireAuth>
-            }
-          />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route
-            path="/cohorts"
-            element={
-              <RequireAuth>
-                <CohortsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/cohorts/:id/dashboard"
-            element={
-              <RequireAuth>
-                <CohortDashboardPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/cohorts/:id"
-            element={
-              <RequireAuth>
-                <CohortDetailPage />
-              </RequireAuth>
-            }
-          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
+import AppShell from '@/components/layout/AppShell';
 import LearnPage from '../LearnPage';
 
 function jsonResponse(data: unknown, status = 200) {
@@ -117,7 +118,9 @@ function renderLearn(path = '/learn') {
       <AuthProvider>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route path="/learn" element={<LearnPage />} />
+            <Route element={<AppShell />}>
+              <Route path="/learn" element={<LearnPage />} />
+            </Route>
             <Route path="/human" element={<div data-testid="human-page">human</div>} />
             <Route path="/login" element={<div data-testid="login-page">login</div>} />
           </Routes>

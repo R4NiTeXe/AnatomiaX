@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/api';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
 import RequireAuth from '@/components/auth/RequireAuth';
+import AppShell from '@/components/layout/AppShell';
 import { friendlyCohortError } from '@/components/auth/friendlyAuthError';
 import CohortDetailPage from '../CohortDetailPage';
 import CohortsPage from '../CohortsPage';
@@ -299,22 +300,24 @@ function renderCohorts(initialEntries: string[]) {
       <AuthProvider>
         <MemoryRouter initialEntries={initialEntries}>
           <Routes>
-            <Route
-              path="/cohorts"
-              element={
-                <RequireAuth>
-                  <CohortsPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/cohorts/:id"
-              element={
-                <RequireAuth>
-                  <CohortDetailPage />
-                </RequireAuth>
-              }
-            />
+            <Route element={<AppShell />}>
+              <Route
+                path="/cohorts"
+                element={
+                  <RequireAuth>
+                    <CohortsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/cohorts/:id"
+                element={
+                  <RequireAuth>
+                    <CohortDetailPage />
+                  </RequireAuth>
+                }
+              />
+            </Route>
             <Route path="/login" element={<div data-testid="login-page">login</div>} />
           </Routes>
         </MemoryRouter>

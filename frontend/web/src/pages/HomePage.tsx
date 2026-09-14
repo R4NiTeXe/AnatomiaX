@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import SiteNav from '@/components/SiteNav';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { QuizRecent } from '@/components/learning/QuizAttempts';
 import StudiedStructures from '@/components/learning/StudiedStructures';
@@ -150,18 +149,17 @@ function Dashboard(): JSX.Element {
 export default function HomePage(): JSX.Element {
   const { status } = useAuth();
 
+  // Rendered inside AppShell which already provides SiteNav + min-h-screen.
+  // Keep main#main-content for skip-link target; AppShell's Outlet renders this.
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <SiteNav />
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-        {status === 'loading' ? (
-          <Skeleton className="h-20 w-full" data-testid="home-loading" />
-        ) : status === 'authenticated' ? (
-          <Dashboard />
-        ) : (
-          <PublicHome />
-        )}
-      </main>
-    </div>
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      {status === 'loading' ? (
+        <Skeleton className="h-20 w-full" data-testid="home-loading" />
+      ) : status === 'authenticated' ? (
+        <Dashboard />
+      ) : (
+        <PublicHome />
+      )}
+    </main>
   );
 }

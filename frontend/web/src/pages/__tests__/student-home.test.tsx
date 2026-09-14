@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
+import AppShell from '@/components/layout/AppShell';
 import HomePage from '../HomePage';
 import LearnPage from '../LearnPage';
 
@@ -110,9 +111,11 @@ function renderHome(path = '/') {
       <AuthProvider>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route element={<AppShell />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/learn" element={<LearnPage />} />
+            </Route>
             <Route path="/human" element={<div data-testid="human-page">human</div>} />
-            <Route path="/learn" element={<LearnPage />} />
             <Route path="/login" element={<div data-testid="login-page">login</div>} />
             <Route path="/register" element={<div data-testid="register-page">register</div>} />
           </Routes>
@@ -132,7 +135,9 @@ function renderLearn(path = '/learn') {
       <AuthProvider>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route path="/learn" element={<LearnPage />} />
+            <Route element={<AppShell />}>
+              <Route path="/learn" element={<LearnPage />} />
+            </Route>
             <Route path="/human" element={<div data-testid="human-page">human</div>} />
             <Route path="/login" element={<div data-testid="login-page">login</div>} />
           </Routes>

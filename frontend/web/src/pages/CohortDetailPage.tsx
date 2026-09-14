@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import SiteNav from '@/components/SiteNav';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyCohortError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
@@ -412,119 +411,116 @@ export default function CohortDetailPage(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <SiteNav />
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6"
-      >
-        <Button variant="ghost" size="sm" asChild className="w-fit">
-          <Link to="/cohorts">← Back to My Cohorts</Link>
-        </Button>
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6"
+    >
+      <Button variant="ghost" size="sm" asChild className="w-fit">
+        <Link to="/cohorts">← Back to My Cohorts</Link>
+      </Button>
 
-        {cohortQuery.isLoading && !cohort ? (
-          <Skeleton className="h-20 w-full" data-testid="cohort-detail-loading" />
-        ) : cohortQuery.isError || !cohort ? (
-          <Card className="p-6">
-            <h1 className="text-xl font-bold tracking-tight" data-testid="cohort-not-found">
-              Cohort not found
-            </h1>
-            <AuthErrorNotice
-              error={cohortQuery.error ? friendlyCohortError(cohortQuery.error) : null}
-              testId="cohort-detail-error"
-            />
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={handleRetry}
-                data-testid="cohort-detail-retry"
+      {cohortQuery.isLoading && !cohort ? (
+        <Skeleton className="h-20 w-full" data-testid="cohort-detail-loading" />
+      ) : cohortQuery.isError || !cohort ? (
+        <Card className="p-6">
+          <h1 className="text-xl font-bold tracking-tight" data-testid="cohort-not-found">
+            Cohort not found
+          </h1>
+          <AuthErrorNotice
+            error={cohortQuery.error ? friendlyCohortError(cohortQuery.error) : null}
+            testId="cohort-detail-error"
+          />
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleRetry}
+              data-testid="cohort-detail-retry"
+            >
+              Retry
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/cohorts">Back to My Cohorts</Link>
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1
+                className="text-2xl font-bold tracking-tight sm:text-3xl"
+                data-testid="cohort-name"
               >
-                Retry
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/cohorts">Back to My Cohorts</Link>
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1
-                  className="text-2xl font-bold tracking-tight sm:text-3xl"
-                  data-testid="cohort-name"
-                >
-                  {cohort.name}
-                </h1>
-                <Badge data-testid="cohort-role-badge">{cohort.myRole ?? 'MEMBER'}</Badge>
-                {isArchived ? (
-                  <Badge variant="secondary" data-testid="cohort-archived-badge">
-                    Archived
-                  </Badge>
-                ) : null}
-              </div>
-              <p className="mt-1 text-sm text-slate-400" data-testid="cohort-institution">
-                {cohort.institutionLabel ?? 'No institution'}
-              </p>
-              {(canManage || user?.role === 'TEACHER' || user?.role === 'ADMIN') &&
-              user?.role !== 'STUDENT' ? (
-                <Button variant="outline" size="sm" asChild className="mt-2">
-                  <Link to={`/cohorts/${cohort.id}/dashboard`} data-testid="cohort-dashboard-link">
-                    View dashboard
-                  </Link>
-                </Button>
+                {cohort.name}
+              </h1>
+              <Badge data-testid="cohort-role-badge">{cohort.myRole ?? 'MEMBER'}</Badge>
+              {isArchived ? (
+                <Badge variant="secondary" data-testid="cohort-archived-badge">
+                  Archived
+                </Badge>
               ) : null}
             </div>
-
-            {isArchived ? (
-              <Alert data-testid="cohort-archived-notice">
-                <AlertDescription>
-                  This cohort is archived and read-only. Members can still view and leave.
-                </AlertDescription>
-              </Alert>
+            <p className="mt-1 text-sm text-slate-400" data-testid="cohort-institution">
+              {cohort.institutionLabel ?? 'No institution'}
+            </p>
+            {(canManage || user?.role === 'TEACHER' || user?.role === 'ADMIN') &&
+            user?.role !== 'STUDENT' ? (
+              <Button variant="outline" size="sm" asChild className="mt-2">
+                <Link to={`/cohorts/${cohort.id}/dashboard`} data-testid="cohort-dashboard-link">
+                  View dashboard
+                </Link>
+              </Button>
             ) : null}
+          </div>
 
-            {canManage && !isArchived ? <InviteCard id={cohort.id} /> : null}
+          {isArchived ? (
+            <Alert data-testid="cohort-archived-notice">
+              <AlertDescription>
+                This cohort is archived and read-only. Members can still view and leave.
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
-            {canManage && !isArchived ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
-                    Edit cohort
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EditCohortForm key={cohort.id} cohort={cohort} />
-                </CardContent>
-              </Card>
-            ) : null}
+          {canManage && !isArchived ? <InviteCard id={cohort.id} /> : null}
 
+          {canManage && !isArchived ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
-                  Members
+                  Edit cohort
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <MembersSection
-                  id={cohort.id}
-                  canManage={canManage}
-                  isArchived={isArchived}
-                  ownUserId={user?.id}
-                />
+                <EditCohortForm key={cohort.id} cohort={cohort} />
               </CardContent>
             </Card>
+          ) : null}
 
-            {canManage && !isArchived ? (
-              <DangerZone id={cohort.id} name={cohort.name} />
-            ) : (
-              <LeaveOnly id={cohort.id} />
-            )}
-          </>
-        )}
-      </main>
-    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+                Members
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MembersSection
+                id={cohort.id}
+                canManage={canManage}
+                isArchived={isArchived}
+                ownUserId={user?.id}
+              />
+            </CardContent>
+          </Card>
+
+          {canManage && !isArchived ? (
+            <DangerZone id={cohort.id} name={cohort.name} />
+          ) : (
+            <LeaveOnly id={cohort.id} />
+          )}
+        </>
+      )}
+    </main>
   );
 }

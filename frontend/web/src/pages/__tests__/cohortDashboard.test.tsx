@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import AppShell from '@/components/layout/AppShell';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
@@ -217,15 +218,17 @@ function renderDashboard(_me: typeof TEACHER_A, path = '/cohorts/c-A/dashboard')
       <AuthProvider>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route
-              path="/cohorts/:id/dashboard"
-              element={
-                <RequireAuth>
-                  <CohortDashboardPage />
-                </RequireAuth>
-              }
-            />
-            <Route path="/cohorts" element={<div data-testid="cohorts-page">list</div>} />
+            <Route element={<AppShell />}>
+              <Route
+                path="/cohorts/:id/dashboard"
+                element={
+                  <RequireAuth>
+                    <CohortDashboardPage />
+                  </RequireAuth>
+                }
+              />
+              <Route path="/cohorts" element={<div data-testid="cohorts-page">list</div>} />
+            </Route>
             <Route path="/login" element={<div data-testid="login-page">login</div>} />
           </Routes>
         </MemoryRouter>
