@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { CohortsModule } from './cohorts/cohorts.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
@@ -24,6 +25,7 @@ import { UsersModule } from './users/users.module';
     ProgressModule,
     NotificationsModule,
     HealthModule,
+    AdminModule,
   ],
   providers: [
     // 8.19.25 canonical contract: request ids on every response, normalized

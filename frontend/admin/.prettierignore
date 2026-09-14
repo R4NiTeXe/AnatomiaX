@@ -1,0 +1,20 @@
+node_modules
+dist
+build
+.next
+coverage
+.next
+out
+.11ty
+_site
+eleventy
+*.min.js
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.git
+.idea
+.vscode
+*.log
+# Next.js generated TypeScript declarations
+**/next-env.d.ts
