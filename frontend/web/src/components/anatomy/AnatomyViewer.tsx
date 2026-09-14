@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Bounds, OrbitControls, useBounds } from '@react-three/drei';
 import { useAnatomyState } from './AnatomyStateContext';
@@ -23,7 +23,13 @@ function FitController({ resetSignal }: { resetSignal: number }): null {
 function AnatomySystems(): JSX.Element {
   const { visibleSystems, status, setSystemStatus, attempts, selectedBodyModel } =
     useAnatomyState();
-  const assets = Object.values(ANATOMY_BODY_MODELS[selectedBodyModel].systems);
+  // STEP 8.20.9: memoize asset list — Object.values() creates a new array
+  // every render, which previously retriggered the status effect on each
+  // hover/selection update. Stable reference limits effect runs to real changes.
+  const assets = useMemo(
+    () => Object.values(ANATOMY_BODY_MODELS[selectedBodyModel].systems),
+    [selectedBodyModel]
+  );
 
   useEffect(() => {
     for (const asset of assets) {
@@ -51,13 +57,19 @@ type AnatomyViewerProps = {
 
 export default function AnatomyViewer({ resetSignal, vertical }: AnatomyViewerProps): JSX.Element {
   const { selectStructure } = useAnatomyState();
+  // STEP 8.20.9: stable miss handler avoids recreating Canvas props on every
+  // context update (hover/selection). Canvas frameloop stays default "always":
+  // OrbitControls damping, Bounds observe, and the 380ms focus animation all
+  // require continuous frames; demand mode would need manual invalidate()
+  // wiring across controls/focus/highlight and risks freezing required motion.
+  const handlePointerMissed = useCallback(() => selectStructure(null), [selectStructure]);
 
   return (
     <Canvas
       dpr={[1, 2]}
       gl={{ antialias: true }}
       camera={{ fov: 50, position: [0, 1.2, 3.5] }}
-      onPointerMissed={() => selectStructure(null)}
+      onPointerMissed={handlePointerMissed}
       style={{ touchAction: 'none' }}
     >
       <color attach="background" args={['#0b1220']} />

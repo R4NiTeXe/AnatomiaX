@@ -1,3 +1,16 @@
+// STEP 8.20.9.1: isolate heavy 3D import that pushes the test over the
+// default 5s timeout under parallel worker contention. Mocking the viewer
+// keeps the DOM assertions (header/nav) intact while making the HumanPage
+// import cheap — no three/R3F parse inside the 5s window. Global
+// ResizeObserver/canvas polyfills live in src/test-setup.ts (setupFiles).
+jest.mock('@/components/anatomy/AnatomyViewer', () => ({
+  __esModule: true,
+  default: () => {
+    const React = require('react');
+    return React.createElement('div', { 'data-testid': 'mock-anatomy-viewer' }, 'viewer');
+  },
+}));
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,6 +20,7 @@ import * as path from 'path';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import App from '@/App';
+import HumanPage from '../HumanPage';
 
 function jsonResponse(data: unknown, status = 200) {
   return {
@@ -28,18 +42,6 @@ const USER = {
 };
 
 describe('8.20.6.1 reliability/a11y', () => {
-  beforeAll(() => {
-    const Polyfill = class {
-      observe(): void {}
-      unobserve(): void {}
-      disconnect(): void {}
-    };
-    // jsdom lacks ResizeObserver required by @react-three/fiber Canvas
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!(global as any).ResizeObserver) (global as any).ResizeObserver = Polyfill;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!(window as any).ResizeObserver) (window as any).ResizeObserver = Polyfill;
-  });
   beforeEach(() => {
     __resetAuthForTests();
     jest.restoreAllMocks();
@@ -136,7 +138,6 @@ describe('8.20.6.1 reliability/a11y', () => {
 
   it('/human still renders without global boundary interfering', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: HumanPage } = await import('../HumanPage');
     render(
       <QueryClientProvider client={client}>
         <AuthProvider>
@@ -146,8 +147,9 @@ describe('8.20.6.1 reliability/a11y', () => {
         </AuthProvider>
       </QueryClientProvider>
     );
-    // header present, viewer not redesigned
+    // header present, viewer not redesigned (viewer is mocked — DOM assertion preserved)
     expect(await screen.findByText('Human anatomy', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByTestId('human-nav')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-anatomy-viewer')).toBeInTheDocument();
   });
 });

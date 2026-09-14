@@ -40,7 +40,9 @@ function cloneSceneMaterials(scene: THREE.Object3D): MeshMaterialEntry[] {
     if (!(mesh as unknown as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
     const shared = mesh.material;
     // Clone so opacity/highlight never mutate materials shared across meshes.
-    const cloned = Array.isArray(shared) ? shared.map(m => m.clone()) : shared.clone();
+    const cloned = Array.isArray(shared)
+      ? shared.map(m => m.clone())
+      : (shared as THREE.Material).clone();
     // Preserve original transparency/depthWrite for soft-transparency restore.
     const clonedList = Array.isArray(cloned) ? cloned : [cloned];
     const sharedList = Array.isArray(shared) ? shared : [shared];
@@ -53,6 +55,41 @@ function cloneSceneMaterials(scene: THREE.Object3D): MeshMaterialEntry[] {
     entries.push({ mesh, base: cloned });
   });
   return entries;
+}
+
+interface CachedMeshKey {
+  key: string;
+  ontologyId: string | null;
+}
+
+function disposeMaterial(material: THREE.Material | THREE.Material[]): void {
+  const list = Array.isArray(material) ? material : [material];
+  for (const m of list) {
+    try {
+      m.dispose?.();
+    } catch {
+      // ignore dispose errors — restore still proceeds
+    }
+  }
+}
+
+// STEP 8.20.9: O(1) restore + highlight-clone disposal. Previously each
+// highlight pass did scene.traverse + linear entries.find per mesh (O(n^2)
+// on large systems) and discarded highlight clones without dispose.
+// Behavior preserved: same emissive/opacity, same matching.
+function restoreMeshToBase(mesh: THREE.Mesh, entryMap: Map<THREE.Mesh, MeshMaterialEntry>): void {
+  const entry = entryMap.get(mesh);
+  if (!entry) return;
+  const current = mesh.material;
+  if (current === entry.base) return;
+  const baseList = Array.isArray(entry.base) ? entry.base : [entry.base];
+  const currentList = Array.isArray(current) ? current : [current];
+  // Dispose only highlight clones (materials not part of base).
+  const toDispose = currentList.filter(m => !baseList.includes(m as THREE.Material));
+  if (toDispose.length > 0) {
+    disposeMaterial(toDispose as THREE.Material[]);
+  }
+  mesh.material = entry.base;
 }
 
 function applySystemOpacity(entries: MeshMaterialEntry[], opacity: number): void {
@@ -131,12 +168,31 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     selectedBodyModel,
   } = useAnatomyState();
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
+  const entryMapRef = useRef<Map<THREE.Mesh, MeshMaterialEntry>>(new Map());
+  const keyCacheRef = useRef<Map<THREE.Mesh, CachedMeshKey>>(new Map());
   const highlightedRef = useRef<THREE.Mesh[]>([]);
   const hoveredRef = useRef<THREE.Mesh[]>([]);
   const compareRef = useRef<THREE.Mesh[]>([]);
 
   useEffect(() => {
-    entriesRef.current = cloneSceneMaterials(scene);
+    const entries = cloneSceneMaterials(scene);
+    entriesRef.current = entries;
+    // STEP 8.20.9: build O(1) lookup + per-mesh key cache once per mount.
+    // Highlight passes previously re-traversed the full scene and recomputed
+    // names/ontology/keys on every selection/hover/compare change.
+    const entryMap = new Map<THREE.Mesh, MeshMaterialEntry>();
+    const keyCache = new Map<THREE.Mesh, CachedMeshKey>();
+    for (const entry of entries) {
+      entryMap.set(entry.mesh, entry);
+      const objectName = resolveStructureName(entry.mesh);
+      const ontologyId = extractOntologyId(entry.mesh);
+      keyCache.set(entry.mesh, {
+        key: createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel),
+        ontologyId,
+      });
+    }
+    entryMapRef.current = entryMap;
+    keyCacheRef.current = keyCache;
     applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
     registerSystemStructures(asset.key, scene);
     registerSystemScene(asset.key, scene);
@@ -168,8 +224,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   useEffect(() => {
     // Restore any previously highlighted meshes in this system.
     for (const mesh of highlightedRef.current) {
-      const entry = entriesRef.current.find(e => e.mesh === mesh);
-      if (entry) mesh.material = entry.base;
+      restoreMeshToBase(mesh, entryMapRef.current);
     }
     highlightedRef.current = [];
 
@@ -179,12 +234,19 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       selectedStructure.bodyModel === selectedBodyModel
     ) {
       const targets: THREE.Mesh[] = [];
-      scene.traverse(obj => {
-        const mesh = obj as THREE.Mesh;
-        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
-        const objectName = resolveStructureName(mesh);
-        const ontologyId = extractOntologyId(mesh);
-        const key = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
+      // STEP 8.20.9: iterate cached mesh entries (meshes only) with
+      // precomputed keys — same matching as previous scene.traverse.
+      for (const { mesh } of entriesRef.current) {
+        const cached = keyCacheRef.current.get(mesh);
+        const key =
+          cached?.key ??
+          createStructureKey(
+            asset.key,
+            extractOntologyId(mesh),
+            resolveStructureName(mesh),
+            selectedBodyModel
+          );
+        const ontologyId = cached?.ontologyId ?? extractOntologyId(mesh);
         if (key === selectedStructure.structureKey) {
           targets.push(mesh);
         } else if (
@@ -195,7 +257,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
           // Multiple meshes sharing the same ontologyId — highlight all.
           targets.push(mesh);
         }
-      });
+      }
       for (const mesh of targets) {
         applyHighlight(mesh, 'selected');
         highlightedRef.current.push(mesh);
@@ -204,8 +266,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
 
     return () => {
       for (const mesh of highlightedRef.current) {
-        const entry = entriesRef.current.find(e => e.mesh === mesh);
-        if (entry) mesh.material = entry.base;
+        restoreMeshToBase(mesh, entryMapRef.current);
       }
       highlightedRef.current = [];
     };
@@ -217,8 +278,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       // Don't restore if mesh is currently selected (selected highlight takes precedence)
       const isSelected = highlightedRef.current.includes(mesh);
       if (!isSelected) {
-        const entry = entriesRef.current.find(e => e.mesh === mesh);
-        if (entry) mesh.material = entry.base;
+        restoreMeshToBase(mesh, entryMapRef.current);
       }
     }
     hoveredRef.current = [];
@@ -231,18 +291,23 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       hoveredStructure.structureKey !== selectedStructure?.structureKey
     ) {
       const targets: THREE.Mesh[] = [];
-      scene.traverse(obj => {
-        const mesh = obj as THREE.Mesh;
-        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
-        const objectName = resolveStructureName(mesh);
-        const ontologyId = extractOntologyId(mesh);
-        const key = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
+      for (const { mesh } of entriesRef.current) {
+        const cached = keyCacheRef.current.get(mesh);
+        const key =
+          cached?.key ??
+          createStructureKey(
+            asset.key,
+            extractOntologyId(mesh),
+            resolveStructureName(mesh),
+            selectedBodyModel
+          );
+        const ontologyId = cached?.ontologyId ?? extractOntologyId(mesh);
         if (key === hoveredStructure.structureKey) {
           targets.push(mesh);
         } else if (hoveredStructure.ontologyId && ontologyId === hoveredStructure.ontologyId) {
           targets.push(mesh);
         }
-      });
+      }
       for (const mesh of targets) {
         // Skip if already highlighted as selected
         if (highlightedRef.current.includes(mesh)) continue;
@@ -255,8 +320,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       for (const mesh of hoveredRef.current) {
         const isSelected = highlightedRef.current.includes(mesh);
         if (!isSelected) {
-          const entry = entriesRef.current.find(e => e.mesh === mesh);
-          if (entry) mesh.material = entry.base;
+          restoreMeshToBase(mesh, entryMapRef.current);
         }
       }
       hoveredRef.current = [];
@@ -269,8 +333,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       const isSelected = highlightedRef.current.includes(mesh);
       const isHovered = hoveredRef.current.includes(mesh);
       if (!isSelected && !isHovered) {
-        const entry = entriesRef.current.find(e => e.mesh === mesh);
-        if (entry) mesh.material = entry.base;
+        restoreMeshToBase(mesh, entryMapRef.current);
       }
     }
     compareRef.current = [];
@@ -282,18 +345,23 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       compareStructure.structureKey !== selectedStructure?.structureKey
     ) {
       const targets: THREE.Mesh[] = [];
-      scene.traverse(obj => {
-        const mesh = obj as THREE.Mesh;
-        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) return;
-        const objectName = resolveStructureName(mesh);
-        const ontologyId = extractOntologyId(mesh);
-        const key = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
+      for (const { mesh } of entriesRef.current) {
+        const cached = keyCacheRef.current.get(mesh);
+        const key =
+          cached?.key ??
+          createStructureKey(
+            asset.key,
+            extractOntologyId(mesh),
+            resolveStructureName(mesh),
+            selectedBodyModel
+          );
+        const ontologyId = cached?.ontologyId ?? extractOntologyId(mesh);
         if (key === compareStructure.structureKey) {
           targets.push(mesh);
         } else if (compareStructure.ontologyId && ontologyId === compareStructure.ontologyId) {
           targets.push(mesh);
         }
-      });
+      }
       for (const mesh of targets) {
         if (highlightedRef.current.includes(mesh) || hoveredRef.current.includes(mesh)) continue;
         applyHighlight(mesh, 'compare');
@@ -306,8 +374,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
         const isSelected = highlightedRef.current.includes(mesh);
         const isHovered = hoveredRef.current.includes(mesh);
         if (!isSelected && !isHovered) {
-          const entry = entriesRef.current.find(e => e.mesh === mesh);
-          if (entry) mesh.material = entry.base;
+          restoreMeshToBase(mesh, entryMapRef.current);
         }
       }
       compareRef.current = [];

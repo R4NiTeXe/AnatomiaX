@@ -141,7 +141,7 @@ export function AnatomyStateProvider({
   const [isolatedSystem, setIsolatedSystem] = useState<AnatomySystemKey | null>(null);
   const [isolatedSnapshot, setIsolatedSnapshot] = useState<IsolatedSnapshot | null>(null);
   const [selectedStructure, setSelectedStructure] = useState<SelectedStructure | null>(null);
-  const [hoveredStructure, setHoveredStructure] = useState<SelectedStructure | null>(null);
+  const [hoveredStructure, setHoveredStructureRaw] = useState<SelectedStructure | null>(null);
   const [recentHistory, setRecentHistory] = useState<SelectedStructure[]>([]);
   const [compareStructure, setCompareStructure] = useState<SelectedStructure | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<AnatomyQuizQuestion[]>([]);
@@ -175,6 +175,27 @@ export function AnatomyStateProvider({
     lymphatic: 0,
   });
 
+  // STEP 8.20.9: hover is high-frequency (pointerOver per mesh/row). Bail out
+  // when the incoming structure matches the current one so repeated hovers
+  // over meshes of the same structure do not create new objects and retrigger
+  // the whole context (all useAnatomyState consumers). Preserves hover UX.
+  const setHoveredStructureSafe = useCallback((next: SelectedStructure | null) => {
+    setHoveredStructureRaw(prev => {
+      if (prev === next) return prev;
+      if (!prev && !next) return prev;
+      if (
+        prev &&
+        next &&
+        prev.structureKey === next.structureKey &&
+        prev.bodyModel === next.bodyModel &&
+        prev.systemKey === next.systemKey
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
+
   // Clear selection when its system becomes hidden
   useEffect(() => {
     if (selectedStructure && !visibleSystems[selectedStructure.systemKey]) {
@@ -185,9 +206,15 @@ export function AnatomyStateProvider({
       setCompareStructure(null);
     }
     if (hoveredStructure && !visibleSystems[hoveredStructure.systemKey]) {
-      setHoveredStructure(null);
+      setHoveredStructureSafe(null);
     }
-  }, [visibleSystems, selectedStructure, compareStructure, hoveredStructure]);
+  }, [
+    visibleSystems,
+    selectedStructure,
+    compareStructure,
+    hoveredStructure,
+    setHoveredStructureSafe,
+  ]);
 
   // Also clear highlight when isolated system hides previous selection
   useEffect(() => {
@@ -206,7 +233,7 @@ export function AnatomyStateProvider({
       systemScenesRef.current.clear();
       setRegistryVersion(v => v + 1);
       setSelectedStructure(null);
-      setHoveredStructure(null);
+      setHoveredStructureSafe(null);
       setRecentHistory([]);
       setCompareStructure(null);
       setQuizQuestions([]);
@@ -298,7 +325,7 @@ export function AnatomyStateProvider({
   const selectStructure = useCallback(
     (structure: SelectedStructure | null) => {
       setSelectedStructure(structure);
-      setHoveredStructure(null);
+      setHoveredStructureSafe(null);
       // If compare is same as new selection, clear compare
       if (structure && compareStructure) {
         const selKey = `${structure.bodyModel}:${structure.structureKey}`;
@@ -307,7 +334,7 @@ export function AnatomyStateProvider({
       }
       if (!structure) {
         setCompareStructure(null);
-        setHoveredStructure(null);
+        setHoveredStructureSafe(null);
       }
       if (structure) {
         setRecentHistory(prev => {
@@ -318,7 +345,7 @@ export function AnatomyStateProvider({
         });
       }
     },
-    [compareStructure]
+    [compareStructure, setHoveredStructureSafe]
   );
 
   const setCompareStructureSafe = useCallback(
@@ -333,9 +360,9 @@ export function AnatomyStateProvider({
         if (selKey === cmpKey) return;
       }
       setCompareStructure(structure);
-      setHoveredStructure(null);
+      setHoveredStructureSafe(null);
     },
-    [selectedStructure]
+    [selectedStructure, setHoveredStructureSafe]
   );
 
   const clearCompare = useCallback(() => {
@@ -656,7 +683,7 @@ export function AnatomyStateProvider({
       selectedStructure,
       selectStructure,
       hoveredStructure,
-      setHoveredStructure,
+      setHoveredStructure: setHoveredStructureSafe,
       recentHistory,
       clearHistory,
       hydrateHistory,
@@ -705,7 +732,7 @@ export function AnatomyStateProvider({
       selectedStructure,
       selectStructure,
       hoveredStructure,
-      setHoveredStructure,
+      setHoveredStructureSafe,
       recentHistory,
       clearHistory,
       hydrateHistory,
