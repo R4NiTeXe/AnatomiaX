@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import SiteNav from '@/components/SiteNav';
 import { useAuth } from '@/components/auth/AuthProvider';
+import ProgressSummary from '@/components/learning/ProgressSummary';
 import { QuizHistoryList } from '@/components/learning/QuizAttempts';
 import StudiedStructures from '@/components/learning/StudiedStructures';
 import { Button } from '@/components/ui/button';
@@ -85,6 +86,7 @@ export default function LearnPage(): JSX.Element {
           </Card>
         ) : (
           <>
+            <ProgressSummary />
             <ContinueSection />
             <Card>
               <CardHeader>
@@ -101,6 +103,9 @@ export default function LearnPage(): JSX.Element {
                 <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
                   Quiz history
                 </CardTitle>
+                <p className="text-xs text-slate-500">
+                  Tap Details to review answers and open structures in 3D.
+                </p>
               </CardHeader>
               <CardContent>
                 <QuizHistoryList />

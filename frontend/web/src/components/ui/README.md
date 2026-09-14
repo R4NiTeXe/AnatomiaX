@@ -5,6 +5,7 @@ Minimal shadcn/ui + Tailwind primitives for application surfaces.
 **Design tokens:** `src/index.css` (`--background/foreground/card/primary/...`) + Tailwind `anatomia` palette. Dark-only, AnatomiaX-specific. Focus ring `ring: 172 66% 50%`, radius `0.75rem`.
 
 **Primitives (10):**
+
 - `button` — `cva` variants `default/outline/secondary/destructive/ghost/link`, `size` `default/sm/lg/icon`, `min-h-[44px]` touch target, `focus-visible:ring-2`.
 - `card` — `Card/Header/Title/Description/Content/Footer`, `border-slate-800 bg-slate-900/40`.
 - `input` — `min-h-[44px]`, `border-input bg-slate-800/50`, `focus-visible:ring-2`.

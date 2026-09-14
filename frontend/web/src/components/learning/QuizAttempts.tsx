@@ -1,8 +1,18 @@
 import { Link } from 'react-router-dom';
+import { parseStudiedKey, getAnatomyInformationByStructureKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuizAttempts, useQuizHistory } from '@/hooks/useProgress';
 import type { QuizAttemptRecord } from '@/lib/progress';
@@ -22,6 +32,97 @@ function focusKeyFor(attempt: QuizAttemptRecord): string | null {
   return found?.structureKey ?? null;
 }
 
+function displayNameForAnswer(a: QuizAttemptRecord['answers'][number]): string {
+  if (a.canonicalName) return a.canonicalName;
+  if (a.structureKey) {
+    const info = getAnatomyInformationByStructureKey(a.structureKey);
+    if (info?.canonicalName) return info.canonicalName;
+    const parsed = parseStudiedKey(a.structureKey);
+    return parsed?.name ?? a.structureKey;
+  }
+  return 'Question';
+}
+
+function AttemptDetail({ attempt }: { attempt: QuizAttemptRecord }): JSX.Element {
+  const answers = attempt.answers ?? [];
+  return (
+    <div className="flex flex-col gap-3" data-testid="quiz-detail">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-slate-100" data-testid="quiz-detail-score">
+          Score {attempt.score} / {attempt.total}
+        </p>
+        <Badge
+          variant={attempt.score === attempt.total ? 'teal' : 'secondary'}
+          className="capitalize"
+        >
+          {attempt.bodyModel}
+        </Badge>
+        <span className="text-xs text-slate-500" data-testid="quiz-detail-date">
+          {formatDate(attempt.completedAt)}
+        </span>
+      </div>
+      {answers.length === 0 ? (
+        <p className="text-sm text-slate-500" data-testid="quiz-detail-empty">
+          No answer details stored for this attempt.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2" data-testid="quiz-detail-list">
+          {answers.map((a, idx) => {
+            const isCorrect = a.selected === a.correct;
+            const name = displayNameForAnswer(a);
+            return (
+              <li
+                key={`${attempt.id}-${idx}`}
+                data-testid="quiz-detail-answer"
+                className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-slate-100">{name}</p>
+                  <p className="text-xs text-slate-500">
+                    Q{idx + 1} · {isCorrect ? 'Correct' : 'Incorrect'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge
+                    variant={isCorrect ? 'teal' : 'destructive'}
+                    data-testid="quiz-detail-answer-status"
+                  >
+                    {isCorrect ? 'Correct' : 'Incorrect'}
+                  </Badge>
+                  {a.structureKey ? (
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to={buildHumanFocusUrl(a.structureKey)} data-testid="quiz-detail-open">
+                        Open in 3D
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button variant="outline" asChild>
+          <Link to="/human" data-testid="quiz-detail-practice">
+            Practice again
+          </Link>
+        </Button>
+        {focusKeyFor(attempt) ? (
+          <Button variant="ghost" asChild>
+            <Link
+              to={buildHumanFocusUrl(focusKeyFor(attempt) as string)}
+              data-testid="quiz-detail-focus"
+            >
+              Open first structure in 3D
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function AttemptItem({ attempt }: { attempt: QuizAttemptRecord }): JSX.Element {
   const focusKey = focusKeyFor(attempt);
   return (
@@ -36,13 +137,31 @@ function AttemptItem({ attempt }: { attempt: QuizAttemptRecord }): JSX.Element {
             {formatDate(attempt.completedAt)}
           </p>
         </div>
-        {focusKey ? (
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={buildHumanFocusUrl(focusKey)} data-testid="quiz-review">
-              Review in 3D
-            </Link>
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-1">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" data-testid="quiz-details-trigger">
+                Details
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Quiz attempt</DialogTitle>
+                <DialogDescription>
+                  Review your answers and open structures in the 3D viewer.
+                </DialogDescription>
+              </DialogHeader>
+              <AttemptDetail attempt={attempt} />
+            </DialogContent>
+          </Dialog>
+          {focusKey ? (
+            <Button variant="ghost" size="sm" asChild>
+              <Link to={buildHumanFocusUrl(focusKey)} data-testid="quiz-review">
+                Review in 3D
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </Card>
     </li>
   );
