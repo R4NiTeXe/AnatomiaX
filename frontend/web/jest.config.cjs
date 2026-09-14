@@ -28,4 +28,7 @@ module.exports = {
   // Limit parallel workers to half the CPUs — still parallel but reduces
   // ts-jest + three parse contention that pushed the /human import over 5s.
   maxWorkers: '50%',
+  coverageDirectory: '<rootDir>/coverage',
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts', '!src/test-setup.ts', '!src/vite-env.d.ts'],
+  coverageReporters: ['text', 'lcov'],
 };

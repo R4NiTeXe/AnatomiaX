@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { CohortsModule } from './cohorts/cohorts.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
+import { LoggingInterceptor } from './common/logging.interceptor';
 import { RequestIdInterceptor } from './common/request-id.interceptor';
 import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -32,6 +33,7 @@ import { UsersModule } from './users/users.module';
     // error bodies on every non-health API error. Registered here so the
     // real app and every e2e module using AppModule behave identically.
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
   ],
 })

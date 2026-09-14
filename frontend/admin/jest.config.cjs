@@ -20,4 +20,7 @@ module.exports = {
     ],
   },
   setupFiles: [],
+  coverageDirectory: '<rootDir>/coverage',
+  collectCoverageFrom: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'hooks/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}', '!**/*.d.ts'],
+  coverageReporters: ['text', 'lcov'],
 };

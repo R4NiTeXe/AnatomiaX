@@ -7,4 +7,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { diagnostics: false }],
   },
+  coverageDirectory: '<rootDir>/coverage',
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
+  coverageReporters: ['text', 'lcov'],
 };

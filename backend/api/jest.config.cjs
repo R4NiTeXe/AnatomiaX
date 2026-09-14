@@ -9,4 +9,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': [tsJestPath, { diagnostics: false }],
   },
+  coverageDirectory: '<rootDir>/coverage',
+  collectCoverageFrom: ['src/**/*.{ts}', '!src/**/*.d.ts', '!src/**/*.e2e.spec.ts'],
+  coverageReporters: ['text', 'lcov'],
 };
