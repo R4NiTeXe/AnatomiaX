@@ -1,27 +1,122 @@
 <!doctype html>
-<html lang="en" data-theme="anatomiax">
+<html lang="{{ site.language | default('en') }}" data-theme="anatomiax">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title }}</title>
-    <meta name="description" content="{{ description }}" />
+    <meta name="description" content="{{ description | default(site.description) }}" />
     <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="{{ site.themeColor }}" />
     <link rel="canonical" href="{{ canonical | default(site.url + page.url) }}" />
+
+    <!-- Favicon / PWA -->
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="{{ title }}" />
-    <meta property="og:description" content="{{ description }}" />
+    <meta property="og:description" content="{{ description | default(site.description) }}" />
     <meta property="og:url" content="{{ canonical | default(site.url + page.url) }}" />
     <meta property="og:site_name" content="{{ site.name }}" />
+    <meta property="og:image" content="{{ site.url }}{{ site.ogImage }}" />
+    <meta property="og:image:width" content="{{ site.ogImageWidth }}" />
+    <meta property="og:image:height" content="{{ site.ogImageHeight }}" />
+    <meta property="og:image:alt" content="{{ site.ogImageAlt }}" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="{{ site.twitterCard }}" />
     <meta name="twitter:title" content="{{ title }}" />
-    <meta name="twitter:description" content="{{ description }}" />
+    <meta name="twitter:description" content="{{ description | default(site.description) }}" />
+    <meta name="twitter:image" content="{{ site.url }}{{ site.ogImage }}" />
+    <meta name="twitter:image:alt" content="{{ site.ogImageAlt }}" />
 
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+    {# JSON-LD — Organization + WebSite on all pages, plus page-specific where supported #}
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "{{ site.url }}/#organization",
+            "name": "{{ site.organization.name }}",
+            "url": "{{ site.organization.url }}",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "{{ site.organization.logo }}"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "{{ site.url }}/#website",
+            "name": "{{ site.name }}",
+            "url": "{{ site.url }}/",
+            "description": "{{ site.description }}",
+            "inLanguage": "{{ site.language }}",
+            "publisher": { "@id": "{{ site.url }}/#organization" }
+          },
+          {
+            "@type": "WebPage",
+            "@id": "{{ canonical | default(site.url + page.url) }}#webpage",
+            "url": "{{ canonical | default(site.url + page.url) }}",
+            "name": "{{ title }}",
+            "description": "{{ description | default(site.description) }}",
+            "isPartOf": { "@id": "{{ site.url }}/#website" },
+            "about": { "@id": "{{ site.url }}/#organization" },
+            "inLanguage": "{{ site.language }}"
+          }
+          {% if page.url == "/medical-learning/" %},
+          {
+            "@type": "Course",
+            "@id": "{{ site.url }}/medical-learning/#course",
+            "name": "Medical Learning — Anatomy, Physiology & Pathology",
+            "description": "{{ description | default(site.description) }}",
+            "provider": { "@id": "{{ site.url }}/#organization" },
+            "isPartOf": { "@id": "{{ site.url }}/#website" },
+            "inLanguage": "{{ site.language }}"
+          }
+          {% endif %}
+          {% if page.url == "/clinical-cases/" %},
+          {
+            "@type": "Course",
+            "@id": "{{ site.url }}/clinical-cases/#course",
+            "name": "Clinical Cases — Case-Based Learning",
+            "description": "{{ description | default(site.description) }}",
+            "provider": { "@id": "{{ site.url }}/#organization" },
+            "inLanguage": "{{ site.language }}"
+          }
+          {% endif %}
+          {% if page.url == "/ai/" %},
+          {
+            "@type": "TechArticle",
+            "@id": "{{ site.url }}/ai/#article",
+            "headline": "AI Health — Responsible AI for Medical Education",
+            "description": "{{ description | default(site.description) }}",
+            "author": { "@id": "{{ site.url }}/#organization" },
+            "isPartOf": { "@id": "{{ site.url }}/#website" },
+            "inLanguage": "{{ site.language }}"
+          }
+          {% endif %}
+          {% if page.url == "/simulation/" %},
+          {
+            "@type": "LearningResource",
+            "@id": "{{ site.url }}/simulation/#resource",
+            "name": "Simulation Lab — Physiological Simulations",
+            "description": "{{ description | default(site.description) }}",
+            "provider": { "@id": "{{ site.url }}/#organization" },
+            "inLanguage": "{{ site.language }}"
+          }
+          {% endif %}
+        ]
+      }
+    </script>
   </head>
   <body class="min-h-screen bg-base-100 text-base-content antialiased">
     <a
