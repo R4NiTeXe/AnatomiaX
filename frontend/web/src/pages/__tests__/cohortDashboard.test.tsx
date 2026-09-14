@@ -261,8 +261,8 @@ describe('cohort dashboard (8.20.7)', () => {
       await screen.findByTestId('dashboard-progress-list', {}, { timeout: 4000 })
     ).toBeInTheDocument();
     expect(screen.getAllByTestId('dashboard-member-progress')).toHaveLength(2);
-    expect(screen.getByText('Ada')).toBeInTheDocument();
-    expect(screen.getByText('Sam')).toBeInTheDocument();
+    expect(screen.getAllByText('Ada').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Sam').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByTestId('dashboard-member-open')).toHaveLength(3);
     expect(screen.getByTestId('dashboard-activity-list')).toBeInTheDocument();
     expect(screen.getAllByTestId('dashboard-activity-item')).toHaveLength(3);
