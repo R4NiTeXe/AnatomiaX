@@ -4,12 +4,10 @@ import { Link } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { requestPasswordReset } from '@/lib/auth';
-
-const inputClass =
-  'min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
-const primaryButtonClass =
-  'min-h-[44px] w-full rounded-lg bg-teal-500/20 px-3 py-2.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
 
 export default function ForgotPasswordPage(): JSX.Element {
   const [email, setEmail] = useState('');
@@ -59,9 +57,9 @@ export default function ForgotPasswordPage(): JSX.Element {
         </p>
       ) : (
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-          <label htmlFor="forgot-email" className="flex flex-col gap-1 text-xs text-slate-400">
-            Email
-            <input
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="forgot-email">Email</Label>
+            <Input
               id="forgot-email"
               type="email"
               required
@@ -70,18 +68,12 @@ export default function ForgotPasswordPage(): JSX.Element {
               value={email}
               onChange={event => setEmail(event.target.value)}
               data-testid="forgot-email"
-              className={inputClass}
             />
-          </label>
+          </div>
           <AuthErrorNotice error={error} testId="forgot-error" />
-          <button
-            type="submit"
-            disabled={busy}
-            data-testid="forgot-submit"
-            className={primaryButtonClass}
-          >
+          <Button type="submit" disabled={busy} data-testid="forgot-submit" className="w-full">
             {busy ? 'Sending…' : 'Send reset instructions'}
-          </button>
+          </Button>
         </form>
       )}
     </AuthLayout>

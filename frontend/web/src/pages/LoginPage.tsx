@@ -6,12 +6,12 @@ import AuthLayout from '@/components/auth/AuthLayout';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { safeAuthDestination } from '@/lib/authRedirect';
-
-const inputClass =
-  'min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
-const primaryButtonClass =
-  'min-h-[44px] w-full rounded-lg bg-teal-500/20 px-3 py-2.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
 
 export default function LoginPage(): JSX.Element {
   const { user, status, sessionExpired, login } = useAuth();
@@ -68,50 +68,37 @@ export default function LoginPage(): JSX.Element {
     >
       <div className="flex flex-col gap-4">
         {showExpired ? (
-          <p
-            className="rounded-lg border border-amber-900/60 bg-amber-950/40 px-3 py-2 text-sm text-amber-200"
-            role="status"
-            data-testid="login-expired-notice"
-          >
-            Your session expired. Please sign in again.
-          </p>
+          <Alert variant="warning" data-testid="login-expired-notice">
+            <AlertDescription>Your session expired. Please sign in again.</AlertDescription>
+          </Alert>
         ) : null}
         {showDeleted ? (
-          <p
-            className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm text-slate-200"
-            role="status"
-            data-testid="login-deleted-notice"
-          >
-            Your account was deleted.
-          </p>
+          <Alert data-testid="login-deleted-notice">
+            <AlertDescription>Your account was deleted.</AlertDescription>
+          </Alert>
         ) : null}
         {showReset ? (
-          <p
-            className="rounded-lg border border-teal-900/60 bg-teal-950/40 px-3 py-2 text-sm text-teal-200"
-            role="status"
-            data-testid="login-reset-notice"
-          >
-            Password reset. Please sign in with your new password.
-          </p>
+          <Alert variant="success" data-testid="login-reset-notice">
+            <AlertDescription>
+              Password reset. Please sign in with your new password.
+            </AlertDescription>
+          </Alert>
         ) : null}
         {showChanged ? (
-          <p
-            className="rounded-lg border border-teal-900/60 bg-teal-950/40 px-3 py-2 text-sm text-teal-200"
-            role="status"
-            data-testid="login-changed-notice"
-          >
-            Password changed. Please sign in again.
-          </p>
+          <Alert variant="success" data-testid="login-changed-notice">
+            <AlertDescription>Password changed. Please sign in again.</AlertDescription>
+          </Alert>
         ) : null}
         {status === 'loading' ? (
-          <p className="text-sm text-slate-500" data-testid="login-loading">
-            Checking session…
-          </p>
+          <div className="flex flex-col gap-2" data-testid="login-loading">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         ) : (
           <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate={false}>
-            <label htmlFor="login-email" className="flex flex-col gap-1 text-xs text-slate-400">
-              Email
-              <input
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
                 id="login-email"
                 type="email"
                 required
@@ -119,12 +106,11 @@ export default function LoginPage(): JSX.Element {
                 value={email}
                 onChange={event => setEmail(event.target.value)}
                 data-testid="login-email"
-                className={inputClass}
               />
-            </label>
-            <label htmlFor="login-password" className="flex flex-col gap-1 text-xs text-slate-400">
-              Password
-              <input
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
                 id="login-password"
                 type="password"
                 required
@@ -133,18 +119,12 @@ export default function LoginPage(): JSX.Element {
                 value={password}
                 onChange={event => setPassword(event.target.value)}
                 data-testid="login-password"
-                className={inputClass}
               />
-            </label>
+            </div>
             <AuthErrorNotice error={error} testId="login-error" />
-            <button
-              type="submit"
-              disabled={busy}
-              data-testid="login-submit"
-              className={primaryButtonClass}
-            >
+            <Button type="submit" disabled={busy} data-testid="login-submit" className="w-full">
               {busy ? 'Signing in…' : 'Sign in'}
-            </button>
+            </Button>
           </form>
         )}
         <GoogleSignInButton />

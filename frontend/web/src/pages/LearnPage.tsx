@@ -3,6 +3,9 @@ import SiteNav from '@/components/SiteNav';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { QuizHistoryList } from '@/components/learning/QuizAttempts';
 import StudiedStructures from '@/components/learning/StudiedStructures';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useProgressSnapshot } from '@/hooks/useProgress';
 import { buildHumanFocusUrl } from '@/lib/humanLink';
 
@@ -15,29 +18,27 @@ function ContinueSection(): JSX.Element | null {
   const target = keys.length > 0 ? keys[0] : null;
 
   return (
-    <section
-      aria-label="Continue learning"
-      className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-    >
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-        Continue learning
-      </h2>
-      {snapshotQuery.isLoading && !snapshotQuery.data ? (
-        <p className="mt-2 text-sm text-slate-500" data-testid="learn-continue-loading">
-          Loading your progress…
-        </p>
-      ) : (
-        <div className="mt-2">
-          <Link
-            to={target ? buildHumanFocusUrl(target) : '/human'}
-            data-testid="learn-continue-link"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal-500/20 px-4 py-2.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-          >
-            {target ? 'Continue in 3D viewer' : 'Open 3D viewer'}
-          </Link>
-        </div>
-      )}
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+          Continue learning
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {snapshotQuery.isLoading && !snapshotQuery.data ? (
+          <Skeleton className="h-10 w-32" data-testid="learn-continue-loading" />
+        ) : (
+          <Button asChild>
+            <Link
+              to={target ? buildHumanFocusUrl(target) : '/human'}
+              data-testid="learn-continue-link"
+            >
+              {target ? 'Continue in 3D viewer' : 'Open 3D viewer'}
+            </Link>
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -58,66 +59,53 @@ export default function LearnPage(): JSX.Element {
         </div>
 
         {status === 'loading' ? (
-          <p className="text-sm text-slate-500" data-testid="learn-loading">
-            Checking session…
-          </p>
+          <Skeleton className="h-20 w-full" data-testid="learn-loading" />
         ) : status !== 'authenticated' ? (
-          <section
-            aria-label="Sign in required"
-            className="rounded-xl border border-slate-800 bg-slate-900/40 p-6"
-          >
+          <Card className="p-6">
             <p className="text-sm text-slate-300" data-testid="learn-anonymous">
               Sign in to track studied structures and quiz history.
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Link
-                to="/login"
-                data-testid="learn-cta-login"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-teal-500/20 px-4 py-2.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              >
-                Sign in
-              </Link>
-              <Link
-                to="/register"
-                data-testid="learn-cta-register"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              >
-                Create account
-              </Link>
-              <Link
-                to="/human"
-                data-testid="learn-cta-explore"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              >
-                Explore anatomy
-              </Link>
+              <Button asChild>
+                <Link to="/login" data-testid="learn-cta-login">
+                  Sign in
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/register" data-testid="learn-cta-register">
+                  Create account
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/human" data-testid="learn-cta-explore">
+                  Explore anatomy
+                </Link>
+              </Button>
             </div>
-          </section>
+          </Card>
         ) : (
           <>
             <ContinueSection />
-            <section
-              aria-label="Studied structures"
-              className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-            >
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Studied structures
-              </h2>
-              <div className="mt-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+                  Studied structures
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <StudiedStructures />
-              </div>
-            </section>
-            <section
-              aria-label="Quiz history"
-              className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-            >
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Quiz history
-              </h2>
-              <div className="mt-2">
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+                  Quiz history
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <QuizHistoryList />
-              </div>
-            </section>
+              </CardContent>
+            </Card>
           </>
         )}
       </main>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface AuthLayoutProps {
   title: string;
@@ -27,9 +28,9 @@ export default function AuthLayout({
         </p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {subtitle ? <p className="mt-2 text-sm leading-6 text-slate-400">{subtitle}</p> : null}
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4 sm:p-6">
-          {children}
-        </div>
+        <Card className="mt-6">
+          <CardContent className="p-4 sm:p-6">{children}</CardContent>
+        </Card>
         {footer ? <div className="mt-4 text-center text-sm text-slate-400">{footer}</div> : null}
       </div>
     </main>

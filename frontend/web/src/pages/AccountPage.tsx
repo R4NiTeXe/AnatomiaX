@@ -4,15 +4,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useQuizAttempts } from '@/hooks/useProgress';
 import { changePassword, deleteAccount, exportAccountData } from '@/lib/auth';
-
-const inputClass =
-  'min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
-const secondaryButtonClass =
-  'min-h-[44px] rounded-lg border border-slate-700 px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
-const dangerButtonClass =
-  'min-h-[44px] rounded-lg border border-red-900/70 bg-red-950/40 px-3 py-2.5 text-sm font-medium text-red-200 hover:bg-red-950/70 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400';
 
 function downloadJson(filename: string, data: unknown): void {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -76,7 +75,6 @@ export default function AccountPage(): JSX.Element {
     setPasswordError(null);
     try {
       await changePassword(currentPassword ? currentPassword : undefined, newPassword);
-      // Backend revokes all sessions on change — force a fresh sign-in.
       await logout();
       navigate('/login?changed=1', { replace: true });
     } catch (err) {
@@ -144,223 +142,203 @@ export default function AccountPage(): JSX.Element {
             className="mt-2 flex items-center gap-1 text-sm"
             data-testid="account-nav"
           >
-            <Link
-              to="/"
-              className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-            >
-              Home
-            </Link>
-            <Link
-              to="/human"
-              className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-            >
-              Anatomy
-            </Link>
-            <Link
-              to="/learn"
-              className="rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-            >
-              Progress
-            </Link>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/">Home</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/human">Anatomy</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/learn">Progress</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/cohorts">Cohorts</Link>
+            </Button>
           </nav>
         </div>
 
         {sessionExpired ? (
-          <p
-            role="status"
-            data-testid="account-expired-notice"
-            className="rounded-lg border border-amber-900/60 bg-amber-950/40 px-3 py-2 text-sm text-amber-200"
-          >
-            Your session expired. Please sign in again.
-          </p>
+          <Alert variant="warning" data-testid="account-expired-notice">
+            <AlertDescription>Your session expired. Please sign in again.</AlertDescription>
+          </Alert>
         ) : null}
 
-        <section
-          aria-label="Profile"
-          className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-        >
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-            Profile
-          </h2>
-          <dl className="mt-3 flex flex-col gap-2 text-sm">
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="w-24 shrink-0 text-slate-500">Email</dt>
-              <dd className="break-all text-slate-100" data-testid="account-email">
-                {user.email ?? '—'}
-              </dd>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+              Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <dl className="flex flex-col gap-2 text-sm">
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                <dt className="w-24 shrink-0 text-slate-500">Email</dt>
+                <dd className="break-all text-slate-100" data-testid="account-email">
+                  {user.email ?? '—'}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                <dt className="w-24 shrink-0 text-slate-500">Name</dt>
+                <dd className="text-slate-100" data-testid="account-name">
+                  {user.name ?? '—'}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                <dt className="w-24 shrink-0 text-slate-500">Role</dt>
+                <dd className="text-slate-100" data-testid="account-role">
+                  {user.role}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                <dt className="w-24 shrink-0 text-slate-500">Sync</dt>
+                <dd className="text-slate-100" data-testid="account-sync-state">
+                  {attemptsQuery.isError ? 'Sync unavailable' : 'Sync on'}
+                </dd>
+              </div>
+            </dl>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" onClick={handleLogout} data-testid="account-logout">
+                Sign out
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/human">Open 3D viewer</Link>
+              </Button>
             </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="w-24 shrink-0 text-slate-500">Name</dt>
-              <dd className="text-slate-100" data-testid="account-name">
-                {user.name ?? '—'}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="w-24 shrink-0 text-slate-500">Role</dt>
-              <dd className="text-slate-100" data-testid="account-role">
-                {user.role}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="w-24 shrink-0 text-slate-500">Sync</dt>
-              <dd className="text-slate-100" data-testid="account-sync-state">
-                {attemptsQuery.isError ? 'Sync unavailable' : 'Sync on'}
-              </dd>
-            </div>
-          </dl>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={handleLogout}
-              data-testid="account-logout"
-              className={secondaryButtonClass}
-            >
-              Sign out
-            </button>
-            <Link
-              to="/human"
-              className={`${secondaryButtonClass} inline-flex items-center justify-center`}
-            >
-              Open 3D viewer
-            </Link>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <section
-          aria-label="Change password"
-          className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-        >
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-            Change password
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Changing your password signs you out on all devices.
-          </p>
-          <form className="mt-3 flex flex-col gap-3" onSubmit={handlePasswordChange}>
-            <label htmlFor="account-current" className="flex flex-col gap-1 text-xs text-slate-400">
-              Current password
-              <input
-                id="account-current"
-                type="password"
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={event => setCurrentPassword(event.target.value)}
-                data-testid="account-current-password"
-                className={inputClass}
-              />
-            </label>
-            <label htmlFor="account-new" className="flex flex-col gap-1 text-xs text-slate-400">
-              New password <span className="text-slate-500">(8+ characters)</span>
-              <input
-                id="account-new"
-                type="password"
-                required
-                minLength={8}
-                maxLength={128}
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={event => setNewPassword(event.target.value)}
-                data-testid="account-new-password"
-                className={inputClass}
-              />
-            </label>
-            <AuthErrorNotice error={passwordError} testId="account-password-error" />
-            <button
-              type="submit"
-              disabled={passwordBusy}
-              data-testid="account-password-submit"
-              className={secondaryButtonClass}
-            >
-              {passwordBusy ? 'Changing…' : 'Change password'}
-            </button>
-          </form>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+              Change password
+            </CardTitle>
+            <CardDescription>Changing your password signs you out on all devices.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="flex flex-col gap-3" onSubmit={handlePasswordChange}>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="account-current">Current password</Label>
+                <Input
+                  id="account-current"
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={event => setCurrentPassword(event.target.value)}
+                  data-testid="account-current-password"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="account-new">
+                  New password <span className="text-slate-500">(8+ characters)</span>
+                </Label>
+                <Input
+                  id="account-new"
+                  type="password"
+                  required
+                  minLength={8}
+                  maxLength={128}
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={event => setNewPassword(event.target.value)}
+                  data-testid="account-new-password"
+                />
+              </div>
+              <AuthErrorNotice error={passwordError} testId="account-password-error" />
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={passwordBusy}
+                data-testid="account-password-submit"
+              >
+                {passwordBusy ? 'Changing…' : 'Change password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-        <section
-          aria-label="Data export"
-          className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-        >
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-            Data export
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Download your cohorts, quiz attempts, and progress snapshot as JSON.
-          </p>
-          <div className="mt-3">
-            <button
-              type="button"
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
+              Data export
+            </CardTitle>
+            <CardDescription>
+              Download your cohorts, quiz attempts, and progress snapshot as JSON.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Button
+              variant="outline"
               onClick={handleExport}
               disabled={exportBusy}
               data-testid="account-export"
-              className={secondaryButtonClass}
             >
               {exportBusy ? 'Preparing…' : 'Download my data'}
-            </button>
-          </div>
-          {exportDone ? (
-            <p
-              role="status"
-              data-testid="account-export-done"
-              className="mt-2 text-sm text-teal-300"
-            >
-              Export downloaded.
-            </p>
-          ) : null}
-          <AuthErrorNotice error={exportError} testId="account-export-error" />
-        </section>
+            </Button>
+            {exportDone ? (
+              <Alert variant="success" data-testid="account-export-done">
+                <AlertDescription>Export downloaded.</AlertDescription>
+              </Alert>
+            ) : null}
+            <AuthErrorNotice error={exportError} testId="account-export-error" />
+          </CardContent>
+        </Card>
 
-        <section
-          aria-label="Delete account"
-          className="rounded-xl border border-red-900/60 bg-red-950/20 p-4"
-        >
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-red-300">
-            Delete account
-          </h2>
-          <p className="mt-1 text-xs text-red-200/80">
-            Permanently deletes your account, progress, and attempts. Cohorts you created survive
-            without you. This cannot be undone.
-          </p>
-          <form className="mt-3 flex flex-col gap-3" onSubmit={handleDelete}>
-            <label
-              htmlFor="account-delete-email"
-              className="flex flex-col gap-1 text-xs text-slate-400"
-            >
-              Type your email to confirm
-              <input
-                id="account-delete-email"
-                type="email"
-                autoComplete="email"
-                value={confirmEmail}
-                onChange={event => setConfirmEmail(event.target.value)}
-                data-testid="account-delete-email"
-                className={inputClass}
-              />
-            </label>
-            <label
-              htmlFor="account-delete-check"
-              className="flex items-start gap-2 text-xs text-slate-300"
-            >
-              <input
-                id="account-delete-check"
-                type="checkbox"
-                checked={confirmChecked}
-                onChange={event => setConfirmChecked(event.target.checked)}
-                data-testid="account-delete-check"
-                className="mt-0.5 h-4 w-4 accent-red-500"
-              />
-              I understand this permanently deletes my account and learning data.
-            </label>
-            <AuthErrorNotice error={deleteError} testId="account-delete-error" />
-            <button
-              type="submit"
-              disabled={!deleteArmed || deleteBusy}
-              data-testid="account-delete-submit"
-              className={dangerButtonClass}
-            >
-              {deleteBusy ? 'Deleting…' : 'Delete my account'}
-            </button>
-          </form>
-        </section>
+        <Card className="border-red-900/60 bg-red-950/20">
+          <CardHeader>
+            <CardTitle className="text-xs uppercase tracking-widest text-red-300">
+              Delete account
+            </CardTitle>
+            <CardDescription className="text-red-200/80">
+              Permanently deletes your account, progress, and attempts. Cohorts you created survive
+              without you. This cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="flex flex-col gap-3" onSubmit={handleDelete}>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="account-delete-email">Type your email to confirm</Label>
+                <Input
+                  id="account-delete-email"
+                  type="email"
+                  autoComplete="email"
+                  value={confirmEmail}
+                  onChange={event => setConfirmEmail(event.target.value)}
+                  data-testid="account-delete-email"
+                />
+              </div>
+              <div className="flex items-start gap-2">
+                <input
+                  id="account-delete-check"
+                  type="checkbox"
+                  checked={confirmChecked}
+                  onChange={event => setConfirmChecked(event.target.checked)}
+                  data-testid="account-delete-check"
+                  className="mt-0.5 h-4 w-4 accent-red-500"
+                />
+                <Label
+                  htmlFor="account-delete-check"
+                  className="text-xs font-normal text-slate-300"
+                >
+                  I understand this permanently deletes my account and learning data.
+                </Label>
+              </div>
+              <AuthErrorNotice error={deleteError} testId="account-delete-error" />
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={!deleteArmed || deleteBusy}
+                data-testid="account-delete-submit"
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete my account'}
+              </Button>
+              {deleteArmed ? (
+                <Badge variant="destructive" className="w-fit">
+                  Armed — this will delete your account
+                </Badge>
+              ) : null}
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

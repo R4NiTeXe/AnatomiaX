@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useQuizAttempts, useQuizHistory } from '@/hooks/useProgress';
 import type { QuizAttemptRecord } from '@/lib/progress';
 import { buildHumanFocusUrl } from '@/lib/humanLink';
@@ -11,7 +15,6 @@ function formatDate(value: string | null): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-/** First answer structureKey that can deep-link into the viewer, if any. */
 function focusKeyFor(attempt: QuizAttemptRecord): string | null {
   const found = (attempt.answers ?? []).find(
     a => typeof a.structureKey === 'string' && a.structureKey.length > 0
@@ -22,28 +25,25 @@ function focusKeyFor(attempt: QuizAttemptRecord): string | null {
 function AttemptItem({ attempt }: { attempt: QuizAttemptRecord }): JSX.Element {
   const focusKey = focusKeyFor(attempt);
   return (
-    <li
-      data-testid="quiz-item"
-      className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2"
-    >
-      <div className="min-w-0">
-        <p className="text-sm text-slate-100" data-testid="quiz-score">
-          {attempt.score} / {attempt.total}
-        </p>
-        <p className="truncate text-xs text-slate-500">
-          <span className="capitalize">{attempt.bodyModel}</span> ·{' '}
-          {formatDate(attempt.completedAt)}
-        </p>
-      </div>
-      {focusKey ? (
-        <Link
-          to={buildHumanFocusUrl(focusKey)}
-          data-testid="quiz-review"
-          className="shrink-0 rounded px-2 py-1 text-xs text-teal-300 hover:bg-teal-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-        >
-          Review in 3D
-        </Link>
-      ) : null}
+    <li data-testid="quiz-item">
+      <Card className="flex items-center justify-between gap-2 px-3 py-2">
+        <div className="min-w-0">
+          <p className="text-sm text-slate-100" data-testid="quiz-score">
+            {attempt.score} / {attempt.total}
+          </p>
+          <p className="truncate text-xs text-slate-500">
+            <span className="capitalize">{attempt.bodyModel}</span> ·{' '}
+            {formatDate(attempt.completedAt)}
+          </p>
+        </div>
+        {focusKey ? (
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={buildHumanFocusUrl(focusKey)} data-testid="quiz-review">
+              Review in 3D
+            </Link>
+          </Button>
+        ) : null}
+      </Card>
     </li>
   );
 }
@@ -62,33 +62,23 @@ function States({
   retryTestId: string;
 }): JSX.Element | null {
   if (isLoading) {
-    return (
-      <p className="text-sm text-slate-500" data-testid="quiz-loading">
-        Loading quiz attempts…
-      </p>
-    );
+    return <Skeleton className="h-10 w-full" data-testid="quiz-loading" />;
   }
   if (isError) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-red-300" role="alert" data-testid={errorTestId}>
-          Couldn&apos;t load quiz attempts.
-        </p>
-        <button
-          type="button"
-          onClick={onRetry}
-          data-testid={retryTestId}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-        >
+        <Alert variant="destructive" data-testid={errorTestId}>
+          <AlertDescription>Couldn&apos;t load quiz attempts.</AlertDescription>
+        </Alert>
+        <Button variant="outline" onClick={onRetry} data-testid={retryTestId}>
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
   return null;
 }
 
-/** Latest-score + recent attempts preview for the home dashboard. */
 export function QuizRecent(): JSX.Element | null {
   const { status } = useAuth();
   const attemptsQuery = useQuizAttempts();
@@ -125,45 +115,37 @@ export function QuizRecent(): JSX.Element | null {
         ))}
       </ul>
       {attempts.length > recent.length ? (
-        <Link
-          to="/learn"
-          data-testid="quiz-view-all"
-          className="text-sm text-teal-300 hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-        >
-          View full history →
-        </Link>
+        <Button variant="link" asChild className="w-fit p-0">
+          <Link to="/learn" data-testid="quiz-view-all">
+            View full history →
+          </Link>
+        </Button>
       ) : null}
     </div>
   );
 }
 
-/** Full pageless history for /learn (limit 100, newest first). */
 export function QuizHistoryList(): JSX.Element | null {
   const { status } = useAuth();
   const historyQuery = useQuizHistory(100);
   if (status !== 'authenticated') return null;
 
   if (historyQuery.isLoading && !historyQuery.data) {
-    return (
-      <p className="text-sm text-slate-500" data-testid="history-loading">
-        Loading quiz history…
-      </p>
-    );
+    return <Skeleton className="h-10 w-full" data-testid="history-loading" />;
   }
   if (historyQuery.isError) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-red-300" role="alert" data-testid="history-error">
-          Couldn&apos;t load quiz history.
-        </p>
-        <button
-          type="button"
+        <Alert variant="destructive" data-testid="history-error">
+          <AlertDescription>Couldn&apos;t load quiz history.</AlertDescription>
+        </Alert>
+        <Button
+          variant="outline"
           onClick={() => historyQuery.refetch()}
           data-testid="history-retry"
-          className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
         >
           Retry
-        </button>
+        </Button>
       </div>
     );
   }

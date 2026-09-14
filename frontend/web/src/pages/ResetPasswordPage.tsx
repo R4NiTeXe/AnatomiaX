@@ -4,12 +4,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { confirmPasswordReset } from '@/lib/auth';
-
-const inputClass =
-  'min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
-const primaryButtonClass =
-  'min-h-[44px] w-full rounded-lg bg-teal-500/20 px-3 py-2.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400';
 
 export default function ResetPasswordPage(): JSX.Element {
   const [searchParams] = useSearchParams();
@@ -52,9 +50,9 @@ export default function ResetPasswordPage(): JSX.Element {
       }
     >
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label htmlFor="reset-email" className="flex flex-col gap-1 text-xs text-slate-400">
-          Email
-          <input
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="reset-email">Email</Label>
+          <Input
             id="reset-email"
             type="email"
             required
@@ -63,12 +61,11 @@ export default function ResetPasswordPage(): JSX.Element {
             value={email}
             onChange={event => setEmail(event.target.value)}
             data-testid="reset-email"
-            className={inputClass}
           />
-        </label>
-        <label htmlFor="reset-token" className="flex flex-col gap-1 text-xs text-slate-400">
-          Reset token
-          <input
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="reset-token">Reset token</Label>
+          <Input
             id="reset-token"
             type="text"
             required
@@ -78,12 +75,13 @@ export default function ResetPasswordPage(): JSX.Element {
             value={token}
             onChange={event => setToken(event.target.value)}
             data-testid="reset-token"
-            className={inputClass}
           />
-        </label>
-        <label htmlFor="reset-password" className="flex flex-col gap-1 text-xs text-slate-400">
-          New password <span className="text-slate-500">(8+ characters)</span>
-          <input
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="reset-password">
+            New password <span className="text-slate-500">(8+ characters)</span>
+          </Label>
+          <Input
             id="reset-password"
             type="password"
             required
@@ -93,18 +91,12 @@ export default function ResetPasswordPage(): JSX.Element {
             value={newPassword}
             onChange={event => setNewPassword(event.target.value)}
             data-testid="reset-password"
-            className={inputClass}
           />
-        </label>
+        </div>
         <AuthErrorNotice error={error} testId="reset-error" />
-        <button
-          type="submit"
-          disabled={busy}
-          data-testid="reset-submit"
-          className={primaryButtonClass}
-        >
+        <Button type="submit" disabled={busy} data-testid="reset-submit" className="w-full">
           {busy ? 'Resetting…' : 'Reset password'}
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   );
