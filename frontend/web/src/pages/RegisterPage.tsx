@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
@@ -12,16 +12,26 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { safeAuthDestination } from '@/lib/authRedirect';
 
+type RegisterFormValues = {
+  email: string;
+  name: string;
+  password: string;
+};
+
 export default function RegisterPage(): JSX.Element {
   const { user, status, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<FriendlyAuthError | null>(null);
+
+  const {
+    register: registerField,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    defaultValues: { email: '', name: '', password: '' },
+  });
 
   const fromState = (location.state as { from?: unknown } | null)?.from;
   const destination = safeAuthDestination(fromState ?? searchParams.get('next'), '/human');
@@ -30,21 +40,16 @@ export default function RegisterPage(): JSX.Element {
     return <Navigate to={destination} replace />;
   }
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
+  const onSubmit = handleSubmit(async values => {
     setError(null);
     try {
-      const trimmedName = name.trim();
-      await register(email.trim(), password, trimmedName ? trimmedName : undefined);
+      const trimmedName = values.name.trim();
+      await register(values.email.trim(), values.password, trimmedName ? trimmedName : undefined);
       navigate(destination, { replace: true });
     } catch (err) {
       setError(friendlyAuthError(err));
-    } finally {
-      setBusy(false);
     }
-  };
+  });
 
   return (
     <AuthLayout
@@ -70,7 +75,7 @@ export default function RegisterPage(): JSX.Element {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="register-email">Email</Label>
               <Input
@@ -79,9 +84,9 @@ export default function RegisterPage(): JSX.Element {
                 required
                 maxLength={254}
                 autoComplete="email"
-                value={email}
-                onChange={event => setEmail(event.target.value)}
                 data-testid="register-email"
+                aria-invalid={!!errors.email}
+                {...registerField('email', { required: true, maxLength: 254 })}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -93,9 +98,9 @@ export default function RegisterPage(): JSX.Element {
                 type="text"
                 maxLength={120}
                 autoComplete="name"
-                value={name}
-                onChange={event => setName(event.target.value)}
                 data-testid="register-name"
+                aria-invalid={!!errors.name}
+                {...registerField('name', { maxLength: 120 })}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -109,14 +114,19 @@ export default function RegisterPage(): JSX.Element {
                 minLength={8}
                 maxLength={128}
                 autoComplete="new-password"
-                value={password}
-                onChange={event => setPassword(event.target.value)}
                 data-testid="register-password"
+                aria-invalid={!!errors.password}
+                {...registerField('password', { required: true, minLength: 8, maxLength: 128 })}
               />
             </div>
             <AuthErrorNotice error={error} testId="register-error" />
-            <Button type="submit" disabled={busy} data-testid="register-submit" className="w-full">
-              {busy ? 'Creating account…' : 'Create account'}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              data-testid="register-submit"
+              className="w-full"
+            >
+              {isSubmitting ? 'Creating account…' : 'Create account'}
             </Button>
           </form>
         )}

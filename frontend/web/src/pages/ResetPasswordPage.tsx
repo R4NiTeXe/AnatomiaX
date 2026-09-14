@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
@@ -9,29 +9,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { confirmPasswordReset } from '@/lib/auth';
 
+type ResetFormValues = {
+  email: string;
+  token: string;
+  newPassword: string;
+};
+
 export default function ResetPasswordPage(): JSX.Element {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [email, setEmail] = useState(searchParams.get('email') ?? '');
-  const [token, setToken] = useState(searchParams.get('token') ?? '');
-  const [newPassword, setNewPassword] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<FriendlyAuthError | null>(null);
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ResetFormValues>({
+    defaultValues: {
+      email: searchParams.get('email') ?? '',
+      token: searchParams.get('token') ?? '',
+      newPassword: '',
+    },
+  });
+
+  const onSubmit = handleSubmit(async values => {
     setError(null);
     try {
-      await confirmPasswordReset(email.trim(), token.trim(), newPassword);
+      await confirmPasswordReset(values.email.trim(), values.token.trim(), values.newPassword);
       navigate('/login?reset=1', { replace: true });
     } catch (err) {
       setError(friendlyAuthError(err));
-    } finally {
-      setBusy(false);
     }
-  };
+  });
 
   return (
     <AuthLayout
@@ -49,7 +58,7 @@ export default function ResetPasswordPage(): JSX.Element {
         </>
       }
     >
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+      <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reset-email">Email</Label>
           <Input
@@ -58,9 +67,9 @@ export default function ResetPasswordPage(): JSX.Element {
             required
             maxLength={254}
             autoComplete="email"
-            value={email}
-            onChange={event => setEmail(event.target.value)}
             data-testid="reset-email"
+            aria-invalid={!!errors.email}
+            {...register('email', { required: true, maxLength: 254 })}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -72,9 +81,9 @@ export default function ResetPasswordPage(): JSX.Element {
             minLength={20}
             maxLength={512}
             autoComplete="one-time-code"
-            value={token}
-            onChange={event => setToken(event.target.value)}
             data-testid="reset-token"
+            aria-invalid={!!errors.token}
+            {...register('token', { required: true, minLength: 20, maxLength: 512 })}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -88,14 +97,14 @@ export default function ResetPasswordPage(): JSX.Element {
             minLength={8}
             maxLength={128}
             autoComplete="new-password"
-            value={newPassword}
-            onChange={event => setNewPassword(event.target.value)}
             data-testid="reset-password"
+            aria-invalid={!!errors.newPassword}
+            {...register('newPassword', { required: true, minLength: 8, maxLength: 128 })}
           />
         </div>
         <AuthErrorNotice error={error} testId="reset-error" />
-        <Button type="submit" disabled={busy} data-testid="reset-submit" className="w-full">
-          {busy ? 'Resetting…' : 'Reset password'}
+        <Button type="submit" disabled={isSubmitting} data-testid="reset-submit" className="w-full">
+          {isSubmitting ? 'Resetting…' : 'Reset password'}
         </Button>
       </form>
     </AuthLayout>

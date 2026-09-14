@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -12,6 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useQuizAttempts } from '@/hooks/useProgress';
 import { changePassword, deleteAccount, exportAccountData } from '@/lib/auth';
+
+type ChangePasswordFormValues = {
+  currentPassword: string;
+  newPassword: string;
+};
 
 function downloadJson(filename: string, data: unknown): void {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -30,10 +36,14 @@ export default function AccountPage(): JSX.Element {
   const attemptsQuery = useQuizAttempts();
   const navigate = useNavigate();
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordError, setPasswordError] = useState<FriendlyAuthError | null>(null);
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors, isSubmitting: passwordBusy },
+  } = useForm<ChangePasswordFormValues>({
+    defaultValues: { currentPassword: '', newPassword: '' },
+  });
 
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<FriendlyAuthError | null>(null);
@@ -68,21 +78,19 @@ export default function AccountPage(): JSX.Element {
     );
   }
 
-  const handlePasswordChange = async (event: FormEvent) => {
-    event.preventDefault();
-    if (passwordBusy) return;
-    setPasswordBusy(true);
+  const handlePasswordChange = handlePasswordSubmit(async values => {
     setPasswordError(null);
     try {
-      await changePassword(currentPassword ? currentPassword : undefined, newPassword);
+      await changePassword(
+        values.currentPassword ? values.currentPassword : undefined,
+        values.newPassword
+      );
       await logout();
       navigate('/login?changed=1', { replace: true });
     } catch (err) {
       setPasswordError(friendlyAuthError(err, { override401: 'Current password is incorrect.' }));
-    } finally {
-      setPasswordBusy(false);
     }
-  };
+  });
 
   const handleExport = async () => {
     if (exportBusy) return;
@@ -215,16 +223,16 @@ export default function AccountPage(): JSX.Element {
             <CardDescription>Changing your password signs you out on all devices.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="flex flex-col gap-3" onSubmit={handlePasswordChange}>
+            <form className="flex flex-col gap-3" onSubmit={handlePasswordChange} noValidate>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="account-current">Current password</Label>
                 <Input
                   id="account-current"
                   type="password"
                   autoComplete="current-password"
-                  value={currentPassword}
-                  onChange={event => setCurrentPassword(event.target.value)}
                   data-testid="account-current-password"
+                  aria-invalid={!!passwordErrors.currentPassword}
+                  {...registerPassword('currentPassword')}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -238,9 +246,13 @@ export default function AccountPage(): JSX.Element {
                   minLength={8}
                   maxLength={128}
                   autoComplete="new-password"
-                  value={newPassword}
-                  onChange={event => setNewPassword(event.target.value)}
                   data-testid="account-new-password"
+                  aria-invalid={!!passwordErrors.newPassword}
+                  {...registerPassword('newPassword', {
+                    required: true,
+                    minLength: 8,
+                    maxLength: 128,
+                  })}
                 />
               </div>
               <AuthErrorNotice error={passwordError} testId="account-password-error" />

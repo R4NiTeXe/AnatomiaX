@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -13,32 +13,43 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCreateCohort, useJoinCohort, useMyCohorts } from '@/hooks/useCohorts';
 
+type CreateCohortFormValues = {
+  name: string;
+  institutionLabel: string;
+};
+
 function CreateCohortCard({
   onCreated,
 }: {
   onCreated: (inviteCode: string, id: string) => void;
 }): JSX.Element {
   const createMutation = useCreateCohort();
-  const [name, setName] = useState('');
-  const [institutionLabel, setInstitutionLabel] = useState('');
   const [error, setError] = useState<FriendlyAuthError | null>(null);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateCohortFormValues>({
+    defaultValues: { name: '', institutionLabel: '' },
+  });
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const onSubmit = handleSubmit(async values => {
     if (createMutation.isPending) return;
     setError(null);
     try {
       const created = await createMutation.mutateAsync({
-        name: name.trim(),
-        ...(institutionLabel.trim() ? { institutionLabel: institutionLabel.trim() } : {}),
+        name: values.name.trim(),
+        ...(values.institutionLabel.trim()
+          ? { institutionLabel: values.institutionLabel.trim() }
+          : {}),
       });
-      setName('');
-      setInstitutionLabel('');
+      reset();
       onCreated(created.inviteCode, created.id);
     } catch (err) {
       setError(friendlyCohortError(err));
     }
-  };
+  });
 
   return (
     <Card>
@@ -48,33 +59,47 @@ function CreateCohortCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cohort-name">Cohort name</Label>
-            <Input
-              id="cohort-name"
-              type="text"
-              required
-              minLength={1}
-              maxLength={120}
-              autoComplete="off"
-              value={name}
-              onChange={event => setName(event.target.value)}
-              data-testid="cohort-create-name"
+            <Controller
+              name="name"
+              control={control}
+              rules={{ required: true, minLength: 1, maxLength: 120 }}
+              render={({ field }) => (
+                <Input
+                  id="cohort-name"
+                  type="text"
+                  required
+                  minLength={1}
+                  maxLength={120}
+                  autoComplete="off"
+                  data-testid="cohort-create-name"
+                  aria-invalid={!!errors.name}
+                  {...field}
+                />
+              )}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cohort-institution">
               Institution <span className="text-slate-500">(optional)</span>
             </Label>
-            <Input
-              id="cohort-institution"
-              type="text"
-              maxLength={120}
-              autoComplete="off"
-              value={institutionLabel}
-              onChange={event => setInstitutionLabel(event.target.value)}
-              data-testid="cohort-create-institution"
+            <Controller
+              name="institutionLabel"
+              control={control}
+              rules={{ maxLength: 120 }}
+              render={({ field }) => (
+                <Input
+                  id="cohort-institution"
+                  type="text"
+                  maxLength={120}
+                  autoComplete="off"
+                  data-testid="cohort-create-institution"
+                  aria-invalid={!!errors.institutionLabel}
+                  {...field}
+                />
+              )}
             />
           </div>
           <AuthErrorNotice error={error} testId="cohort-create-error" />
@@ -91,23 +116,32 @@ function CreateCohortCard({
   );
 }
 
+type JoinCohortFormValues = {
+  inviteCode: string;
+};
+
 function JoinCohortCard(): JSX.Element {
   const navigate = useNavigate();
   const joinMutation = useJoinCohort();
-  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState<FriendlyAuthError | null>(null);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<JoinCohortFormValues>({
+    defaultValues: { inviteCode: '' },
+  });
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const onSubmit = handleSubmit(async values => {
     if (joinMutation.isPending) return;
     setError(null);
     try {
-      const view = await joinMutation.mutateAsync(inviteCode.trim());
+      const view = await joinMutation.mutateAsync(values.inviteCode.trim());
       navigate(`/cohorts/${view.id}`);
     } catch (err) {
       setError(friendlyCohortError(err));
     }
-  };
+  });
 
   return (
     <Card>
@@ -117,21 +151,28 @@ function JoinCohortCard(): JSX.Element {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cohort-invite">Invite code</Label>
-            <Input
-              id="cohort-invite"
-              type="text"
-              required
-              minLength={1}
-              maxLength={128}
-              autoComplete="off"
-              autoCapitalize="off"
-              autoCorrect="off"
-              value={inviteCode}
-              onChange={event => setInviteCode(event.target.value)}
-              data-testid="cohort-join-code"
+            <Controller
+              name="inviteCode"
+              control={control}
+              rules={{ required: true, minLength: 1, maxLength: 128 }}
+              render={({ field }) => (
+                <Input
+                  id="cohort-invite"
+                  type="text"
+                  required
+                  minLength={1}
+                  maxLength={128}
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  data-testid="cohort-join-code"
+                  aria-invalid={!!errors.inviteCode}
+                  {...field}
+                />
+              )}
             />
           </div>
           <AuthErrorNotice error={error} testId="cohort-join-error" />

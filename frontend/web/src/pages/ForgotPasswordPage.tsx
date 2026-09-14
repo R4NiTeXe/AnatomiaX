@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
@@ -9,26 +9,34 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requestPasswordReset } from '@/lib/auth';
 
+type ForgotFormValues = {
+  email: string;
+};
+
 export default function ForgotPasswordPage(): JSX.Element {
-  const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState('');
   const [error, setError] = useState<FriendlyAuthError | null>(null);
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotFormValues>({
+    defaultValues: { email: '' },
+  });
+
+  const onSubmit = handleSubmit(async values => {
     setError(null);
     try {
-      await requestPasswordReset(email.trim());
+      const trimmed = values.email.trim();
+      await requestPasswordReset(trimmed);
+      setSentEmail(trimmed);
       setSent(true);
     } catch (err) {
       setError(friendlyAuthError(err));
-    } finally {
-      setBusy(false);
     }
-  };
+  });
 
   return (
     <AuthLayout
@@ -48,7 +56,7 @@ export default function ForgotPasswordPage(): JSX.Element {
     >
       {sent ? (
         <p role="status" data-testid="forgot-sent" className="text-sm leading-6 text-slate-200">
-          If an account exists for <span className="font-medium">{email.trim()}</span>, reset
+          If an account exists for <span className="font-medium">{sentEmail}</span>, reset
           instructions are on the way. Check your inbox, then{' '}
           <Link to="/reset-password" className="text-teal-300 hover:text-teal-200">
             enter your reset token
@@ -56,7 +64,7 @@ export default function ForgotPasswordPage(): JSX.Element {
           .
         </p>
       ) : (
-        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="forgot-email">Email</Label>
             <Input
@@ -65,14 +73,19 @@ export default function ForgotPasswordPage(): JSX.Element {
               required
               maxLength={254}
               autoComplete="email"
-              value={email}
-              onChange={event => setEmail(event.target.value)}
               data-testid="forgot-email"
+              aria-invalid={!!errors.email}
+              {...register('email', { required: true, maxLength: 254 })}
             />
           </div>
           <AuthErrorNotice error={error} testId="forgot-error" />
-          <Button type="submit" disabled={busy} data-testid="forgot-submit" className="w-full">
-            {busy ? 'Sending…' : 'Send reset instructions'}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            data-testid="forgot-submit"
+            className="w-full"
+          >
+            {isSubmitting ? 'Sending…' : 'Send reset instructions'}
           </Button>
         </form>
       )}

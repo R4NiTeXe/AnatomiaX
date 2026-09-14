@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -23,61 +23,89 @@ import {
 } from '@/hooks/useCohorts';
 import type { CohortView } from '@/lib/cohorts';
 
+type EditCohortFormValues = {
+  name: string;
+  institutionLabel: string;
+};
+
 function EditCohortForm({ cohort }: { cohort: CohortView }): JSX.Element {
   const updateMutation = useUpdateCohort(cohort.id);
-  const [name, setName] = useState(cohort.name);
-  const [institutionLabel, setInstitutionLabel] = useState(cohort.institutionLabel ?? '');
   const [error, setError] = useState<FriendlyAuthError | null>(null);
   const [saved, setSaved] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<EditCohortFormValues>({
+    defaultValues: {
+      name: cohort.name,
+      institutionLabel: cohort.institutionLabel ?? '',
+    },
+  });
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const onSubmit = handleSubmit(async values => {
     if (updateMutation.isPending) return;
     setError(null);
     setSaved(false);
     try {
       await updateMutation.mutateAsync({
-        name: name.trim(),
-        institutionLabel: institutionLabel.trim(),
+        name: values.name.trim(),
+        institutionLabel: values.institutionLabel.trim(),
       });
       setSaved(true);
     } catch (err) {
       setError(friendlyCohortError(err));
     }
-  };
+  });
 
   return (
-    <form className="mt-3 flex flex-col gap-3" onSubmit={handleSubmit}>
+    <form className="mt-3 flex flex-col gap-3" onSubmit={onSubmit} noValidate>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="cohort-edit-name">Cohort name</Label>
-        <Input
-          id="cohort-edit-name"
-          type="text"
-          required
-          minLength={1}
-          maxLength={120}
-          autoComplete="off"
-          value={name}
-          onChange={event => {
-            setName(event.target.value);
-            setSaved(false);
-          }}
-          data-testid="cohort-edit-name"
+        <Controller
+          name="name"
+          control={control}
+          rules={{ required: true, minLength: 1, maxLength: 120 }}
+          render={({ field }) => (
+            <Input
+              id="cohort-edit-name"
+              type="text"
+              required
+              minLength={1}
+              maxLength={120}
+              autoComplete="off"
+              data-testid="cohort-edit-name"
+              aria-invalid={!!errors.name}
+              {...field}
+              onChange={e => {
+                field.onChange(e);
+                setSaved(false);
+              }}
+            />
+          )}
         />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="cohort-edit-institution">Institution</Label>
-        <Input
-          id="cohort-edit-institution"
-          type="text"
-          maxLength={120}
-          autoComplete="off"
-          value={institutionLabel}
-          onChange={event => {
-            setInstitutionLabel(event.target.value);
-            setSaved(false);
-          }}
-          data-testid="cohort-edit-institution"
+        <Controller
+          name="institutionLabel"
+          control={control}
+          rules={{ maxLength: 120 }}
+          render={({ field }) => (
+            <Input
+              id="cohort-edit-institution"
+              type="text"
+              maxLength={120}
+              autoComplete="off"
+              data-testid="cohort-edit-institution"
+              aria-invalid={!!errors.institutionLabel}
+              {...field}
+              onChange={e => {
+                field.onChange(e);
+                setSaved(false);
+              }}
+            />
+          )}
         />
       </div>
       <AuthErrorNotice error={error} testId="cohort-edit-error" />

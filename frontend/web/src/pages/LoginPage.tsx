@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
@@ -13,15 +13,25 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { safeAuthDestination } from '@/lib/authRedirect';
 
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
+
 export default function LoginPage(): JSX.Element {
   const { user, status, sessionExpired, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<FriendlyAuthError | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    defaultValues: { email: '', password: '' },
+  });
 
   const fromState = (location.state as { from?: unknown } | null)?.from;
   const destination = safeAuthDestination(fromState ?? searchParams.get('next'), '/human');
@@ -35,20 +45,15 @@ export default function LoginPage(): JSX.Element {
   const showReset = searchParams.get('reset') === '1';
   const showChanged = searchParams.get('changed') === '1';
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
+  const onSubmit = handleSubmit(async values => {
     setError(null);
     try {
-      await login(email.trim(), password);
+      await login(values.email.trim(), values.password);
       navigate(destination, { replace: true });
     } catch (err) {
       setError(friendlyAuthError(err, { override401: 'Invalid email or password.' }));
-    } finally {
-      setBusy(false);
     }
-  };
+  });
 
   return (
     <AuthLayout
@@ -95,7 +100,7 @@ export default function LoginPage(): JSX.Element {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate={false}>
+          <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="login-email">Email</Label>
               <Input
@@ -103,9 +108,9 @@ export default function LoginPage(): JSX.Element {
                 type="email"
                 required
                 autoComplete="email"
-                value={email}
-                onChange={event => setEmail(event.target.value)}
                 data-testid="login-email"
+                aria-invalid={!!errors.email}
+                {...register('email', { required: true })}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -116,14 +121,19 @@ export default function LoginPage(): JSX.Element {
                 required
                 minLength={8}
                 autoComplete="current-password"
-                value={password}
-                onChange={event => setPassword(event.target.value)}
                 data-testid="login-password"
+                aria-invalid={!!errors.password}
+                {...register('password', { required: true, minLength: 8 })}
               />
             </div>
             <AuthErrorNotice error={error} testId="login-error" />
-            <Button type="submit" disabled={busy} data-testid="login-submit" className="w-full">
-              {busy ? 'Signing in…' : 'Sign in'}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              data-testid="login-submit"
+              className="w-full"
+            >
+              {isSubmitting ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
         )}

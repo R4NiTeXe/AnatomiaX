@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -514,8 +514,9 @@ describe('student cohorts (8.20.4)', () => {
     );
     fireEvent.change(screen.getByTestId('cohort-join-code'), { target: { value: 'invite-A' } });
     fireEvent.click(screen.getByTestId('cohort-join-submit'));
-    expect(await screen.findByTestId('cohort-join-error', {}, { timeout: 4000 })).toHaveTextContent(
-      /already a member/
+    await waitFor(
+      () => expect(screen.getByTestId('cohort-join-error')).toHaveTextContent(/already a member/),
+      { timeout: 4000 }
     );
   });
 
