@@ -89,3 +89,22 @@ export function removeCohortMember(id: string, userId: string): Promise<void> {
     method: 'DELETE',
   });
 }
+
+export interface CohortMemberProgress {
+  userId: string;
+  name: string | null;
+  role: 'TEACHER' | 'STUDENT';
+  joinedAt: string;
+  studiedKeys: string[];
+  quizAttempts: Array<{
+    id: string;
+    score: number;
+    total: number;
+    bodyModel: string;
+    completedAt: string;
+  }>;
+}
+
+export function getCohortProgress(id: string): Promise<CohortMemberProgress[]> {
+  return authedRequest<CohortMemberProgress[]>(`/api/v1/cohorts/${id}/progress`);
+}

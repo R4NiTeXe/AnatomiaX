@@ -4,6 +4,7 @@ import {
   archiveCohort,
   createCohort,
   getCohort,
+  getCohortProgress,
   joinCohort,
   leaveCohort,
   listCohortMembers,
@@ -23,6 +24,10 @@ export function cohortKey(userId: string | undefined, id: string): readonly unkn
 
 export function cohortMembersKey(userId: string | undefined, id: string): readonly unknown[] {
   return ['cohorts', 'members', userId ?? 'anonymous', id] as const;
+}
+
+export function cohortProgressKey(userId: string | undefined, id: string): readonly unknown[] {
+  return ['cohorts', 'progress', userId ?? 'anonymous', id] as const;
 }
 
 /**
@@ -64,6 +69,19 @@ export function useCohortMembers(id: string | undefined) {
     enabled: status === 'authenticated' && !!id,
     retry: false,
     staleTime: 30_000,
+  });
+}
+
+export function useCohortProgress(id: string | undefined) {
+  const { user, status } = useAuth();
+  return useQuery({
+    queryKey: cohortProgressKey(user?.id, id ?? ''),
+    queryFn: () => getCohortProgress(id as string),
+    enabled: status === 'authenticated' && !!id,
+    retry: false,
+    staleTime: 30_000,
+    gcTime: 300_000,
+    refetchOnWindowFocus: false,
   });
 }
 

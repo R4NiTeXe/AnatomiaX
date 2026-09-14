@@ -61,6 +61,11 @@ export class CohortsController {
     return this.cohorts.listMembers(user, id);
   }
 
+  @Get(':id/progress')
+  getProgress(@CurrentUser() user: SafeUser, @Param('id') id: string) {
+    return this.cohorts.getProgress(user, id);
+  }
+
   @Delete(':id/members/:userId')
   removeMember(
     @CurrentUser() user: SafeUser,

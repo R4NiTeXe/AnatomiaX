@@ -182,6 +182,72 @@ export class CohortsService {
     }));
   }
 
+  async getProgress(
+    viewer: SafeUser,
+    cohortId: string
+  ): Promise<
+    Array<{
+      userId: string;
+      name: string | null;
+      role: CohortMemberRole;
+      joinedAt: Date;
+      studiedKeys: string[];
+      quizAttempts: Array<{
+        id: string;
+        score: number;
+        total: number;
+        bodyModel: string;
+        completedAt: Date;
+      }>;
+    }>
+  > {
+    const ctx = await this.requireViewer(viewer, cohortId);
+    // Progress is owner/admin only; members without manage rights get 403 (no oracle leak — already viewer-checked).
+    if (!ctx.isOwner && !ctx.isAdmin) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+    // Archived cohorts remain readable but progress is still owner-gated (consistent with invite regeneration).
+    const members = await this.prisma.cohortMember.findMany({
+      where: { cohortId },
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { joinedAt: 'asc' },
+    });
+    const result: Array<{
+      userId: string;
+      name: string | null;
+      role: CohortMemberRole;
+      joinedAt: Date;
+      studiedKeys: string[];
+      quizAttempts: Array<{
+        id: string;
+        score: number;
+        total: number;
+        bodyModel: string;
+        completedAt: Date;
+      }>;
+    }> = [];
+    for (const m of members) {
+      const [snapshot, attempts] = await Promise.all([
+        this.prisma.progressSnapshot.findUnique({ where: { userId: m.userId } }),
+        this.prisma.quizAttempt.findMany({
+          where: { userId: m.userId },
+          orderBy: { completedAt: 'desc' },
+          take: 20,
+          select: { id: true, score: true, total: true, bodyModel: true, completedAt: true },
+        }),
+      ]);
+      result.push({
+        userId: m.userId,
+        name: (m.user as { name: string | null }).name,
+        role: m.role,
+        joinedAt: m.joinedAt,
+        studiedKeys: snapshot?.studiedKeys ?? [],
+        quizAttempts: attempts,
+      });
+    }
+    return result;
+  }
+
   private isOwner(cohort: Cohort, user: SafeUser): boolean {
     return cohort.createdById === user.id;
   }

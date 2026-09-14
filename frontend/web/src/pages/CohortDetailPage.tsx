@@ -468,6 +468,14 @@ export default function CohortDetailPage(): JSX.Element {
               <p className="mt-1 text-sm text-slate-400" data-testid="cohort-institution">
                 {cohort.institutionLabel ?? 'No institution'}
               </p>
+              {(canManage || user?.role === 'TEACHER' || user?.role === 'ADMIN') &&
+              user?.role !== 'STUDENT' ? (
+                <Button variant="outline" size="sm" asChild className="mt-2">
+                  <Link to={`/cohorts/${cohort.id}/dashboard`} data-testid="cohort-dashboard-link">
+                    View dashboard
+                  </Link>
+                </Button>
+              ) : null}
             </div>
 
             {isArchived ? (

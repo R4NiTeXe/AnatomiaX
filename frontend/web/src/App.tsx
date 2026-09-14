@@ -19,6 +19,7 @@ const AccountPage = lazy(() => import('@/pages/AccountPage'));
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage'));
 const CohortsPage = lazy(() => import('@/pages/CohortsPage'));
 const CohortDetailPage = lazy(() => import('@/pages/CohortDetailPage'));
+const CohortDashboardPage = lazy(() => import('@/pages/CohortDashboardPage'));
 
 function RouteFallback(): JSX.Element {
   return (
@@ -65,6 +66,14 @@ export default function App(): JSX.Element {
             element={
               <RequireAuth>
                 <CohortsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/cohorts/:id/dashboard"
+            element={
+              <RequireAuth>
+                <CohortDashboardPage />
               </RequireAuth>
             }
           />
