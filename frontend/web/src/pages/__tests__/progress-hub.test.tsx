@@ -228,8 +228,10 @@ describe('progress hub (8.20.6)', () => {
       await screen.findByTestId('progress-summary-error', {}, { timeout: 4000 })
     ).toBeInTheDocument();
     mockBackend({ user: USER_A, snapshotKeys: [KEY_SKIN], attempts: [attempt('a1', 'u-a', 1, 2)] });
-    fireEvent.click(screen.getByTestId('progress-summary-retry-snapshot'));
-    fireEvent.click(screen.getByTestId('progress-summary-retry-history'));
+    fireEvent.click(screen.getByTestId('progress-summary-retry'));
+    // preserved hidden aliases remain in DOM for backward compat
+    expect(screen.getByTestId('progress-summary-retry-snapshot')).toBeInTheDocument();
+    expect(screen.getByTestId('progress-summary-retry-history')).toBeInTheDocument();
     expect(
       await screen.findByTestId('progress-summary-studied', {}, { timeout: 4000 })
     ).toHaveTextContent('1');

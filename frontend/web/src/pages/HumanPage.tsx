@@ -142,7 +142,11 @@ export default function HumanPage(): JSX.Element {
     <AnatomyStateProvider>
       <AnatomyProgressSync />
       <HumanDeepLink />
-      <main className="flex h-screen min-h-screen flex-col bg-slate-950 text-slate-100">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex h-screen min-h-screen flex-col bg-slate-950 text-slate-100"
+      >
         <header className="border-b border-slate-900 px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-2">
             <div>

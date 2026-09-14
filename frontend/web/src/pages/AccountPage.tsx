@@ -128,7 +128,7 @@ export default function AccountPage(): JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-8 sm:px-6">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">

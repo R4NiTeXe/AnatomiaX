@@ -414,7 +414,11 @@ export default function CohortDetailPage(): JSX.Element {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <SiteNav />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6"
+      >
         <Button variant="ghost" size="sm" asChild className="w-fit">
           <Link to="/cohorts">← Back to My Cohorts</Link>
         </Button>

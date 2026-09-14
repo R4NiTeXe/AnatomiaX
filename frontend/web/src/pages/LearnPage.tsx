@@ -49,7 +49,11 @@ export default function LearnPage(): JSX.Element {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <SiteNav />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:px-6"
+      >
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl" data-testid="learn-title">
             Learning progress

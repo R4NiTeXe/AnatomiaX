@@ -24,6 +24,9 @@ export function useProgressSnapshot() {
     enabled: status === 'authenticated',
     retry: false,
     staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
@@ -35,6 +38,9 @@ export function useQuizAttempts() {
     enabled: status === 'authenticated',
     retry: false,
     staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
@@ -52,6 +58,9 @@ export function useQuizHistory(limit = 100) {
     enabled: status === 'authenticated',
     retry: false,
     staleTime: 60_000,
+    gcTime: 300_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 

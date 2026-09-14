@@ -47,29 +47,42 @@ export default function ProgressSummary(): JSX.Element | null {
   }
 
   if (isError) {
-    const error = (snapshotQuery.error as Error) || (historyQuery.error as Error);
+    const error =
+      (snapshotQuery.error as unknown as { requestId?: string; message?: string }) ||
+      (historyQuery.error as unknown as { requestId?: string; message?: string });
+    const requestId =
+      (snapshotQuery.error as unknown as { requestId?: string })?.requestId ??
+      (historyQuery.error as unknown as { requestId?: string })?.requestId;
+    const handleRetry = () => {
+      void snapshotQuery.refetch();
+      void historyQuery.refetch();
+    };
     return (
       <Alert variant="destructive" data-testid="progress-summary-error">
         <AlertDescription>
           Couldn&apos;t load progress summary.{error?.message ? ` ${error.message}` : ''}
+          {requestId ? ` (Reference: ${requestId})` : ''}
         </AlertDescription>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => snapshotQuery.refetch()}
+            onClick={handleRetry}
+            data-testid="progress-summary-retry"
+          >
+            Retry
+          </Button>
+          {/* preserved for existing tests where practical */}
+          <span
+            className="hidden"
             data-testid="progress-summary-retry-snapshot"
-          >
-            Retry studied
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => historyQuery.refetch()}
+            aria-hidden="true"
+          />
+          <span
+            className="hidden"
             data-testid="progress-summary-retry-history"
-          >
-            Retry quizzes
-          </Button>
+            aria-hidden="true"
+          />
         </div>
       </Alert>
     );

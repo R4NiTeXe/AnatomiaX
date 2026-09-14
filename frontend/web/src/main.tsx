@@ -6,17 +6,20 @@ import './index.css';
 import App from './App';
 import '@/lib/devHealth';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
 
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   </React.StrictMode>
 );

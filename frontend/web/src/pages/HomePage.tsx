@@ -153,7 +153,7 @@ export default function HomePage(): JSX.Element {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <SiteNav />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
         {status === 'loading' ? (
           <Skeleton className="h-20 w-full" data-testid="home-loading" />
         ) : status === 'authenticated' ? (

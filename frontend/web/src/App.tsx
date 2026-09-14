@@ -30,47 +30,55 @@ function RouteFallback(): JSX.Element {
 
 export default function App(): JSX.Element {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/human" element={<HumanPage />} />
-        <Route path="/human-test" element={<HumanTestPage />} />
-        <Route path="/ai-health" element={<AiHealthPage />} />
-        <Route path="/medical-lab" element={<MedicalLabPage />} />
-        <Route path="/simulation" element={<SimulationPage />} />
-        <Route path="/clinical-cases" element={<ClinicalCasesPage />} />
-        <Route path="/learn" element={<LearnPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route
-          path="/account"
-          element={
-            <RequireAuth>
-              <AccountPage />
-            </RequireAuth>
-          }
-        />
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route
-          path="/cohorts"
-          element={
-            <RequireAuth>
-              <CohortsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/cohorts/:id"
-          element={
-            <RequireAuth>
-              <CohortDetailPage />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+    <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:text-slate-100 focus:ring-2 focus:ring-teal-400"
+      >
+        Skip to content
+      </a>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/human" element={<HumanPage />} />
+          <Route path="/human-test" element={<HumanTestPage />} />
+          <Route path="/ai-health" element={<AiHealthPage />} />
+          <Route path="/medical-lab" element={<MedicalLabPage />} />
+          <Route path="/simulation" element={<SimulationPage />} />
+          <Route path="/clinical-cases" element={<ClinicalCasesPage />} />
+          <Route path="/learn" element={<LearnPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/account"
+            element={
+              <RequireAuth>
+                <AccountPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route
+            path="/cohorts"
+            element={
+              <RequireAuth>
+                <CohortsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/cohorts/:id"
+            element={
+              <RequireAuth>
+                <CohortDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </>
   );
 }

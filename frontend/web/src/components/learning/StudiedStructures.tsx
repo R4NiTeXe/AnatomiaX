@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { getAnatomyInformationByStructureKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -23,6 +23,7 @@ export default function StudiedStructures({
 }): JSX.Element | null {
   const { status } = useAuth();
   const snapshotQuery = useProgressSnapshot();
+  const navigate = useNavigate();
 
   if (status === 'loading') {
     return <Skeleton className="h-10 w-full" data-testid="studied-loading" />;
@@ -68,18 +69,34 @@ export default function StudiedStructures({
         {keys.length} {keys.length === 1 ? 'structure' : 'structures'} studied
       </p>
       <ul className="flex flex-col gap-1" data-testid="studied-list">
-        {visible.map(key => (
-          <li key={key} data-testid="studied-item">
-            <Card className="flex items-center justify-between gap-2 px-3 py-2">
-              <span className="truncate text-sm text-slate-100">{displayNameFor(key)}</span>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to={buildHumanFocusUrl(key)} data-testid="studied-open">
-                  Open in 3D
-                </Link>
-              </Button>
-            </Card>
-          </li>
-        ))}
+        {visible.map(key => {
+          const label = displayNameFor(key);
+          const href = buildHumanFocusUrl(key);
+          return (
+            <li key={key} data-testid="studied-item">
+              <Card
+                className="flex items-center justify-between gap-2 px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${label} in 3D viewer`}
+                onClick={() => navigate(href)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(href);
+                  }
+                }}
+              >
+                <span className="truncate text-sm text-slate-100">{label}</span>
+                <Button variant="ghost" size="sm" asChild onClick={e => e.stopPropagation()}>
+                  <Link to={href} data-testid="studied-open" onClick={e => e.stopPropagation()}>
+                    Open in 3D
+                  </Link>
+                </Button>
+              </Card>
+            </li>
+          );
+        })}
       </ul>
       {preview && keys.length > visible.length ? (
         <Button variant="link" asChild className="w-fit p-0">
