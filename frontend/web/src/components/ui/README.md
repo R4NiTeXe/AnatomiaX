@@ -2,7 +2,7 @@
 
 Minimal shadcn/ui + Tailwind primitives for application surfaces.
 
-**Design tokens:** `src/index.css` (`--background/foreground/card/primary/...`) + Tailwind `anatomia` palette. Dark-only, AnatomiaX-specific. Focus ring `ring: 172 66% 50%`, radius `0.75rem`.
+**Design tokens:** `src/index.css` (`--background/foreground/card/primary/...` + 8.23 `--surface/*`, `--glow-*`) + Tailwind `anatomia` palette + `surface` colors + `soft/lift/glow` shadows. Dark-only, AnatomiaX-specific. Focus ring `ring: 172 66% 50%`, radius `0.75rem`. Type scale + `.ax-app-bg` ambient + `.ax-shimmer` in `@layer components`.
 
 **Primitives (10):**
 
@@ -22,6 +22,8 @@ Added deps: `class-variance-authority`, `@radix-ui/react-dialog/label/tabs/dropd
 
 **Migrated surfaces (behavior unchanged):** auth (`login/register/forgot/reset`), `account`, `home/dashboard`, `learn/progress`, `cohorts` + `cohort detail`, `SiteNav`, `StudiedStructures`, `QuizAttempts`.
 
+**Motion foundation (8.23):** `src/components/motion/` — tokens (`DURATIONS`/`EASE`/`SPRING_SOFT`/variants), `MotionRoot` (`reducedMotion="user"`, wired in `main.tsx`), `PageTransition` (enter-only route fade), `Reveal` (once scroll reveal), `Stagger`/`StaggerItem`, `ActiveNavPill` (shared-layout nav indicator). Radix open/close motion uses `tailwindcss-animate` state classes (no JS lifecycle fights). Import from `@/components/motion` only.
+
 `/human` viewer untouched — no styling/logic change.
 
-**Rules:** Web only, no Motion, no second UI lib, no backend change, routes unchanged, `data-testid` preserved for tests.
+**Rules:** Web only, Motion via foundation only, no second UI lib, no backend change, routes unchanged, `data-testid` preserved for tests.

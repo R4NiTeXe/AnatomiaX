@@ -47,6 +47,19 @@ export default {
           600: '#0d9488',
           900: '#134e4a',
         },
+        // STEP 8.23 premium surface scale — semantic layer over slate literals.
+        surface: {
+          DEFAULT: 'hsl(var(--surface))',
+          raised: 'hsl(var(--surface-raised))',
+          overlay: 'hsl(var(--surface-overlay))',
+        },
+      },
+      // STEP 8.23 restrained elevation — soft depth, single subtle glow.
+      boxShadow: {
+        soft: '0 8px 30px -12px rgb(0 0 0 / 0.7)',
+        lift: '0 16px 48px -16px rgb(0 0 0 / 0.75)',
+        glow: '0 0 24px -6px rgb(45 212 191 / 0.45)',
+        'glow-sm': '0 0 12px -4px rgb(45 212 191 / 0.35)',
       },
       borderRadius: {
         lg: 'var(--radius)',

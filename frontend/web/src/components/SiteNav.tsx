@@ -1,57 +1,69 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { ActiveNavPill } from '@/components/motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 
 const linkClass = ({ isActive }: { isActive: boolean }): string =>
-  `inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${isActive ? 'bg-teal-500/20 text-teal-200' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`;
+  `relative inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${isActive ? 'text-teal-100' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`;
 
-export default function SiteNav(): JSX.Element {
-  const { user, status } = useAuth();
-
-  const links = (
-    <>
-      <NavLink to="/" end className={linkClass} data-testid="nav-home">
-        Home
-      </NavLink>
-      <NavLink to="/human" className={linkClass} data-testid="nav-anatomy">
-        Anatomy
-      </NavLink>
-      <NavLink to="/learn" className={linkClass} data-testid="nav-learn">
-        Progress
-      </NavLink>
-      {status === 'authenticated' && user ? (
-        <NavLink to="/cohorts" className={linkClass} data-testid="nav-cohorts">
-          Cohorts
-        </NavLink>
-      ) : null}
-      {status === 'authenticated' && user ? (
-        <NavLink to="/account" className={linkClass} data-testid="nav-account">
-          Account
-        </NavLink>
-      ) : (
-        <NavLink to="/login" className={linkClass} data-testid="nav-login">
-          Sign in
-        </NavLink>
+function navLink(
+  to: string,
+  testId: string,
+  label: string,
+  pillId: string,
+  end?: boolean
+): JSX.Element {
+  return (
+    <NavLink to={to} end={end} className={linkClass} data-testid={testId}>
+      {({ isActive }) => (
+        <>
+          {isActive ? <ActiveNavPill id={pillId} /> : null}
+          <span className="relative">{label}</span>
+        </>
       )}
+    </NavLink>
+  );
+}
+
+// One link set per mounted nav instance — desktop bar and mobile sheet each
+// get their own pill id because both stay mounted (CSS-hidden switches).
+function NavLinkSet({ pillId }: { pillId: string }): JSX.Element {
+  const { user, status } = useAuth();
+  return (
+    <>
+      {navLink('/', 'nav-home', 'Home', pillId, true)}
+      {navLink('/human', 'nav-anatomy', 'Anatomy', pillId)}
+      {navLink('/learn', 'nav-learn', 'Progress', pillId)}
+      {status === 'authenticated' && user
+        ? navLink('/cohorts', 'nav-cohorts', 'Cohorts', pillId)
+        : null}
+      {status === 'authenticated' && user
+        ? navLink('/account', 'nav-account', 'Account', pillId)
+        : navLink('/login', 'nav-login', 'Sign in', pillId)}
     </>
   );
+}
 
+export default function SiteNav(): JSX.Element {
   return (
     <nav
       aria-label="Primary"
-      className="border-b border-slate-900 bg-slate-950 text-slate-100"
+      // STEP 8.23: sticky clinical glass — hairline border, backdrop blur.
+      className="sticky top-0 z-40 border-b border-slate-800/60 bg-slate-950/80 text-slate-100 backdrop-blur-md"
       data-testid="site-nav"
     >
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 py-2 sm:px-6">
         <Link
           to="/"
-          className="shrink-0 rounded-lg px-2 py-2 text-xs font-semibold uppercase tracking-widest text-slate-400 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+          className="shrink-0 rounded-lg px-2 py-2 text-xs font-semibold uppercase tracking-widest text-slate-400 transition-colors hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           AnatomiaX
         </Link>
-        <div className="hidden items-center gap-1 sm:flex">{links}</div>
+        <div className="hidden items-center gap-1 sm:flex">
+          <NavLinkSet pillId="ax-nav-active-desktop" />
+        </div>
         <div className="sm:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -63,7 +75,9 @@ export default function SiteNav(): JSX.Element {
               <SheetHeader>
                 <SheetTitle>Navigation</SheetTitle>
               </SheetHeader>
-              <div className="mt-4 flex flex-col gap-1">{links}</div>
+              <div className="mt-4 flex flex-col gap-1">
+                <NavLinkSet pillId="ax-nav-active-mobile" />
+              </div>
             </SheetContent>
           </Sheet>
         </div>

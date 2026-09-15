@@ -24,6 +24,66 @@
     --input: 217 33% 20%;
     --ring: 172 66% 50%;
     --radius: 0.75rem;
+
+    /* STEP 8.23 premium medical-tech layer — restrained accents only.
+       Deep clinical background, single teal/cyan accent family, hairline
+       borders, soft depth. Later Rive/Lottie/GLSL work reuses these vars. */
+    --surface: 222 47% 10%;
+    --surface-raised: 222 47% 13%;
+    --surface-overlay: 222 47% 15%;
+    --glow: 172 66% 50%;
+    --glow-soft: 186 72% 55%;
+  }
+}
+
+@keyframes ax-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@layer components {
+  /* STEP 8.23 type scale — single hierarchy for later pages.
+     Existing pages keep their classes; adopt these going forward. */
+  .ax-display {
+    @apply text-4xl font-bold tracking-tight text-slate-50 sm:text-5xl;
+  }
+  .ax-h1 {
+    @apply text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl;
+  }
+  .ax-section-title {
+    @apply text-xs font-semibold uppercase tracking-widest text-slate-400;
+  }
+  .ax-body {
+    @apply text-sm leading-6 text-slate-300;
+  }
+  .ax-meta {
+    @apply text-xs text-slate-500;
+  }
+  .ax-kicker {
+    @apply text-xs font-semibold uppercase tracking-widest text-teal-300;
+  }
+
+  /* Ambient clinical backdrop — static gradients only (zero runtime cost). */
+  .ax-app-bg {
+    background:
+      radial-gradient(60rem 30rem at 50% -10rem, rgb(45 212 191 / 0.07), transparent 60%),
+      radial-gradient(42rem 26rem at 88% 8%, rgb(56 189 248 / 0.05), transparent 60%), #020617;
+  }
+
+  /* Skeleton shimmer sweep — GPU-cheap background-position animation. */
+  .ax-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgb(148 163 184 / 0.14) 50%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    animation: ax-shimmer 2.4s linear infinite;
   }
 }
 
@@ -65,6 +125,28 @@ body {
 
 a {
   color: inherit;
+}
+
+::selection {
+  background: rgb(45 212 191 / 0.28);
+  color: #f8fafc;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 8px;
+  border: 2px solid #020617;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

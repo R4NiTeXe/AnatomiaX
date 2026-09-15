@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => ({
         // Route-level lazy loading is preserved (App.tsx lazy routes).
         // three-core + three-r3f stay lazy via /human chunk; react/query/ui
         // vendors are shared. No chunk-limit warning suppression.
+        // STEP 8.23: motion vendor chunk — keeps the Motion foundation out
+        // of the index entry so the entry budget holds.
         manualChunks(id: string): string | undefined {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('/three/') || id.includes('three-stdlib') || id.includes('meshopt')) {
@@ -43,6 +45,9 @@ export default defineConfig(({ mode }) => ({
           }
           if (id.includes('@tanstack')) {
             return 'query-vendor';
+          }
+          if (id.includes('/motion/') || id.includes('motion-dom')) {
+            return 'motion-vendor';
           }
           if (
             id.includes('@radix-ui') ||

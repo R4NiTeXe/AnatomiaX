@@ -16,6 +16,7 @@
  *   web three-r3f (lazy /human)     warn > 170 kB
  *   web HumanPage (lazy route)      warn > 100 kB
  *   web index entry                 warn > 30 kB
+ *   web motion-vendor (shared)      warn > 160 kB (added 8.23; Motion foundation)
  *   web total JS                    warn > 1700 kB
  *   Rationale: 8.20.9 manual chunking keeps three-core/three-r3f/HumanPage
  *   lazy behind /human; initial entry stays ~300 kB raw (~100 kB gzip).
@@ -34,6 +35,7 @@ const BUDGETS = [
   { match: /^three-r3f-.*\.js$/, label: 'web three-r3f (lazy /human)', warnKb: 170 },
   { match: /^HumanPage-.*\.js$/, label: 'web HumanPage (lazy route)', warnKb: 100 },
   { match: /^index-.*\.js$/, label: 'web index entry', warnKb: 30 },
+  { match: /^motion-vendor-.*\.js$/, label: 'web motion-vendor (shared)', warnKb: 160 },
 ];
 
 const TOTAL_WARN_KB = 1700;

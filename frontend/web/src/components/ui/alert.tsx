@@ -3,7 +3,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border p-3 text-sm [&>svg]:absolute [&>svg]:left-3 [&>svg]:top-3 [&>svg+div]:translate-y-[-3px]',
+  // STEP 8.23: soft depth so inline feedback reads as a raised surface.
+  'relative w-full rounded-lg border p-3 text-sm shadow-soft [&>svg]:absolute [&>svg]:left-3 [&>svg]:top-3 [&>svg+div]:translate-y-[-3px]',
   {
     variants: {
       variant: {
