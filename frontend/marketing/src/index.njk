@@ -6,7 +6,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
 <!-- Hero -->
 <section class="relative overflow-hidden border-b border-base-300 bg-base-100">
-  <div data-hero-bg class="pointer-events-none absolute inset-0">
+  <div data-hero-bg data-hero-animate class="pointer-events-none absolute inset-0">
     <div class="absolute inset-0 bg-gradient-to-b from-base-100 via-base-100 to-base-200/50"></div>
     <div
       class="absolute inset-0 opacity-[0.03]"
@@ -31,6 +31,8 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
       <div class="max-w-xl">
         <div
           data-hero-label
+          data-hero-animate
+          data-hero-rise
           class="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[0.7rem] font-medium tracking-widest text-primary"
         >
           <span class="relative flex h-1.5 w-1.5">
@@ -45,14 +47,21 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
           data-hero-heading
           class="mt-6 text-5xl font-bold tracking-tight text-base-content sm:text-6xl lg:text-[4.25rem] lg:leading-[1.02]"
         >
-          The Human Body,<br />
-          <span
-            class="bg-gradient-to-r from-primary via-teal-300 to-cyan-300 bg-clip-text text-transparent"
-            >Brought to Life.</span
+          <span class="hero-mask"
+            ><span class="hero-line" data-hero-line>The Human Body,</span></span
+          >
+          <span class="hero-mask"
+            ><span
+              class="hero-line bg-gradient-to-r from-primary via-teal-300 to-cyan-300 bg-clip-text text-transparent"
+              data-hero-line
+              >Brought to Life.</span
+            ></span
           >
         </h1>
         <p
           data-hero-text
+          data-hero-animate
+          data-hero-rise
           class="mt-6 max-w-[34rem] text-sm leading-7 text-base-content/65 sm:text-base sm:leading-8"
         >
           Explore human anatomy through interactive 3D visualization, AI-assisted health education,

@@ -38,6 +38,18 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
 
+    {# Pre-paint JS gate for the hero entrance (8.24.2): lets CSS hold the
+       intro start-state before first paint so the choreography never flashes.
+       No-JS keeps everything visible; reduced-motion is forced visible in CSS.
+       The 4s fallback reveals content even if the animation bundle itself
+       fails to load or throws before completing. #}
+    <script>
+      document.documentElement.classList.add('js-anim');
+      setTimeout(function () {
+        document.documentElement.classList.remove('js-anim');
+      }, 4000);
+    </script>
+
     {# JSON-LD — Organization + WebSite on all pages, plus page-specific where supported #}
     <script type="application/ld+json">
       {

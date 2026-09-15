@@ -17,7 +17,10 @@ gsap.registerPlugin(ScrollTrigger);
  */
 (function () {
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced) return;
+  if (prefersReduced) {
+    document.documentElement.classList.remove('js-anim');
+    return;
+  }
 
   function init() {
     const ctx = gsap.context(() => {
@@ -54,58 +57,94 @@ gsap.registerPlugin(ScrollTrigger);
         onScroll();
       }
 
-      // Hero entrance (once) — headlined sequence with stat strip + visual
-      const heroLabel = document.querySelector('[data-hero-label]');
-      const heroHeading = document.querySelector('[data-hero-heading]');
-      const heroText = document.querySelector('[data-hero-text]');
-      const heroActions = document.querySelector('[data-hero-actions]');
-      const heroMeta = document.querySelector('[data-hero-meta]');
-      const heroVisual = document.querySelector('[data-hero-visual]');
-      const heroStats = document.querySelectorAll('[data-hero-stats] > *');
-
-      const heroEls = [heroLabel, heroHeading, heroText, heroActions].filter(Boolean);
-      if (heroEls.length) {
-        gsap.from(heroEls, {
-          opacity: 0,
-          y: 14,
-          duration: 0.7,
-          stagger: 0.12,
-          ease: 'power2.out',
-          delay: 0.15,
-          clearProps: 'all',
+      // Hero entrance (once) — one timeline so the first viewport builds in
+      // deliberate beats (~1s total). CSS (via the `js-anim` gate) already
+      // holds every start-state pre-paint, so these `to` tweens can never
+      // flash or flicker — without JS everything simply stays visible.
+      // Beats: ambient 0–150ms → kicker 150–350 → headline 300–800 →
+      // text 450–850 → CTAs 550–950 → stats 650–1000 → visual 600–1050.
+      const heroBgOnly = document.querySelector('[data-hero-bg]');
+      const heroLabelOnly = document.querySelector('[data-hero-label]');
+      const heroLines = document.querySelectorAll('.hero-line');
+      const heroTextOnly = document.querySelector('[data-hero-text]');
+      const heroCtas = document.querySelectorAll('[data-hero-actions] > *');
+      const heroStatsOnly = document.querySelectorAll('[data-hero-stats] > *');
+      const heroVisualOnly = document.querySelector('[data-hero-visual]');
+      const hasHero =
+        heroBgOnly ||
+        heroLabelOnly ||
+        heroLines.length ||
+        heroTextOnly ||
+        heroCtas.length ||
+        heroStatsOnly.length ||
+        heroVisualOnly;
+      if (hasHero) {
+        const intro = gsap.timeline({
+          defaults: { ease: 'power2.out', overwrite: 'auto' },
+          // Belt-and-braces: drop the pre-paint gate once the intro lands so
+          // no CSS start-state can ever re-apply (clearProps already restores
+          // natural inline values first).
+          onComplete: () => document.documentElement.classList.remove('js-anim'),
         });
-      }
-      if (heroMeta && !heroStats.length) {
-        gsap.from(heroMeta, {
-          opacity: 0,
-          y: 10,
-          duration: 0.6,
-          ease: 'power2.out',
-          delay: 0.6,
-          clearProps: 'all',
-        });
-      }
-      if (heroStats.length) {
-        gsap.from(heroStats, {
-          opacity: 0,
-          y: 10,
-          duration: 0.55,
-          stagger: 0.09,
-          ease: 'power2.out',
-          delay: 0.55,
-          clearProps: 'all',
-        });
-      }
-      if (heroVisual) {
-        gsap.from(heroVisual, {
-          opacity: 0,
-          y: 16,
-          scale: 0.985,
-          duration: 0.8,
-          ease: 'power2.out',
-          delay: 0.4,
-          clearProps: 'all',
-        });
+        if (heroBgOnly) {
+          intro.to(heroBgOnly, { opacity: 1, duration: 0.25, clearProps: 'opacity' }, 0);
+        }
+        if (heroLabelOnly) {
+          intro.to(
+            heroLabelOnly,
+            { opacity: 1, y: 0, duration: 0.3, clearProps: 'opacity,transform' },
+            0.15
+          );
+        }
+        if (heroLines.length) {
+          intro.to(
+            heroLines,
+            { y: 0, duration: 0.55, stagger: 0.12, ease: 'power3.out', clearProps: 'transform' },
+            0.3
+          );
+        }
+        if (heroTextOnly) {
+          intro.to(
+            heroTextOnly,
+            { opacity: 1, y: 0, duration: 0.4, clearProps: 'opacity,transform' },
+            0.45
+          );
+        }
+        if (heroCtas.length) {
+          intro.to(
+            heroCtas,
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.35,
+              stagger: 0.1,
+              clearProps: 'opacity,transform',
+            },
+            0.55
+          );
+        }
+        if (heroStatsOnly.length) {
+          intro.to(
+            heroStatsOnly,
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, clearProps: 'opacity,transform' },
+            0.65
+          );
+        }
+        if (heroVisualOnly) {
+          intro.to(
+            heroVisualOnly,
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.5,
+              ease: 'power3.out',
+              clearProps: 'opacity,transform',
+            },
+            0.6
+          );
+        }
       }
 
       // Hero ambient — background parallax scrub + glow float.

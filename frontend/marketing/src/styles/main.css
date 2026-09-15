@@ -47,6 +47,44 @@
   .btn-primary:hover {
     box-shadow: 0 0 28px -6px rgb(20 184 166 / 0.55);
   }
+
+  /* STEP 8.24.2 hero intro start-states — applied pre-paint via the
+     `js-anim` gate in base.njk so the first paint already holds the
+     choreography curtain (no flash of final content, no flicker).
+     GSAP tweens *to* these natural end states; text stays in the DOM. */
+  .js-anim [data-hero-animate] {
+    opacity: 0;
+  }
+  .js-anim [data-hero-rise] {
+    transform: translateY(14px);
+  }
+  .js-anim [data-hero-stats] > * {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  .js-anim [data-hero-actions] > * {
+    opacity: 0;
+  }
+  .js-anim [data-hero-actions] > :first-child {
+    transform: translateY(14px) scale(0.96);
+  }
+  .js-anim [data-hero-actions] > :not(:first-child) {
+    transform: translateY(14px);
+  }
+  .js-anim [data-hero-visual] {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  /* Masked headline lines — inner spans slide up inside overflow masks. */
+  .hero-mask {
+    display: block;
+    overflow: hidden;
+  }
+  .js-anim .hero-line {
+    display: block;
+    transform: translateY(112%);
+    will-change: transform;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -58,5 +96,16 @@
     transform: none;
     transition: none;
     box-shadow: none;
+  }
+  /* STEP 8.24.2: reduced motion shows the final hero state immediately —
+     overrides every intro start-state above (safety-critical visibility). */
+  .js-anim [data-hero-animate],
+  .js-anim [data-hero-rise],
+  .js-anim [data-hero-stats] > *,
+  .js-anim [data-hero-actions] > *,
+  .js-anim [data-hero-visual],
+  .js-anim .hero-line {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
