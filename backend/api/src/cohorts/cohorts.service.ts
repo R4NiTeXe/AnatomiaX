@@ -40,6 +40,9 @@ function newInviteCode(): string {
   return randomBytes(16).toString('base64url');
 }
 
+/** Latest attempts returned per member by getProgress (was per-member `take`). */
+const QUIZ_ATTEMPTS_PER_MEMBER = 20;
+
 @Injectable()
 export class CohortsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -212,40 +215,56 @@ export class CohortsService {
       include: { user: { select: { id: true, name: true } } },
       orderBy: { joinedAt: 'asc' },
     });
-    const result: Array<{
-      userId: string;
-      name: string | null;
-      role: CohortMemberRole;
-      joinedAt: Date;
-      studiedKeys: string[];
-      quizAttempts: Array<{
-        id: string;
-        score: number;
-        total: number;
-        bodyModel: string;
-        completedAt: Date;
-      }>;
-    }> = [];
-    for (const m of members) {
-      const [snapshot, attempts] = await Promise.all([
-        this.prisma.progressSnapshot.findUnique({ where: { userId: m.userId } }),
-        this.prisma.quizAttempt.findMany({
-          where: { userId: m.userId },
-          orderBy: { completedAt: 'desc' },
-          take: 20,
-          select: { id: true, score: true, total: true, bodyModel: true, completedAt: true },
-        }),
-      ]);
-      result.push({
-        userId: m.userId,
-        name: (m.user as { name: string | null }).name,
-        role: m.role,
-        joinedAt: m.joinedAt,
-        studiedKeys: snapshot?.studiedKeys ?? [],
-        quizAttempts: attempts,
-      });
+    if (members.length === 0) return [];
+    // 8.20.22: batched fetch — 2 queries total regardless of member count
+    // (was 2 sequential queries per member). Per-member semantics preserved
+    // exactly: latest QUIZ_ATTEMPTS_PER_MEMBER attempts desc + snapshot keys,
+    // members in joinedAt order. `userId` is selected only for in-memory
+    // grouping and never leaves the server beyond the existing DTO.
+    const userIds = members.map(m => m.userId);
+    const [snapshots, attempts] = await Promise.all([
+      this.prisma.progressSnapshot.findMany({ where: { userId: { in: userIds } } }),
+      this.prisma.quizAttempt.findMany({
+        where: { userId: { in: userIds } },
+        orderBy: { completedAt: 'desc' },
+        select: {
+          id: true,
+          userId: true,
+          score: true,
+          total: true,
+          bodyModel: true,
+          completedAt: true,
+        },
+      }),
+    ]);
+    const keysByUser = new Map<string, string[]>();
+    for (const s of snapshots) {
+      keysByUser.set(s.userId, s.studiedKeys ?? []);
     }
-    return result;
+    const attemptsByUser = new Map<string, typeof attempts>();
+    for (const a of attempts) {
+      const list = attemptsByUser.get(a.userId) ?? [];
+      // Global desc order keeps each member subsequence desc, so the first
+      // QUIZ_ATTEMPTS_PER_MEMBER equal per-member `take` results exactly.
+      if (list.length < QUIZ_ATTEMPTS_PER_MEMBER) {
+        list.push(a);
+        attemptsByUser.set(a.userId, list);
+      }
+    }
+    return members.map(m => ({
+      userId: m.userId,
+      name: (m.user as { name: string | null }).name,
+      role: m.role,
+      joinedAt: m.joinedAt,
+      studiedKeys: keysByUser.get(m.userId) ?? [],
+      quizAttempts: (attemptsByUser.get(m.userId) ?? []).map(a => ({
+        id: a.id,
+        score: a.score,
+        total: a.total,
+        bodyModel: a.bodyModel,
+        completedAt: a.completedAt,
+      })),
+    }));
   }
 
   private isOwner(cohort: Cohort, user: SafeUser): boolean {

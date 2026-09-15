@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { SafeUser } from '../users/users.service';
 import { AuthService, AuthSession } from './auth.service';
+import { webAppOrigin } from './web-app-url';
 import { CurrentUser } from './current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ConfirmPasswordResetDto } from './dto/confirm-reset.dto';
@@ -39,19 +40,11 @@ function sessionBody(session: AuthSession) {
 }
 
 /**
- * 8.20.20: the web app origin for completing the full-page Google OAuth flow.
- * First CORS_ORIGIN entry is the web app by convention (see .env.example and
- * docs/deployment/README.md). Operator-controlled allow-list value only —
- * never derived from request input, so no open-redirect surface.
+ * 8.20.20: the web app origin for completing the full-page Google OAuth flow
+ * (shared helper — first CORS_ORIGIN entry, operator allow-list only).
  */
 function webAppCallbackUrl(config: ConfigService): string {
-  const raw = config.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
-  const first =
-    raw
-      .split(',')
-      .map(o => o.trim())
-      .filter(Boolean)[0] ?? 'http://localhost:5173';
-  return `${first.replace(/\/+$/, '')}/auth/callback`;
+  return `${webAppOrigin(config)}/auth/callback`;
 }
 
 @Controller('v1/auth')

@@ -119,6 +119,37 @@ export function validateProductionEnv(config: ConfigService): void {
     failures.push('FCM_SERVER_KEY is required when FIREBASE_PROJECT_ID is set in production');
   }
 
+  // 8.20.22: SMTP reset delivery is optional (stub applies without SMTP_HOST),
+  // but a partial configuration must fail clearly rather than silently never
+  // delivering. Rules mirror PasswordResetDelivery.resolveSmtpConfig.
+  const smtpHost = (config.get<string>('SMTP_HOST') ?? '').trim();
+  const smtpFrom = (config.get<string>('SMTP_FROM') ?? '').trim();
+  const smtpUser = (config.get<string>('SMTP_USER') ?? '').trim();
+  const smtpPass = (config.get<string>('SMTP_PASSWORD') ?? '').trim();
+  const smtpAny = smtpHost || smtpFrom || smtpUser || smtpPass;
+  if (smtpAny && !smtpHost) {
+    failures.push('SMTP_HOST is required when SMTP_* reset delivery is configured in production');
+  }
+  if (smtpHost) {
+    if (!smtpFrom) {
+      failures.push('SMTP_FROM is required when SMTP_HOST is set in production');
+    }
+    if ((smtpUser && !smtpPass) || (!smtpUser && smtpPass)) {
+      failures.push('SMTP_USER and SMTP_PASSWORD must be set together in production');
+    }
+    const smtpPortRaw = (config.get<string>('SMTP_PORT') ?? '').trim();
+    if (smtpPortRaw) {
+      const smtpPort = Number(smtpPortRaw);
+      if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+        failures.push('SMTP_PORT must be an integer between 1 and 65535 in production');
+      }
+    }
+    const smtpSecureRaw = (config.get<string>('SMTP_SECURE') ?? '').toLowerCase().trim();
+    if (smtpSecureRaw && !['true', 'false'].includes(smtpSecureRaw)) {
+      failures.push('SMTP_SECURE must be true or false in production');
+    }
+  }
+
   if (failures.length > 0) {
     throw new Error(`Invalid production configuration: ${failures.join('; ')}`);
   }

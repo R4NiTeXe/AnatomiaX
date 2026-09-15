@@ -21,6 +21,8 @@ class FakeDb {
       if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
         const nested = value as Record<string, any>;
         if ('equals' in nested) return record[key] === nested.equals;
+        // 8.20.22: batched `in` operator for getProgress (userId: { in: ids }).
+        if ('in' in nested && Array.isArray(nested.in)) return nested.in.includes(record[key]);
         return false;
       }
       return record[key] === value;
@@ -192,6 +194,40 @@ class FakeDb {
       if (!row) throw new Error('Record not found');
       this.members.delete(where.id);
       return { ...row };
+    },
+  };
+
+  // 8.20.22: learning-record stores for batched getProgress (no database).
+  snapshots = new Map<string, Record<string, any>>();
+  attempts: Record<string, any>[] = [];
+
+  progressSnapshot = {
+    findMany: async ({ where }: { where?: Record<string, any> }) => {
+      return [...this.snapshots.values()]
+        .filter(s => this.match(s, where ?? {}))
+        .map(s => ({ ...s }));
+    },
+  };
+
+  quizAttempt = {
+    findMany: async ({
+      where,
+      orderBy,
+      select,
+    }: {
+      where?: Record<string, any>;
+      orderBy?: Record<string, string>;
+      select?: Record<string, boolean>;
+    }) => {
+      let rows = this.attempts.filter(a => this.match(a, where ?? {}));
+      if (orderBy) rows = this.order(rows, orderBy);
+      if (select) {
+        const keys = Object.entries(select)
+          .filter(([, v]) => v)
+          .map(([k]) => k);
+        rows = rows.map(a => Object.fromEntries(keys.map(k => [k, a[k]])));
+      }
+      return rows.map(a => ({ ...a }));
     },
   };
 
@@ -463,5 +499,109 @@ describe('Cohorts (e2e, no database)', () => {
       .set(auth('student-a@example.com'))
       .send({});
     expect(join.status).toBe(400);
+  });
+
+  describe('8.20.22 batched getProgress (no N+1)', () => {
+    const studentB = () => ids['student-b@example.com'] as string;
+    const teacherA = () => ids['teacher-a@example.com'] as string;
+
+    beforeAll(() => {
+      db.users.get(teacherA())!.name = 'Tess Teacher';
+      db.users.get(studentB())!.name = 'Sam Student';
+      // Only one member has a snapshot (covers the studiedKeys: [] default).
+      db.snapshots.set(studentB(), {
+        userId: studentB(),
+        studiedKeys: ['male:skin:UBERON:0002097', 'male:nervous:UBERON:0001016'],
+        bodyModel: 'male',
+        updatedAt: new Date(),
+      });
+      // 25 attempts for student-b (covers the latest-20 cap + desc order).
+      for (let i = 0; i < 25; i++) {
+        db.attempts.push({
+          id: `attempt-b-${i}`,
+          userId: studentB(),
+          score: i,
+          total: 10,
+          bodyModel: i % 2 === 0 ? 'male' : 'female',
+          completedAt: new Date(Date.now() + i * 3600000),
+        });
+      }
+      // 2 attempts for the owner; interleaved timestamps prove per-user grouping.
+      for (const [i, at] of [10, 30].entries()) {
+        db.attempts.push({
+          id: `attempt-a-${i}`,
+          userId: teacherA(),
+          score: 100 + i,
+          total: 100,
+          bodyModel: 'male',
+          completedAt: new Date(Date.now() + at * 3600000),
+        });
+      }
+    });
+
+    it('owner sees every member with correct shape, order, caps, and defaults', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${ids.cohort}/progress`)
+        .set(auth('teacher-a@example.com'));
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      // Members in joinedAt order: owner seated at creation comes first.
+      expect(res.body.map((m: { userId: string }) => m.userId)).toEqual([teacherA(), studentB()]);
+      for (const m of res.body as Array<Record<string, unknown>>) {
+        expect(Object.keys(m).sort()).toEqual(
+          ['joinedAt', 'name', 'quizAttempts', 'role', 'studiedKeys', 'userId'].sort()
+        );
+        expect(m).not.toHaveProperty('email');
+      }
+      const [owner, student] = res.body as Array<{
+        userId: string;
+        name: string;
+        studiedKeys: string[];
+        quizAttempts: Array<{ id: string; score: number; completedAt: string }>;
+      }>;
+      expect(owner.name).toBe('Tess Teacher');
+      expect(owner.studiedKeys).toEqual([]);
+      expect(owner.quizAttempts.map(a => a.id)).toEqual(['attempt-a-1', 'attempt-a-0']);
+      expect(student.name).toBe('Sam Student');
+      expect(student.studiedKeys).toEqual([
+        'male:skin:UBERON:0002097',
+        'male:nervous:UBERON:0001016',
+      ]);
+      // Latest 20 of 25, newest first.
+      expect(student.quizAttempts).toHaveLength(20);
+      expect(student.quizAttempts[0].id).toBe('attempt-b-24');
+      expect(student.quizAttempts[19].id).toBe('attempt-b-5');
+      const times = student.quizAttempts.map(a => new Date(a.completedAt).getTime());
+      expect([...times].sort((a, b) => b - a)).toEqual(times);
+    });
+
+    it('issues a bounded number of queries regardless of member count', async () => {
+      const snapshotSpy = jest.spyOn(db.progressSnapshot, 'findMany');
+      const attemptsSpy = jest.spyOn(db.quizAttempt, 'findMany');
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${ids.cohort}/progress`)
+        .set(auth('teacher-a@example.com'));
+      expect(res.status).toBe(200);
+      // One batched snapshots query + one batched attempts query for 2 members
+      // (was 2 sequential queries per member before 8.20.22).
+      expect(snapshotSpy).toHaveBeenCalledTimes(1);
+      expect(attemptsSpy).toHaveBeenCalledTimes(1);
+      expect(attemptsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: { in: expect.any(Array) } } })
+      );
+      snapshotSpy.mockRestore();
+      attemptsSpy.mockRestore();
+    });
+
+    it('member without manage rights gets 403; outsider gets 404', async () => {
+      const member = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${ids.cohort}/progress`)
+        .set(auth('student-b@example.com'));
+      expect(member.status).toBe(403);
+      const outsider = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${ids.cohort}/progress`)
+        .set(auth('teacher-b@example.com'));
+      expect(outsider.status).toBe(404);
+    });
   });
 });

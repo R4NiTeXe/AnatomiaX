@@ -54,6 +54,10 @@ Install (from repo root):
 npm ci
 ```
 
+Single root `package-lock.json` owns all npm workspaces — do not add
+per-package lockfiles (a redundant `frontend/admin/package-lock.json` was
+removed in 8.20.22 after causing Next.js additional-lockfile warnings).
+
 ---
 
 ## 3. Environment variables
@@ -92,6 +96,9 @@ with staging values so the same checks gate staging before production.
 | `GOOGLE_CALLBACK_URL`                       | only if Google enabled | e.g. `https://api.<domain>/api/v1/auth/google/callback`.                                              |
 | `FCM_SERVER_KEY`                            | optional               | Empty = push sender stays stubbed, nothing sent.                                                      |
 | `FIREBASE_PROJECT_ID`                       | optional               | Requires `FCM_SERVER_KEY` when set.                                                                   |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE`   | optional               | Reset-email SMTP relay. Empty host = safe stub (no mail sent). No vendor required.                    |
+| `SMTP_USER` + `SMTP_PASSWORD`               | optional pair          | Set together or leave both empty (authless relays only need host).                                    |
+| `SMTP_FROM`                                 | iff SMTP enabled       | Sender address, e.g. `AnatomiaX <noreply@example.com>`. Required when `SMTP_HOST` is set.             |
 
 Verified: no `JWT_SECRET`, `DATABASE_URL`, OAuth secret, refresh secret, or
 FCM private key is read through `VITE_*` or `NEXT_PUBLIC_*` anywhere in the
@@ -209,14 +216,23 @@ COOKIE_SAMESITE=lax
 # optional:
 # GOOGLE_CLIENT_ID=… GOOGLE_CLIENT_SECRET=… GOOGLE_CALLBACK_URL=https://<api>/api/v1/auth/google/callback
 # FCM_SERVER_KEY=… FIREBASE_PROJECT_ID=…
+# SMTP_HOST=… SMTP_PORT=587 SMTP_SECURE=false SMTP_USER=… SMTP_PASSWORD=… SMTP_FROM=…
 ```
+
+Password-reset delivery modes (8.20.22, `PasswordResetDelivery`): no
+`SMTP_HOST` → safe stub (requests resolve, mail is only logged server-side —
+development/test need nothing). `SMTP_HOST` set → concise reset email via
+plain SMTP to any provider/relay (link: `<web-origin>/reset-password?email=…&token=…`,
+existing single-use/expiry/revocation semantics unchanged). Partial SMTP
+config fails fast at boot; mail outages resolve like success (no account
+enumeration). All SMTP values are server-only — never `VITE_*`/`NEXT_PUBLIC_*`.
 
 Startup fails fast with `Invalid production configuration: …` (variable names
 and rules only, never secret values) when required config is missing/unsafe.
 Rules enforced: JWT strength, `postgresql://` scheme, CORS allow-list hygiene
 (no `*`, no localhost), TTL bounds, SameSite/Secure compatibility, Google
 pair + non-localhost callback when enabled, FCM project-requires-key,
-`PORT`/`HOST` shape.
+SMTP consistency when configured, `PORT`/`HOST` shape.
 
 Frontend builds bake public values at build time — rebuild/redeploy the
 static output when rotating a public base URL (no server restart reads them).
@@ -363,6 +379,18 @@ Rules:
 - Release ordering is always: build → migrate → start → health/readiness →
   smoke checks. Keep application changes backward-compatible with the
   previous schema during rollout where possible.
+
+DB-less safety gate (CI + pre-release, never touches a database):
+
+```bash
+node scripts/check-prisma-migrations.js
+```
+
+It runs `prisma validate` (dummy `DATABASE_URL` for parsing only — never
+connects) plus structural checks (lockfile, versioned `migration.sql` files,
+postgresql provider, `env("DATABASE_URL")`). True schema-vs-migration drift
+detection needs a shadow database, which CI does not provision — keep
+migrations and schema in sync at authoring time instead.
 
 Do not generate a migration unless the schema actually changed.
 

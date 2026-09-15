@@ -188,4 +188,56 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
     // Only variable names and rules — no credential material.
     expect(message).not.toMatch(/postgres:.+@/);
   });
+
+  it('keeps SMTP optional but rejects partial SMTP config in production (8.20.22)', () => {
+    process.env.NODE_ENV = 'production';
+    // Absent SMTP keeps the safe stub — no failure.
+    expect(() => validateProductionEnv(configFor(base))).not.toThrow();
+    // Host without sender fails clearly.
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, SMTP_HOST: 'mail.example.com' }))
+    ).toThrow('SMTP_FROM');
+    // Orphaned sender-side values without a host fail clearly.
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, SMTP_FROM: 'noreply@example.com' }))
+    ).toThrow('SMTP_HOST');
+    // Split credentials fail clearly.
+    expect(() =>
+      validateProductionEnv(
+        configFor({
+          ...base,
+          SMTP_HOST: 'mail.example.com',
+          SMTP_FROM: 'noreply@example.com',
+          SMTP_USER: 'u',
+        })
+      )
+    ).toThrow('SMTP_USER');
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, SMTP_HOST: 'h', SMTP_FROM: 'f', SMTP_PORT: 'x' }))
+    ).toThrow('SMTP_PORT');
+    expect(() =>
+      validateProductionEnv(
+        configFor({ ...base, SMTP_HOST: 'h', SMTP_FROM: 'f', SMTP_SECURE: 'sometimes' })
+      )
+    ).toThrow('SMTP_SECURE');
+    // Complete SMTP config (authless relay and authenticated) passes.
+    expect(() =>
+      validateProductionEnv(
+        configFor({ ...base, SMTP_HOST: 'mail.example.com', SMTP_FROM: 'noreply@example.com' })
+      )
+    ).not.toThrow();
+    expect(() =>
+      validateProductionEnv(
+        configFor({
+          ...base,
+          SMTP_HOST: 'mail.example.com',
+          SMTP_FROM: 'AnatomiaX <noreply@example.com>',
+          SMTP_PORT: '465',
+          SMTP_SECURE: 'true',
+          SMTP_USER: 'u',
+          SMTP_PASSWORD: 'p',
+        })
+      )
+    ).not.toThrow();
+  });
 });
