@@ -26,9 +26,9 @@
             <li><a href="/ai/">AI Health</a></li>
             <li><a href="/clinical-cases/">Clinical Cases</a></li>
             <li class="mt-2 border-t border-base-300 pt-2">
-              <a href="/contact/" class="justify-center">Login</a>
+              <a href="{{ site.loginUrl }}" class="justify-center">Login</a>
             </li>
-            <li><a href="/contact/" class="btn btn-sm btn-primary mt-1 justify-center">Get Started</a></li>
+            <li><a href="{{ site.getStartedUrl }}" class="btn btn-sm btn-primary mt-1 justify-center">Get Started</a></li>
           </ul>
         </div>
         <a href="/" class="flex items-center gap-2 text-[1.15rem] font-semibold tracking-tight">
@@ -48,12 +48,12 @@
       </div>
 
       <div class="navbar-end hidden gap-2 lg:flex">
-        <a href="/contact/" class="btn btn-ghost btn-sm">Login</a>
-        <a href="/contact/" class="btn btn-primary btn-sm">Get Started</a>
+        <a href="{{ site.loginUrl }}" class="btn btn-ghost btn-sm">Login</a>
+        <a href="{{ site.getStartedUrl }}" class="btn btn-primary btn-sm">Get Started</a>
       </div>
 
       <div class="navbar-end lg:hidden">
-        <a href="/contact/" class="btn btn-primary btn-sm">Get Started</a>
+        <a href="{{ site.getStartedUrl }}" class="btn btn-primary btn-sm">Get Started</a>
       </div>
     </div>
   </div>

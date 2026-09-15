@@ -11,12 +11,23 @@
 const rawUrl = (process.env.SITE_URL || process.env.URL || 'https://anatomiax.example').trim();
 const normalizedUrl = rawUrl.replace(/\/+$/, '');
 
+// App origin for Login/Get Started CTAs (empty = fall back to /contact/).
+// Set APP_URL to the deployed web-app origin (e.g. https://app.<domain>) so
+// marketing Login reaches <app>/login and Get Started reaches <app>/register.
+// No production domain is invented here; unset keeps current contact fallback.
+const rawAppUrl = (process.env.APP_URL || '').trim();
+const appUrl = rawAppUrl.replace(/\/+$/, '');
+
 module.exports = {
   name: 'AnatomiaX',
   url: normalizedUrl,
   // Configurable contact — placeholder until real address is supplied.
   // Footer/contact pages render this with an explicit placeholder notice.
   email: (process.env.CONTACT_EMAIL || 'contact@anatomiax.example').trim(),
+  // Marketing-to-app journey (see _includes navbar/footer, src/index.njk).
+  appUrl,
+  loginUrl: appUrl ? `${appUrl}/login` : '/contact/',
+  getStartedUrl: appUrl ? `${appUrl}/register` : '/contact/',
   description:
     'Interactive 3D human anatomy and AI-assisted medical education for students, educators, and lifelong learners.',
   language: 'en',

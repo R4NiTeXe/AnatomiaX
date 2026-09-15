@@ -65,13 +65,14 @@ with staging values so the same checks gate staging before production.
 
 ### PUBLIC BUILD-TIME (baked into browser bundle — never secrets)
 
-| Variable                      | Surface   | Local default               | Staging/production rule                              |
-| ----------------------------- | --------- | --------------------------- | ---------------------------------------------------- |
-| `VITE_API_BASE_URL`           | web       | `http://localhost:3000`     | Explicit HTTPS API origin. Never localhost in prod.  |
-| `VITE_ANATOMY_ASSET_BASE_URL` | web       | `/models-dev/`              | Explicit HTTPS static base. Never localhost in prod. |
-| `NEXT_PUBLIC_API_BASE_URL`    | admin     | `http://localhost:3000`     | Explicit HTTPS API origin. Never localhost in prod.  |
-| `SITE_URL` (or `URL`)         | marketing | `https://anatomiax.example` | Canonical HTTPS origin for canonical/sitemap/OG.     |
-| `CONTACT_EMAIL`               | marketing | `contact@anatomiax.example` | Real contact address in production.                  |
+| Variable                      | Surface   | Local default               | Staging/production rule                                                                                           |
+| ----------------------------- | --------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL`           | web       | `http://localhost:3000`     | Explicit HTTPS API origin. Never localhost in prod.                                                               |
+| `VITE_ANATOMY_ASSET_BASE_URL` | web       | `/models-dev/`              | Explicit HTTPS static base. Never localhost in prod.                                                              |
+| `NEXT_PUBLIC_API_BASE_URL`    | admin     | `http://localhost:3000`     | Explicit HTTPS API origin. Never localhost in prod.                                                               |
+| `SITE_URL` (or `URL`)         | marketing | `https://anatomiax.example` | Canonical HTTPS origin for canonical/sitemap/OG.                                                                  |
+| `CONTACT_EMAIL`               | marketing | `contact@anatomiax.example` | Real contact address in production.                                                                               |
+| `APP_URL`                     | marketing | _(empty)_                   | Deployed web-app origin; Login→`<app>/login`, Get Started→`<app>/register`. Empty keeps the `/contact/` fallback. |
 
 ### SERVER-ONLY (never via `VITE_*` / `NEXT_PUBLIC_*`)
 
@@ -181,7 +182,7 @@ NEXT_PUBLIC_API_BASE_URL=https://staging-api.<domain> npm run build -w @anatomia
 5. Marketing build with staging canonical URL:
 
 ```bash
-SITE_URL=https://staging.<domain> CONTACT_EMAIL=contact@staging.<domain> npm run build -w @anatomiax/marketing
+SITE_URL=https://staging.<domain> CONTACT_EMAIL=contact@staging.<domain> APP_URL=https://staging-app.<domain> npm run build -w @anatomiax/marketing
 ```
 
 6. Apply migrations with `npx prisma migrate deploy` (see §12), start the API
@@ -279,6 +280,11 @@ npm run build:js -w @anatomiax/marketing
 - `SITE_URL` (or `URL`) is the canonical HTTPS origin for `<link rel=canonical>`,
   `sitemap.xml`, `robots.txt`, `og:url`, JSON-LD (`src/_data/site.js`).
 - `CONTACT_EMAIL` is the public contact placeholder.
+- `APP_URL` (optional, 8.20.19) is the deployed web-app origin for the
+  marketing-to-app journey: navbar/footer/home Login CTAs resolve to
+  `<APP_URL>/login` and Get Started CTAs to `<APP_URL>/register`. Empty
+  (default) preserves the `/contact/` fallback. Example staging build:
+  `APP_URL=https://staging-app.<domain> npm run build -w @anatomiax/marketing`.
 - Local/example defaults (`https://anatomiax.example`,
   `contact@anatomiax.example`) are clearly non-production placeholders —
   override both in staging/production; never invent a real domain in source.
