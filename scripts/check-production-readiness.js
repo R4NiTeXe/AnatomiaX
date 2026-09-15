@@ -1,5 +1,5 @@
 /**
- * Lightweight production-readiness checks (STEP 8.20.16).
+ * Lightweight production-readiness checks (STEP 8.20.16, extended 8.20.21).
  * Provider-neutral, no deps, no secrets, no cloud, no deployment.
  *
  * Usage:
@@ -9,6 +9,8 @@
  *   node scripts/check-production-readiness.js --health-url http://127.0.0.1:3000
  *   node scripts/check-production-readiness.js --check-builds
  *   node scripts/check-production-readiness.js --strict-env
+ *   # Release-day operator smoke (no secrets; URLs only):
+ *   node scripts/check-production-readiness.js --production --smoke --site-url https://www.example --web-url https://app.example --admin-url https://admin.example --health-url https://api.example --asset-base https://assets.example/anatomy/ --cors https://app.example,https://admin.example --app-url https://app.example
  *
  * Flags:
  *   --api-base <url>    API origin to validate (or VITE_API_BASE_URL / NEXT_PUBLIC_API_BASE_URL).
@@ -18,6 +20,14 @@
  *   --check-builds      Verify expected build outputs exist (dist/.next/_site) — warn-only unless --production.
  *   --strict-env        Alias that enables production env-leakage checks (also on by default).
  *   --timeout <ms>      Per-request timeout for --health-url (default 8000).
+ *   --smoke             Operator smoke pass: probe supplied public URLs (web/admin/site, sitemap,
+ *                       robots), verify URL consistency (APP_URL vs CORS, api-base vs health-url),
+ *                       and check the Google callback route is live without crashing.
+ *   --web-url <url>     Deployed web app origin (smoke: GET / must be 200 HTML).
+ *   --admin-url <url>   Deployed admin origin (smoke: GET / must be 200 HTML).
+ *   --site-url <url>    Marketing origin (smoke: GET /, /sitemap.xml, /robots.txt).
+ *   --cors <list>       CORS_ORIGIN value (smoke: consistency vs --app-url, HTTPS in production).
+ *   --app-url <url>     APP_URL value (smoke: must match first CORS origin).
  *
  * Exit codes: 0 pass, 1 failure, 2 usage error.
  * Never prints secret values — only variable names and rules.
@@ -35,7 +45,6 @@ const MANIFEST_TS = path.join(
   'src',
   'assetManifest.ts'
 );
-
 function parseArgs() {
   const args = process.argv.slice(2);
   const out = {
@@ -46,6 +55,12 @@ function parseArgs() {
     checkBuilds: false,
     strictEnv: true,
     timeout: 8000,
+    smoke: false,
+    webUrl: null,
+    adminUrl: null,
+    siteUrl: null,
+    cors: null,
+    appUrl: null,
   };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -59,8 +74,19 @@ function parseArgs() {
     else if (a === '--check-builds') out.checkBuilds = true;
     else if (a === '--strict-env') out.strictEnv = true;
     else if (a === '--timeout' && args[i + 1]) out.timeout = Number(args[++i]);
+    else if (a === '--smoke') out.smoke = true;
+    else if (a === '--web-url' && args[i + 1]) out.webUrl = args[++i];
+    else if (a.startsWith('--web-url=')) out.webUrl = a.slice('--web-url='.length);
+    else if (a === '--admin-url' && args[i + 1]) out.adminUrl = args[++i];
+    else if (a.startsWith('--admin-url=')) out.adminUrl = a.slice('--admin-url='.length);
+    else if (a === '--site-url' && args[i + 1]) out.siteUrl = args[++i];
+    else if (a.startsWith('--site-url=')) out.siteUrl = a.slice('--site-url='.length);
+    else if (a === '--cors' && args[i + 1]) out.cors = args[++i];
+    else if (a.startsWith('--cors=')) out.cors = a.slice('--cors='.length);
+    else if (a === '--app-url' && args[i + 1]) out.appUrl = args[++i];
+    else if (a.startsWith('--app-url=')) out.appUrl = a.slice('--app-url='.length);
     else if (a === '--help' || a === '-h') {
-      console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 30).join('\n'));
+      console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 45).join('\n'));
       process.exit(0);
     } else {
       console.error(`Unknown flag: ${a}`);
@@ -73,10 +99,12 @@ function parseArgs() {
   if (!out.assetBase) {
     out.assetBase = process.env.VITE_ANATOMY_ASSET_BASE_URL || null;
   }
+  if (!out.appUrl) {
+    out.appUrl = process.env.APP_URL || null;
+  }
   if (process.env.NODE_ENV === 'production') out.production = true;
   return out;
 }
-
 function isLocalhostUrl(url) {
   if (!url) return false;
   const t = String(url).trim();
@@ -335,6 +363,180 @@ async function checkHealth(healthUrl, timeout) {
   return { failures };
 }
 
+/** Normalized scheme://host origin, or null when unparseable. */
+function originOf(url) {
+  try {
+    const u = new URL(String(url).trim());
+    return `${u.protocol}//${u.host}`.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function stripTrailingSlash(url) {
+  return String(url).trim().replace(/\/+$/, '');
+}
+
+/**
+ * 8.20.21 operator smoke: probe deployed public URLs supplied via flags.
+ * All probes are plain unauthenticated GETs; no secrets are sent or needed.
+ */
+async function checkPublicUrls({ webUrl, adminUrl, siteUrl }, timeout) {
+  const failures = [];
+  async function probe(label, url, expectHtml) {
+    const target = stripTrailingSlash(url);
+    try {
+      const res = await fetchWithTimeout(target, timeout);
+      if (res.status !== 200) {
+        failures.push(`${label} GET ${target} expected 200, got ${res.status}`);
+        return;
+      }
+      if (expectHtml) {
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('text/html')) {
+          failures.push(`${label} GET ${target} expected text/html, got ${ct || '(missing)'}`);
+          return;
+        }
+      }
+      console.log(`[smoke] ${label} 200 OK (${target})`);
+    } catch (e) {
+      failures.push(`${label} GET ${target} unreachable: ${e.message}`);
+    }
+  }
+  if (webUrl) await probe('web', `${stripTrailingSlash(webUrl)}/`, true);
+  if (adminUrl) await probe('admin', `${stripTrailingSlash(adminUrl)}/`, true);
+  if (siteUrl) {
+    const base = stripTrailingSlash(siteUrl);
+    await probe('marketing', `${base}/`, true);
+    try {
+      const sm = await fetchWithTimeout(`${base}/sitemap.xml`, timeout);
+      const smText = await sm.text().catch(() => '');
+      if (sm.status !== 200 || !smText.includes('<urlset')) {
+        failures.push(`marketing sitemap expected 200 <urlset>, got ${sm.status}`);
+      } else {
+        console.log(`[smoke] marketing sitemap 200 <urlset> (${base}/sitemap.xml)`);
+      }
+    } catch (e) {
+      failures.push(`marketing sitemap unreachable: ${e.message}`);
+    }
+    try {
+      const rb = await fetchWithTimeout(`${base}/robots.txt`, timeout);
+      const rbText = await rb.text().catch(() => '');
+      if (rb.status !== 200 || !rbText.includes('Sitemap:')) {
+        failures.push(`marketing robots expected 200 with Sitemap:, got ${rb.status}`);
+      } else {
+        console.log(`[smoke] marketing robots 200 with Sitemap: (${base}/robots.txt)`);
+      }
+    } catch (e) {
+      failures.push(`marketing robots unreachable: ${e.message}`);
+    }
+  }
+  return { failures };
+}
+
+/**
+ * 8.20.21 URL consistency: cross-checks operator-supplied URLs against each
+ * other and the production HTTPS/no-localhost rules. Catches misconfiguration
+ * (e.g. APP_URL pointing somewhere CORS does not allow) before traffic does.
+ */
+function checkUrlConsistency({
+  apiBase,
+  healthUrl,
+  assetBase,
+  webUrl,
+  adminUrl,
+  siteUrl,
+  cors,
+  appUrl,
+  production,
+}) {
+  const failures = [];
+  const httpsFail = (label, url) => {
+    if (!url) return;
+    if (isLocalhostUrl(url)) {
+      failures.push(`${label} must not target localhost in production`);
+    } else if (!/^https:\/\//i.test(String(url).trim())) {
+      failures.push(`${label} must be https:// in production`);
+    }
+  };
+  if (production) {
+    httpsFail('web URL (--web-url)', webUrl);
+    httpsFail('admin URL (--admin-url)', adminUrl);
+    httpsFail('site URL (--site-url)', siteUrl);
+    if (appUrl) httpsFail('APP_URL (--app-url)', appUrl);
+    if (cors) {
+      for (const o of String(cors)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)) {
+        httpsFail('CORS origin (--cors)', o);
+      }
+    }
+  }
+  if (appUrl && cors) {
+    const corsFirst = String(cors)
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)[0];
+    if (corsFirst && originOf(appUrl) !== originOf(corsFirst)) {
+      failures.push('APP_URL origin must match the first CORS_ORIGIN entry (web app)');
+    } else if (corsFirst) {
+      console.log('[smoke] APP_URL origin matches first CORS_ORIGIN (web app)');
+    }
+  }
+  if (apiBase && healthUrl && originOf(apiBase) !== originOf(healthUrl)) {
+    failures.push('--api-base origin must match --health-url origin');
+  }
+  if (webUrl && appUrl && originOf(webUrl) !== originOf(appUrl)) {
+    failures.push('--web-url origin must match --app-url origin');
+  }
+  return { failures };
+}
+
+/**
+ * 8.20.21 Google callback liveness: without a real Google session the guard
+ * must reject (302 to Google or 401) — never crash (5xx) or 404. The success
+ * redirect itself needs a real session, so it stays covered by the
+ * AuthController unit test plus the manual release-checklist step.
+ */
+async function checkGoogleCallback(apiUrl, timeout) {
+  const failures = [];
+  if (!apiUrl) return { failures };
+  const target = `${stripTrailingSlash(apiUrl)}/api/v1/auth/google/callback`;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeout);
+    let res;
+    try {
+      res = await fetch(target, { redirect: 'manual', signal: ctrl.signal });
+    } finally {
+      clearTimeout(t);
+    }
+    if (res.status === 302) {
+      const loc = res.headers.get('location') || '';
+      if (!loc.includes('accounts.google.com') && !loc.endsWith('/auth/callback')) {
+        failures.push(
+          `Google callback 302 to unexpected location (not Google, not /auth/callback)`
+        );
+      } else {
+        console.log(`[smoke] Google callback 302 (guard initiates OAuth, no crash)`);
+      }
+    } else if (res.status === 401) {
+      const body = await res.text().catch(() => '');
+      if (/node_modules| at .*\(.*\.ts:/.test(body)) {
+        failures.push('Google callback 401 leaks a stack trace');
+      } else {
+        console.log('[smoke] Google callback 401 without session (guard rejects, no crash)');
+      }
+    } else {
+      failures.push(`Google callback expected 302|401 without session, got ${res.status}`);
+    }
+  } catch (e) {
+    failures.push(`Google callback probe failed: ${e.message}`);
+  }
+  return { failures };
+}
+
 async function main() {
   const opts = parseArgs();
   console.log(
@@ -365,6 +567,16 @@ async function main() {
 
   const health = await checkHealth(opts.healthUrl, opts.timeout);
   failures.push(...health.failures);
+
+  if (opts.smoke) {
+    console.log('[smoke] operator smoke pass (URLs only, no secrets)');
+    const consistency = checkUrlConsistency(opts);
+    failures.push(...consistency.failures);
+    const publicUrls = await checkPublicUrls(opts, opts.timeout);
+    failures.push(...publicUrls.failures);
+    const google = await checkGoogleCallback(opts.healthUrl || opts.apiBase, opts.timeout);
+    failures.push(...google.failures);
+  }
 
   for (const w of warnings) console.log(`[readiness] WARN: ${w}`);
   if (failures.length > 0) {

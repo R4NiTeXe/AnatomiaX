@@ -441,6 +441,15 @@ After build → migrate → start, in order:
 8. Marketing `_site/sitemap.xml` + `_site/robots.txt` reference the canonical `SITE_URL`.
 9. Login → refresh → cohort → quiz smoke path in staging before production.
 10. Confirm `CORS_ORIGIN` matches the deployed web/admin origins.
+11. Google OAuth (only when configured): start Login → Continue with Google →
+    approve → expect landing on `<web>/auth/callback` then the app (never raw
+    JSON). Consent-denied stays a safe API error, never a crash.
+12. Role access: student reaches `/learn`, teacher reaches `/cohorts`, student
+    gets 403 on admin routes, admin reaches admin overview/users/cohorts.
+13. `/human` loads; deep link `/human?focus=<key>` opens the viewer.
+14. Logout → protected routes redirect to `/login`; expired sessions show the
+    sign-in notice without cached data leaking across accounts.
+15. Rollback path verified before traffic: previous artifacts retained (§17).
 
 Automated (no secrets, no cloud):
 
@@ -450,6 +459,19 @@ node scripts/check-anatomy-assets.js --base /models-dev/
 npm run typecheck --workspaces --if-present
 npm run build --workspaces --if-present
 ```
+
+Release-day operator smoke against deployed URLs (URLs only, no secrets):
+
+```bash
+node scripts/check-production-readiness.js --production --smoke \
+  --site-url <https-marketing> --web-url <https-web> --admin-url <https-admin> \
+  --health-url <https-api> --api-base <https-api> \
+  --asset-base <https-assets>/ --cors <https-web>,<https-admin> --app-url <https-web>
+```
+
+This probes `/` (web/admin/site), `/sitemap.xml` + `/robots.txt`, API
+liveness/readiness, anatomy manifest rules, APP_URL↔CORS consistency, and
+Google-callback liveness — exit 0 only when every probe passes.
 
 ---
 
