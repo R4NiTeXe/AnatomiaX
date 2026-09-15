@@ -76,22 +76,22 @@ with staging values so the same checks gate staging before production.
 
 ### SERVER-ONLY (never via `VITE_*` / `NEXT_PUBLIC_*`)
 
-| Variable                                    | Required in prod       | Notes                                                                                  |
-| ------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                              | yes                    | `postgresql://…` connection string. Never commit real value.                           |
-| `JWT_SECRET`                                | yes                    | `>=32` chars, not the placeholder. No secret in logs/errors.                           |
-| `CORS_ORIGIN`                               | yes                    | Comma-separated HTTPS origins. No `*`, no localhost in prod.                           |
-| `PORT`                                      | no                     | Integer 1–65535. Default `3000`.                                                       |
-| `HOST`                                      | no                     | Default `0.0.0.0`. Local dev may use `127.0.0.1`.                                      |
-| `JWT_ACCESS_TTL`                            | no                     | Default `15m`.                                                                         |
-| `REFRESH_TTL_DAYS`                          | no (1–90)              | Default `30`.                                                                          |
-| `PASSWORD_RESET_TTL_MINUTES`                | no (1–1440)            | Default `60`.                                                                          |
-| `COOKIE_SECURE`                             | no (`true/false`)      | Forced `true` in production. `none` requires `true`.                                   |
-| `COOKIE_SAMESITE`                           | no (`lax/strict/none`) | Default `lax`.                                                                         |
-| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | optional pair          | Set together or leave both empty. Callback must not be localhost in prod when enabled. |
-| `GOOGLE_CALLBACK_URL`                       | only if Google enabled | e.g. `https://api.<domain>/api/v1/auth/google/callback`.                               |
-| `FCM_SERVER_KEY`                            | optional               | Empty = push sender stays stubbed, nothing sent.                                       |
-| `FIREBASE_PROJECT_ID`                       | optional               | Requires `FCM_SERVER_KEY` when set.                                                    |
+| Variable                                    | Required in prod       | Notes                                                                                                 |
+| ------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                              | yes                    | `postgresql://…` connection string. Never commit real value.                                          |
+| `JWT_SECRET`                                | yes                    | `>=32` chars, not the placeholder. No secret in logs/errors.                                          |
+| `CORS_ORIGIN`                               | yes                    | Comma-separated HTTPS origins (first = web app; OAuth redirects there). No `*`, no localhost in prod. |
+| `PORT`                                      | no                     | Integer 1–65535. Default `3000`.                                                                      |
+| `HOST`                                      | no                     | Default `0.0.0.0`. Local dev may use `127.0.0.1`.                                                     |
+| `JWT_ACCESS_TTL`                            | no                     | Default `15m`.                                                                                        |
+| `REFRESH_TTL_DAYS`                          | no (1–90)              | Default `30`.                                                                                         |
+| `PASSWORD_RESET_TTL_MINUTES`                | no (1–1440)            | Default `60`.                                                                                         |
+| `COOKIE_SECURE`                             | no (`true/false`)      | Forced `true` in production. `none` requires `true`.                                                  |
+| `COOKIE_SAMESITE`                           | no (`lax/strict/none`) | Default `lax`.                                                                                        |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | optional pair          | Set together or leave both empty. Callback must not be localhost in prod when enabled.                |
+| `GOOGLE_CALLBACK_URL`                       | only if Google enabled | e.g. `https://api.<domain>/api/v1/auth/google/callback`.                                              |
+| `FCM_SERVER_KEY`                            | optional               | Empty = push sender stays stubbed, nothing sent.                                                      |
+| `FIREBASE_PROJECT_ID`                       | optional               | Requires `FCM_SERVER_KEY` when set.                                                                   |
 
 Verified: no `JWT_SECRET`, `DATABASE_URL`, OAuth secret, refresh secret, or
 FCM private key is read through `VITE_*` or `NEXT_PUBLIC_*` anywhere in the
@@ -166,7 +166,8 @@ Treat staging as production-config with staging values:
 1. Set `NODE_ENV=production` on the API with staging secrets/URLs so
    `validateProductionEnv` gates staging exactly like production.
 2. `CORS_ORIGIN=https://staging-web.<domain>, https://staging-admin.<domain>`
-   (no wildcard, no localhost).
+   (no wildcard, no localhost). Convention: the FIRST entry is the web app —
+   Google OAuth success redirects to `<first-entry>/auth/callback`.
 3. Web build with staging values baked at build time:
 
 ```bash

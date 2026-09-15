@@ -222,6 +222,8 @@ function checkEnvExamples() {
       failures.push('frontend/marketing/.env.example missing SITE_URL');
     if (!content.includes('CONTACT_EMAIL'))
       failures.push('frontend/marketing/.env.example missing CONTACT_EMAIL');
+    if (!content.includes('APP_URL'))
+      failures.push('frontend/marketing/.env.example missing APP_URL');
   }
   return { failures };
 }

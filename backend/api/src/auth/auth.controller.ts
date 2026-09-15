@@ -20,6 +20,10 @@ interface CookieResponse {
   clearCookie(name: string, options: Record<string, unknown>): void;
 }
 
+interface RedirectResponse extends CookieResponse {
+  redirect(url: string): void;
+}
+
 interface AuthRequest {
   cookies?: Record<string, string | undefined>;
   headers: Record<string, string | string[] | undefined>;
@@ -32,6 +36,22 @@ function sessionBody(session: AuthSession) {
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
   };
+}
+
+/**
+ * 8.20.20: the web app origin for completing the full-page Google OAuth flow.
+ * First CORS_ORIGIN entry is the web app by convention (see .env.example and
+ * docs/deployment/README.md). Operator-controlled allow-list value only —
+ * never derived from request input, so no open-redirect surface.
+ */
+function webAppCallbackUrl(config: ConfigService): string {
+  const raw = config.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
+  const first =
+    raw
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean)[0] ?? 'http://localhost:5173';
+  return `${first.replace(/\/+$/, '')}/auth/callback`;
 }
 
 @Controller('v1/auth')
@@ -83,10 +103,16 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleCallback(@Req() req: AuthRequest, @Res({ passthrough: true }) res: CookieResponse) {
+  async googleCallback(@Req() req: AuthRequest, @Res() res: RedirectResponse): Promise<void> {
     // Guard guarantees req.user; verified through Google's identity response.
     const user = req.user as SafeUser;
-    return this.writeSession(res, await this.auth.issueSessionForUser(user.id));
+    const session = await this.auth.issueSessionForUser(user.id);
+    // 8.20.20: full-page OAuth flow left the SPA, so 302 back to the web app
+    // (which picks the session up from the httpOnly cookie via /auth/callback)
+    // instead of stranding the user on raw session JSON with tokens rendered
+    // in the page. Cookie is set on the same redirect response.
+    res.cookie(REFRESH_COOKIE, session.refreshToken, this.cookieOptions());
+    res.redirect(webAppCallbackUrl(this.config));
   }
 
   @Post('refresh')
