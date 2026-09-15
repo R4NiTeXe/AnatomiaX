@@ -42,9 +42,19 @@ export default function CohortDetailPage(): JSX.Element {
                   </span>
                 ) : null}
               </p>
-              <Button variant="outline" asChild className="mt-4">
-                <Link href="/cohorts">Back to cohorts</Link>
-              </Button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => query.refetch()}
+                  data-testid="admin-cohort-detail-retry"
+                >
+                  Retry
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/cohorts">Back to cohorts</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : query.data ? (

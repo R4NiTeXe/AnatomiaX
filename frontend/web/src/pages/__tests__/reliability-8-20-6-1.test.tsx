@@ -152,4 +152,27 @@ describe('8.20.6.1 reliability/a11y', () => {
     expect(screen.getByTestId('human-nav')).toBeInTheDocument();
     expect(screen.getByTestId('mock-anatomy-viewer')).toBeInTheDocument();
   });
+
+  it('8.20.18 unknown routes render a skip-link-targeted 404 with a home link', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/no-such-route-xyz']}>
+            <App />
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+    expect(await screen.findByTestId('not-found-title', {}, { timeout: 4000 })).toHaveTextContent(
+      'Page not found'
+    );
+    // skip link resolves on the standalone 404 page
+    const skip = await screen.findByText('Skip to content', {}, { timeout: 4000 });
+    expect(skip).toHaveAttribute('href', '#main-content');
+    const mains = await screen.findAllByRole('main', {}, { timeout: 4000 });
+    expect(mains.some(m => m.id === 'main-content')).toBe(true);
+    const home = screen.getByTestId('not-found-home');
+    expect(home).toHaveAttribute('href', '/');
+  });
 });

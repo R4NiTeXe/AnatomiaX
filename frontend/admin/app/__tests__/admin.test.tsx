@@ -5,6 +5,7 @@ import { AuthProvider } from '@/components/auth-provider';
 import OverviewPage from '../page';
 import UsersPage from '../users/page';
 import CohortsPage from '../cohorts/page';
+import CohortDetailPage from '../cohorts/[id]/page';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -113,6 +114,31 @@ describe('admin overview', () => {
       await screen.findByTestId('admin-overview-error', {}, { timeout: 4000 })
     ).toBeInTheDocument();
   });
+
+  it('8.20.18 error state offers retry that refetches overview', async () => {
+    let overviewCalls = 0;
+    (global.fetch as unknown as jest.Mock).mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/v1/auth/me')) return Promise.resolve(jsonResponse(ADMIN_USER));
+      if (u.includes('/api/v1/admin/overview')) {
+        overviewCalls += 1;
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: 'Error',
+          headers: { get: () => null },
+          text: async () => JSON.stringify({ message: 'boom' }),
+        } as unknown as Response);
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    renderWithProviders(<OverviewPage />);
+    const retry = await screen.findByTestId('admin-overview-retry', {}, { timeout: 4000 });
+    expect(retry).toBeInTheDocument();
+    const before = overviewCalls;
+    fireEvent.click(retry);
+    await waitFor(() => expect(overviewCalls).toBeGreaterThan(before));
+  });
 });
 
 describe('admin users', () => {
@@ -167,6 +193,31 @@ describe('admin users', () => {
     fireEvent.change(select, { target: { value: 'TEACHER' } });
     expect(select.value).toBe('TEACHER');
   });
+
+  it('8.20.18 error state offers retry that refetches users', async () => {
+    let usersCalls = 0;
+    (global.fetch as unknown as jest.Mock).mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/v1/auth/me')) return Promise.resolve(jsonResponse(ADMIN_USER));
+      if (u.includes('/api/v1/admin/users')) {
+        usersCalls += 1;
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: 'Error',
+          headers: { get: () => null },
+          text: async () => JSON.stringify({ message: 'boom' }),
+        } as unknown as Response);
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    renderWithProviders(<UsersPage />);
+    const retry = await screen.findByTestId('admin-users-retry', {}, { timeout: 4000 });
+    expect(retry).toBeInTheDocument();
+    const before = usersCalls;
+    fireEvent.click(retry);
+    await waitFor(() => expect(usersCalls).toBeGreaterThan(before));
+  });
 });
 
 describe('admin cohorts', () => {
@@ -213,6 +264,60 @@ describe('admin cohorts', () => {
     const archived = screen.getByTestId('admin-cohorts-archived-filter');
     fireEvent.change(archived, { target: { value: 'true' } });
     expect((archived as HTMLSelectElement).value).toBe('true');
+  });
+
+  it('8.20.18 error state offers retry that refetches cohorts', async () => {
+    let cohortsCalls = 0;
+    (global.fetch as unknown as jest.Mock).mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/v1/auth/me')) return Promise.resolve(jsonResponse(ADMIN_USER));
+      if (u.includes('/api/v1/admin/cohorts')) {
+        cohortsCalls += 1;
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: 'Error',
+          headers: { get: () => null },
+          text: async () => JSON.stringify({ message: 'boom' }),
+        } as unknown as Response);
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    renderWithProviders(<CohortsPage />);
+    const retry = await screen.findByTestId('admin-cohorts-retry', {}, { timeout: 4000 });
+    expect(retry).toBeInTheDocument();
+    const before = cohortsCalls;
+    fireEvent.click(retry);
+    await waitFor(() => expect(cohortsCalls).toBeGreaterThan(before));
+  });
+
+  it('8.20.18 cohort detail error offers retry alongside back navigation', async () => {
+    let detailCalls = 0;
+    (global.fetch as unknown as jest.Mock).mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/v1/auth/me')) return Promise.resolve(jsonResponse(ADMIN_USER));
+      if (u.includes('/api/v1/admin/cohorts/c1')) {
+        detailCalls += 1;
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: 'Error',
+          headers: { get: () => null },
+          text: async () => JSON.stringify({ message: 'boom' }),
+        } as unknown as Response);
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    renderWithProviders(<CohortDetailPage />);
+    expect(
+      await screen.findByTestId('admin-cohort-not-found', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    const retry = screen.getByTestId('admin-cohort-detail-retry');
+    expect(retry).toBeInTheDocument();
+    expect(screen.getByTestId('admin-cohort-back')).toBeInTheDocument();
+    const before = detailCalls;
+    fireEvent.click(retry);
+    await waitFor(() => expect(detailCalls).toBeGreaterThan(before));
   });
 });
 

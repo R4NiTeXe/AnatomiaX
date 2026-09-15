@@ -5,6 +5,7 @@ import { AdminShell } from '@/components/admin-shell';
 import { useAdminOverview } from '@/hooks/useAdmin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -41,17 +42,28 @@ export default function OverviewPage(): JSX.Element {
             <Skeleton className="h-28 w-full" />
           </div>
         ) : overview.isError ? (
-          <Alert variant="destructive" data-testid="admin-overview-error">
-            <AlertDescription>
-              Failed to load overview.{' '}
-              {overview.error instanceof Error ? overview.error.message : 'Please retry.'}{' '}
-              {(overview.error as unknown as { requestId?: string })?.requestId ? (
-                <span className="font-mono text-xs">
-                  Ref: {(overview.error as unknown as { requestId?: string }).requestId}
-                </span>
-              ) : null}
-            </AlertDescription>
-          </Alert>
+          <div className="flex flex-col gap-2">
+            <Alert variant="destructive" data-testid="admin-overview-error">
+              <AlertDescription>
+                Failed to load overview.{' '}
+                {overview.error instanceof Error ? overview.error.message : 'Please retry.'}{' '}
+                {(overview.error as unknown as { requestId?: string })?.requestId ? (
+                  <span className="font-mono text-xs">
+                    Ref: {(overview.error as unknown as { requestId?: string }).requestId}
+                  </span>
+                ) : null}
+              </AlertDescription>
+            </Alert>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => overview.refetch()}
+              data-testid="admin-overview-retry"
+              className="w-fit"
+            >
+              Retry
+            </Button>
+          </div>
         ) : overview.data ? (
           <>
             <section

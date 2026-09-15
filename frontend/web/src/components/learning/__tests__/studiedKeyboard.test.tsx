@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -41,7 +41,7 @@ function renderStudied() {
   );
 }
 
-describe('StudiedStructures keyboard (8.20.6.1)', () => {
+describe('StudiedStructures keyboard (8.20.6.1, 8.20.18)', () => {
   beforeEach(() => {
     __resetAuthForTests();
     jest.restoreAllMocks();
@@ -58,20 +58,21 @@ describe('StudiedStructures keyboard (8.20.6.1)', () => {
     }) as unknown as typeof fetch;
   });
 
-  it('makes studied item keyboard accessible with Enter/Space', async () => {
+  it('exposes studied items as plain links with no nested interactives', async () => {
     renderStudied();
     const item = await screen.findByTestId('studied-item', {}, { timeout: 4000 });
-    const card = within(item).getByRole('button');
-    expect(card).toHaveAttribute('tabIndex', '0');
-    expect(card).toHaveAttribute('aria-label', expect.stringContaining('Open'));
-    // focus and press Enter
-    card.focus();
-    expect(document.activeElement).toBe(card);
-    fireEvent.keyDown(card, { key: 'Enter', code: 'Enter' });
-    // navigation is via useNavigate, jsdom will not actually navigate but we can verify the card is still accessible
-    expect(card).toBeInTheDocument();
-    fireEvent.keyDown(card, { key: ' ', code: 'Space' });
-    expect(card).toBeInTheDocument();
+    // 8.20.18: the card is a plain container — no role=button wrapping a link.
+    expect(within(item).queryByRole('button')).not.toBeInTheDocument();
+    const labelLink = within(item).getByTestId('studied-open-label');
+    expect(labelLink.tagName).toBe('A');
+    expect(labelLink).toHaveAttribute('href', `/human?focus=${encodeURIComponent(KEY)}`);
+    expect(labelLink).toHaveAttribute('aria-label', expect.stringContaining('Open'));
+    // natively keyboard-focusable links: Tab reaches them without custom handlers
+    labelLink.focus();
+    expect(document.activeElement).toBe(labelLink);
+    const openLink = within(item).getByTestId('studied-open');
+    openLink.focus();
+    expect(document.activeElement).toBe(openLink);
   });
 
   it('preserves Open in 3D link href and focus ring', async () => {

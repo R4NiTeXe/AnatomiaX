@@ -80,16 +80,27 @@ export default function UsersPage(): JSX.Element {
                 <Skeleton className="h-10 w-full" />
               </div>
             ) : query.isError ? (
-              <Alert variant="destructive" data-testid="admin-users-error">
-                <AlertDescription>
-                  Failed to load users.{' '}
-                  {(query.error as unknown as { requestId?: string })?.requestId ? (
-                    <span className="font-mono text-xs">
-                      Ref: {(query.error as unknown as { requestId?: string }).requestId}
-                    </span>
-                  ) : null}
-                </AlertDescription>
-              </Alert>
+              <div className="flex flex-col gap-2">
+                <Alert variant="destructive" data-testid="admin-users-error">
+                  <AlertDescription>
+                    Failed to load users.{' '}
+                    {(query.error as unknown as { requestId?: string })?.requestId ? (
+                      <span className="font-mono text-xs">
+                        Ref: {(query.error as unknown as { requestId?: string }).requestId}
+                      </span>
+                    ) : null}
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => query.refetch()}
+                  data-testid="admin-users-retry"
+                  className="w-fit"
+                >
+                  Retry
+                </Button>
+              </div>
             ) : !query.data || query.data.items.length === 0 ? (
               <p
                 className="py-8 text-center text-sm text-slate-500"
