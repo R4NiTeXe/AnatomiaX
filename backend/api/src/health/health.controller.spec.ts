@@ -44,4 +44,22 @@ describe('HealthController', () => {
       database: 'disconnected',
     });
   });
+
+  it('8.20.16 readiness sets 200 when connected and 503 when disconnected', async () => {
+    prisma.ping.mockResolvedValueOnce(true);
+    const okRes = { status: jest.fn() };
+    await expect(controller.database(okRes)).resolves.toEqual({
+      status: 'ok',
+      database: 'connected',
+    });
+    expect(okRes.status).toHaveBeenCalledWith(200);
+
+    prisma.ping.mockResolvedValueOnce(false);
+    const degradedRes = { status: jest.fn() };
+    const body = await controller.database(degradedRes);
+    expect(body).toEqual({ status: 'degraded', database: 'disconnected' });
+    expect(degradedRes.status).toHaveBeenCalledWith(503);
+    // Payload never carries raw DB errors.
+    expect(JSON.stringify(body)).not.toMatch(/postgres|prisma|Error/i);
+  });
 });

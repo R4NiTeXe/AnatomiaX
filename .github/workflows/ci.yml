@@ -33,6 +33,12 @@ jobs:
       - name: Build workspaces
         run: npm run build --workspaces --if-present
 
+      - name: Deployment readiness (no secrets, provider-neutral)
+        run: node scripts/check-production-readiness.js --check-builds
+
+      - name: Anatomy asset contract (dev layout)
+        run: node scripts/check-anatomy-assets.js --base /models-dev/
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 

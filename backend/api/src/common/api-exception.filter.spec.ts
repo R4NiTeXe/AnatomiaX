@@ -142,7 +142,13 @@ describe('ApiExceptionFilter (8.19.25)', () => {
   });
 
   it('passes health routes through untouched', async () => {
-    for (const url of ['/api/health', '/api/health/db', '/api/health?x=1']) {
+    for (const url of [
+      '/api/health',
+      '/api/health/db',
+      '/api/health?x=1',
+      '/health',
+      '/health?x=1',
+    ]) {
       const { host, res } = mockHost(url);
       expect(() => filter.catch(new Error('health boom'), host)).toThrow('health boom');
       expect(res.status).not.toHaveBeenCalled();

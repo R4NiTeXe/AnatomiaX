@@ -54,6 +54,7 @@ export function codeForStatus(status: number): ApiErrorCode {
 /** Health routes keep their legacy payloads and bypass normalization. */
 export function isHealthPath(url: string): boolean {
   const path = url.split('?')[0];
+  if (path === '/health' || path.startsWith('/health/')) return true;
   return path === '/api/health' || path.startsWith('/api/health/');
 }
 

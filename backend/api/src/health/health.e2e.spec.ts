@@ -59,11 +59,20 @@ describe('Health (e2e)', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
-  it('GET /api/health/db reports database status without throwing', async () => {
+  it('GET /api/health/db reports database status without throwing (8.20.16 readiness)', async () => {
     const res = await request(app.getHttpServer()).get('/api/health/db');
-    expect(res.status).toBe(200);
     expect(['connected', 'disconnected']).toContain(res.body.database);
     expect(res.body.status).toBe(res.body.database === 'connected' ? 'ok' : 'degraded');
+    // Readiness contract: 200 when connected, 503 when unavailable.
+    expect(res.status).toBe(res.body.database === 'connected' ? 200 : 503);
+    // Never leaks raw DB internals.
+    expect(JSON.stringify(res.body)).not.toMatch(/postgres|prisma|ECONN/i);
+  });
+
+  it('liveness stays 200 even when readiness is degraded', async () => {
+    const liveness = await request(app.getHttpServer()).get('/api/health');
+    expect(liveness.status).toBe(200);
+    expect(liveness.body).toEqual({ status: 'ok' });
   });
 
   it('bootstrap does not throw and app is defined', () => {
