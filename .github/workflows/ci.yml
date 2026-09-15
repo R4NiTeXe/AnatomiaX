@@ -39,6 +39,9 @@ jobs:
       - name: Anatomy asset contract (dev layout)
         run: node scripts/check-anatomy-assets.js --base /models-dev/
 
+      - name: Performance budget (informational warnings)
+        run: node scripts/check-performance-budget.js
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
