@@ -1,10 +1,11 @@
 import { useProgressSnapshot, useQuizHistory } from '@/hooks/useProgress';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import ProgressRing from './ProgressRing';
+import { documentedCoverage } from './coverage';
 
 function bestScoreText(attempts: { score: number; total: number }[]): string {
   if (attempts.length === 0) return '—';
@@ -91,77 +92,84 @@ export default function ProgressSummary(): JSX.Element | null {
   const studiedKeys = snapshotQuery.data?.studiedKeys ?? [];
   const attempts = historyQuery.data ?? [];
   const latest = attempts[0] ?? null;
+  const coverage = documentedCoverage(studiedKeys, snapshotQuery.data?.bodyModel ?? null);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="progress-summary">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
-            Studied
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-bold text-slate-100" data-testid="progress-summary-studied">
+    <div
+      data-testid="progress-summary"
+      className="grid gap-4 rounded-xl border border-slate-800/70 bg-gradient-to-b from-slate-900/80 to-slate-900/40 p-4 shadow-soft sm:p-5 lg:grid-cols-[auto_1fr] lg:gap-6"
+    >
+      <div className="flex items-center gap-4">
+        <ProgressRing
+          value={coverage.studied}
+          max={coverage.total}
+          testId="progress-summary-coverage"
+        />
+        <div className="min-w-0">
+          <p className="ax-section-title">Mastery</p>
+          <p className="mt-1 text-sm text-slate-300">
+            {coverage.studied} of {coverage.total} documented structures
+          </p>
+          <p className="mt-1 text-xs text-slate-500">{studiedKeys.length} studied in total</p>
+        </div>
+      </div>
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div>
+          <dt className="ax-section-title">Studied</dt>
+          <dd
+            className="mt-1 text-2xl font-bold tabular-nums text-slate-100"
+            data-testid="progress-summary-studied"
+          >
             {studiedKeys.length}
-          </p>
-          <p className="text-xs text-slate-500">
+          </dd>
+          <dd className="text-xs text-slate-500">
             {studiedKeys.length === 1 ? 'structure' : 'structures'}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
-            Quizzes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-bold text-slate-100" data-testid="progress-summary-quizzes">
+          </dd>
+        </div>
+        <div>
+          <dt className="ax-section-title">Quizzes</dt>
+          <dd
+            className="mt-1 text-2xl font-bold tabular-nums text-slate-100"
+            data-testid="progress-summary-quizzes"
+          >
             {attempts.length}
-          </p>
-          <p className="text-xs text-slate-500">
+          </dd>
+          <dd className="text-xs text-slate-500">
             {attempts.length === 1 ? 'completed' : 'completed'}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
-            Latest score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-bold text-slate-100" data-testid="progress-summary-latest">
+          </dd>
+        </div>
+        <div>
+          <dt className="ax-section-title">Latest score</dt>
+          <dd
+            className="mt-1 text-2xl font-bold tabular-nums text-slate-100"
+            data-testid="progress-summary-latest"
+          >
             {latest ? `${latest.score} / ${latest.total}` : '—'}
-          </p>
-          {latest ? (
-            <Badge
-              variant={latest.score === latest.total ? 'teal' : 'secondary'}
-              className="mt-1 capitalize"
-            >
-              {latest.bodyModel}
-            </Badge>
-          ) : (
-            <p className="text-xs text-slate-500">No attempts yet</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs uppercase tracking-widest text-slate-400">
-            Best score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-bold text-slate-100" data-testid="progress-summary-best">
+          </dd>
+          <dd>
+            {latest ? (
+              <Badge
+                variant={latest.score === latest.total ? 'teal' : 'secondary'}
+                className="mt-1 capitalize"
+              >
+                {latest.bodyModel}
+              </Badge>
+            ) : (
+              <span className="text-xs text-slate-500">No attempts yet</span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt className="ax-section-title">Best score</dt>
+          <dd
+            className="mt-1 text-2xl font-bold tabular-nums text-slate-100"
+            data-testid="progress-summary-best"
+          >
             {bestScoreText(attempts)}
-          </p>
-          <p className="text-xs text-slate-500">{attempts.length > 0 ? 'personal best' : '—'}</p>
-        </CardContent>
-      </Card>
+          </dd>
+          <dd className="text-xs text-slate-500">{attempts.length > 0 ? 'personal best' : '—'}</dd>
+        </div>
+      </dl>
     </div>
   );
 }

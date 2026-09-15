@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
+import { displayNameForStudiedKey } from '@/components/learning/StudiedStructures';
+import { documentedCoverage } from '@/components/learning/coverage';
 import AppShell from '@/components/layout/AppShell';
 import HomePage from '../HomePage';
 import LearnPage from '../LearnPage';
@@ -214,6 +216,29 @@ describe('student home/dashboard (8.20.3)', () => {
       'href',
       '/human'
     );
+    expect(screen.getByTestId('home-next-action')).toHaveTextContent(/select any structure/i);
+    expect(screen.getByTestId('home-review-link')).toHaveAttribute('href', '/learn');
+  });
+
+  it('shows a mastery strip and names the next structure to continue with', async () => {
+    const keys = [KEY_HEART, KEY_SKIN];
+    mockBackend({
+      user: USER_A,
+      snapshotKeys: keys,
+      attempts: [attempt('att-1', 'u-a', 4, 5, KEY_HEART)],
+    });
+    renderHome();
+    await screen.findByTestId('home-dashboard', {}, { timeout: 4000 });
+    const expected = documentedCoverage(keys, 'male');
+    expect(await screen.findByTestId('home-mastery', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByTestId('home-mastery-coverage-value')).toHaveTextContent(
+      `${expected.percent}%`
+    );
+    expect(screen.getByTestId('home-mastery-studied')).toHaveTextContent('2');
+    expect(screen.getByTestId('home-continue-title')).toHaveTextContent(
+      displayNameForStudiedKey(KEY_HEART)
+    );
+    expect(screen.getByTestId('home-next-action')).toHaveTextContent(/jump back into the viewer/i);
   });
 
   it('shows loading then error with retry for dashboard data', async () => {

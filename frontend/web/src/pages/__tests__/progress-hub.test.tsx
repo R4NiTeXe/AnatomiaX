@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
+import { documentedCoverage } from '@/components/learning/coverage';
 import AppShell from '@/components/layout/AppShell';
 import LearnPage from '../LearnPage';
 
@@ -339,5 +340,38 @@ describe('progress hub (8.20.6)', () => {
     fireEvent.click(await screen.findByTestId('quiz-details-trigger', {}, { timeout: 4000 }));
     await screen.findByTestId('quiz-detail', {}, { timeout: 4000 });
     expect(screen.getByTestId('quiz-detail-practice')).toHaveAttribute('href', '/human');
+  });
+
+  it('shows a mastery ring derived from documented coverage, not invented stats', async () => {
+    const keys = [KEY_HEART, KEY_SKIN, KEY_BRAIN];
+    mockBackend({ user: USER_A, snapshotKeys: keys, attempts: [] });
+    renderLearn();
+    await screen.findByTestId('progress-summary', {}, { timeout: 4000 });
+    const expected = documentedCoverage(keys, 'male');
+    expect(expected.total).toBeGreaterThan(0);
+    expect(screen.getByTestId('progress-summary-coverage')).toHaveAttribute(
+      'aria-label',
+      `${expected.percent} percent complete`
+    );
+    expect(screen.getByTestId('progress-summary-coverage-value')).toHaveTextContent(
+      `${expected.percent}%`
+    );
+  });
+
+  it('shows per-question correct counts in attempt review', async () => {
+    mockBackend({
+      user: USER_A,
+      snapshotKeys: [],
+      attempts: [
+        attempt('a1', 'u-a', 1, 2, [
+          { structureKey: KEY_HEART, selected: 0, correct: 0 },
+          { structureKey: KEY_SKIN, selected: 1, correct: 0 },
+        ]),
+      ],
+    });
+    renderLearn();
+    fireEvent.click(await screen.findByTestId('quiz-details-trigger', {}, { timeout: 4000 }));
+    await screen.findByTestId('quiz-detail', {}, { timeout: 4000 });
+    expect(screen.getByTestId('quiz-detail-correct')).toHaveTextContent('1 of 2 correct');
   });
 });

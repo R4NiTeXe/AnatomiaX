@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { parseStudiedKey, getAnatomyInformationByStructureKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { Reveal } from '@/components/motion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,91 +46,121 @@ function displayNameForAnswer(a: QuizAttemptRecord['answers'][number]): string {
 
 function AttemptDetail({ attempt }: { attempt: QuizAttemptRecord }): JSX.Element {
   const answers = attempt.answers ?? [];
+  const correctCount = answers.filter(a => a.selected === a.correct).length;
+  const perfect = attempt.total > 0 && attempt.score === attempt.total;
   return (
-    <div className="flex flex-col gap-3" data-testid="quiz-detail">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-medium text-slate-100" data-testid="quiz-detail-score">
-          Score {attempt.score} / {attempt.total}
-        </p>
-        <Badge
-          variant={attempt.score === attempt.total ? 'teal' : 'secondary'}
-          className="capitalize"
-        >
-          {attempt.bodyModel}
-        </Badge>
-        <span className="text-xs text-slate-500" data-testid="quiz-detail-date">
-          {formatDate(attempt.completedAt)}
-        </span>
-      </div>
-      {answers.length === 0 ? (
-        <p className="text-sm text-slate-500" data-testid="quiz-detail-empty">
-          No answer details stored for this attempt.
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2" data-testid="quiz-detail-list">
-          {answers.map((a, idx) => {
-            const isCorrect = a.selected === a.correct;
-            const name = displayNameForAnswer(a);
-            return (
-              <li
-                key={`${attempt.id}-${idx}`}
-                data-testid="quiz-detail-answer"
-                className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-slate-100">{name}</p>
-                  <p className="text-xs text-slate-500">
-                    Q{idx + 1} · {isCorrect ? 'Correct' : 'Incorrect'}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge
-                    variant={isCorrect ? 'teal' : 'destructive'}
-                    data-testid="quiz-detail-answer-status"
-                  >
-                    {isCorrect ? 'Correct' : 'Incorrect'}
-                  </Badge>
-                  {a.structureKey ? (
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={buildHumanFocusUrl(a.structureKey)} data-testid="quiz-detail-open">
-                        Open in 3D
-                      </Link>
-                    </Button>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button variant="outline" asChild>
-          <Link to="/human" data-testid="quiz-detail-practice">
-            Practice again
-          </Link>
-        </Button>
-        {focusKeyFor(attempt) ? (
-          <Button variant="ghost" asChild>
-            <Link
-              to={buildHumanFocusUrl(focusKeyFor(attempt) as string)}
-              data-testid="quiz-detail-focus"
-            >
-              Open first structure in 3D
+    <Reveal>
+      <div className="flex flex-col gap-3" data-testid="quiz-detail">
+        <div className="flex items-center gap-4 rounded-xl border border-slate-800/70 bg-slate-950/40 px-4 py-3">
+          <p
+            className="text-3xl font-bold tabular-nums text-slate-100"
+            data-testid="quiz-detail-score"
+          >
+            {attempt.score} / {attempt.total}
+          </p>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={perfect ? 'teal' : 'secondary'} className="capitalize">
+                {attempt.bodyModel}
+              </Badge>
+              <span className="text-xs text-slate-500" data-testid="quiz-detail-date">
+                {formatDate(attempt.completedAt)}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-400" data-testid="quiz-detail-correct">
+              {answers.length > 0
+                ? `${correctCount} of ${answers.length} correct`
+                : 'Score only — no per-question detail'}
+            </p>
+          </div>
+        </div>
+        {answers.length === 0 ? (
+          <p className="text-sm text-slate-500" data-testid="quiz-detail-empty">
+            No answer details stored for this attempt.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2" data-testid="quiz-detail-list">
+            {answers.map((a, idx) => {
+              const isCorrect = a.selected === a.correct;
+              const name = displayNameForAnswer(a);
+              return (
+                <li
+                  key={`${attempt.id}-${idx}`}
+                  data-testid="quiz-detail-answer"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-slate-100">{name}</p>
+                    <p className="text-xs text-slate-500">
+                      Q{idx + 1} · {isCorrect ? 'Correct' : 'Incorrect'}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge
+                      variant={isCorrect ? 'teal' : 'destructive'}
+                      data-testid="quiz-detail-answer-status"
+                    >
+                      {isCorrect ? 'Correct' : 'Incorrect'}
+                    </Badge>
+                    {a.structureKey ? (
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link
+                          to={buildHumanFocusUrl(a.structureKey)}
+                          data-testid="quiz-detail-open"
+                        >
+                          Open in 3D
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="outline" asChild>
+            <Link to="/human" data-testid="quiz-detail-practice">
+              Practice again
             </Link>
           </Button>
-        ) : null}
+          {focusKeyFor(attempt) ? (
+            <Button variant="ghost" asChild>
+              <Link
+                to={buildHumanFocusUrl(focusKeyFor(attempt) as string)}
+                data-testid="quiz-detail-focus"
+              >
+                Open first structure in 3D
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </Reveal>
   );
 }
 
-function AttemptItem({ attempt }: { attempt: QuizAttemptRecord }): JSX.Element {
+function AttemptItem({
+  attempt,
+  index,
+}: {
+  attempt: QuizAttemptRecord;
+  index?: number;
+}): JSX.Element {
   const focusKey = focusKeyFor(attempt);
   return (
     <li data-testid="quiz-item">
-      <Card className="flex items-center justify-between gap-2 px-3 py-2">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-100" data-testid="quiz-score">
+      <Card className="flex items-center gap-3 px-3 py-2.5">
+        {typeof index === 'number' ? (
+          <span
+            aria-hidden="true"
+            className="w-6 shrink-0 text-center text-xs font-bold tabular-nums text-teal-300/80"
+          >
+            {String(index + 1).padStart(2, '0')}
+          </span>
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium tabular-nums text-slate-100" data-testid="quiz-score">
             {attempt.score} / {attempt.total}
           </p>
           <p className="truncate text-xs text-slate-500">
@@ -229,8 +260,8 @@ export function QuizRecent(): JSX.Element | null {
         Latest score: {latest.score} / {latest.total}
       </p>
       <ul className="flex flex-col gap-1" data-testid="quiz-list">
-        {recent.map(attempt => (
-          <AttemptItem key={attempt.id} attempt={attempt} />
+        {recent.map((attempt, index) => (
+          <AttemptItem key={attempt.id} attempt={attempt} index={index} />
         ))}
       </ul>
       {attempts.length > recent.length ? (
@@ -284,8 +315,8 @@ export function QuizHistoryList(): JSX.Element | null {
         {attempts.length} {attempts.length === 1 ? 'attempt' : 'attempts'}
       </p>
       <ul className="flex flex-col gap-1" data-testid="history-list">
-        {attempts.map(attempt => (
-          <AttemptItem key={attempt.id} attempt={attempt} />
+        {attempts.map((attempt, index) => (
+          <AttemptItem key={attempt.id} attempt={attempt} index={index} />
         ))}
       </ul>
     </div>

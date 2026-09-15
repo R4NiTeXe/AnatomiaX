@@ -24,17 +24,24 @@ export function Stagger({
 export function StaggerItem({
   children,
   className,
+  as = 'div',
+  ...rest
 }: {
   children: ReactNode;
   className?: string;
+  /** Render as `li` for staggered lists so `ul > li` stays valid HTML. */
+  as?: 'div' | 'li';
+  [key: `data-${string}`]: unknown;
 }): JSX.Element {
+  const Tag = as === 'li' ? motion.li : motion.div;
   return (
-    <motion.div
+    <Tag
       className={className}
       variants={staggerChild}
       transition={{ duration: DURATIONS.fast, ease: EASE.standard }}
+      {...rest}
     >
       {children}
-    </motion.div>
+    </Tag>
   );
 }

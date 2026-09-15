@@ -92,6 +92,21 @@ describe('motion primitives (8.23)', () => {
     expect(screen.getByTestId('stagger-b')).toBeInTheDocument();
   });
 
+  it('StaggerItem renders as li for valid staggered lists', () => {
+    render(
+      <Stagger>
+        <ul>
+          <StaggerItem as="li" data-testid="stagger-li">
+            <span>item</span>
+          </StaggerItem>
+        </ul>
+      </Stagger>
+    );
+    const item = screen.getByTestId('stagger-li');
+    expect(item.tagName).toBe('LI');
+    expect(item.closest('ul')).toBeInTheDocument();
+  });
+
   it('ActiveNavPill is aria-hidden decoration', () => {
     const { container } = render(<ActiveNavPill id="test-pill" />);
     const pill = container.firstChild as HTMLElement;
