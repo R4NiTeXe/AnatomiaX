@@ -7,12 +7,13 @@ gsap.registerPlugin(ScrollTrigger);
 /**
  * AnatomiaX marketing animations
  * - Lenis smooth scroll + GSAP ticker
- * - Hero entrance (once)
- * - Scroll reveals via ScrollTrigger
- * - Feature card hover (subtle)
+ * - Hero entrance (once, sequenced with stat strip + visual scale)
+ * - Hero ambient: background parallax scrub + glow float (transform-only)
+ * - Scroll reveals via ScrollTrigger (+ grouped item staggers)
+ * - Feature card hover (subtle lift)
  * - Placeholder scan line (lightweight)
  * - Navbar scroll state
- * Respects prefers-reduced-motion.
+ * Respects prefers-reduced-motion (all motion below this guard).
  */
 (function () {
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,34 +54,84 @@ gsap.registerPlugin(ScrollTrigger);
         onScroll();
       }
 
-      // Hero entrance (once)
+      // Hero entrance (once) — headlined sequence with stat strip + visual
       const heroLabel = document.querySelector('[data-hero-label]');
       const heroHeading = document.querySelector('[data-hero-heading]');
       const heroText = document.querySelector('[data-hero-text]');
       const heroActions = document.querySelector('[data-hero-actions]');
       const heroMeta = document.querySelector('[data-hero-meta]');
       const heroVisual = document.querySelector('[data-hero-visual]');
+      const heroStats = document.querySelectorAll('[data-hero-stats] > *');
 
-      const heroEls = [heroLabel, heroHeading, heroText, heroActions, heroMeta].filter(Boolean);
+      const heroEls = [heroLabel, heroHeading, heroText, heroActions].filter(Boolean);
       if (heroEls.length) {
         gsap.from(heroEls, {
           opacity: 0,
-          y: 10,
-          duration: 0.6,
-          stagger: 0.08,
+          y: 14,
+          duration: 0.7,
+          stagger: 0.12,
           ease: 'power2.out',
           delay: 0.15,
+          clearProps: 'all',
+        });
+      }
+      if (heroMeta && !heroStats.length) {
+        gsap.from(heroMeta, {
+          opacity: 0,
+          y: 10,
+          duration: 0.6,
+          ease: 'power2.out',
+          delay: 0.6,
+          clearProps: 'all',
+        });
+      }
+      if (heroStats.length) {
+        gsap.from(heroStats, {
+          opacity: 0,
+          y: 10,
+          duration: 0.55,
+          stagger: 0.09,
+          ease: 'power2.out',
+          delay: 0.55,
           clearProps: 'all',
         });
       }
       if (heroVisual) {
         gsap.from(heroVisual, {
           opacity: 0,
-          y: 12,
-          duration: 0.7,
+          y: 16,
+          scale: 0.985,
+          duration: 0.8,
           ease: 'power2.out',
-          delay: 0.35,
+          delay: 0.4,
           clearProps: 'all',
+        });
+      }
+
+      // Hero ambient — background parallax scrub + glow float.
+      // Transform-only; scrub tied to scroll, float is a cheap yoyo loop.
+      const heroBg = document.querySelector('[data-hero-bg]');
+      const heroSection = heroVisual ? heroVisual.closest('section') : null;
+      if (heroBg && heroSection) {
+        gsap.to(heroBg, {
+          yPercent: 12,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: heroSection,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        });
+      }
+      const heroGlow = document.querySelector('[data-hero-glow]');
+      if (heroGlow) {
+        gsap.to(heroGlow, {
+          y: -12,
+          duration: 6,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
         });
       }
 
@@ -102,13 +153,33 @@ gsap.registerPlugin(ScrollTrigger);
       reveals.forEach(el => {
         gsap.from(el, {
           opacity: 0,
-          y: 12,
-          duration: 0.6,
+          y: 16,
+          duration: 0.65,
           ease: 'power2.out',
           clearProps: 'all',
           scrollTrigger: {
             trigger: el,
             start: 'top 86%',
+            once: true,
+          },
+        });
+      });
+
+      // Grouped reveals — [data-reveal-item] children cascade under one trigger
+      const revealGroups = document.querySelectorAll('[data-reveal-group]');
+      revealGroups.forEach(group => {
+        const items = group.querySelectorAll('[data-reveal-item]');
+        if (!items.length) return;
+        gsap.from(items, {
+          opacity: 0,
+          y: 14,
+          duration: 0.55,
+          stagger: 0.09,
+          ease: 'power2.out',
+          clearProps: 'all',
+          scrollTrigger: {
+            trigger: group,
+            start: 'top 85%',
             once: true,
           },
         });
@@ -132,13 +203,13 @@ gsap.registerPlugin(ScrollTrigger);
         });
       }
 
-      // Feature card hover (subtle)
+      // Feature card hover (lift; border glow handled in CSS)
       featureCards.forEach(card => {
         card.addEventListener('mouseenter', () => {
-          gsap.to(card, { y: -2, duration: 0.25, ease: 'power2.out', overwrite: 'auto' });
+          gsap.to(card, { y: -4, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
         });
         card.addEventListener('mouseleave', () => {
-          gsap.to(card, { y: 0, duration: 0.25, ease: 'power2.out', overwrite: 'auto' });
+          gsap.to(card, { y: 0, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
         });
         card.addEventListener('focusin', () => {
           gsap.to(card, { y: -1, duration: 0.2, ease: 'power2.out', overwrite: 'auto' });

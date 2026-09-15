@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { DURATIONS, EASE } from '@/components/motion';
+import { DURATIONS, EASE, Stagger, StaggerItem } from '@/components/motion';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface AuthLayoutProps {
@@ -35,65 +35,95 @@ export default function AuthLayout({
         {/* Brand panel — large screens only; complementary copy, hidden from AT
             because the form column carries the real title/subtitle. */}
         <div className="hidden lg:block" aria-hidden="true">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: DURATIONS.base, ease: EASE.standard }}
-          >
-            <p className="ax-kicker">AnatomiaX</p>
-            <p className="mt-3 max-w-md text-3xl font-bold leading-tight tracking-tight text-slate-50">
-              The human body,
-              <br />
-              <span className="text-teal-300">brought to life.</span>
-            </p>
-            <dl className="mt-8 flex max-w-md flex-col gap-5">
-              {BRAND_POINTS.map(point => (
-                <div key={point.title} className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400 shadow-glow-sm" />
-                  <div>
-                    <dt className="text-sm font-semibold text-slate-100">{point.title}</dt>
-                    <dd className="mt-0.5 text-sm leading-6 text-slate-400">{point.body}</dd>
+          <Stagger>
+            <StaggerItem>
+              <p className="ax-kicker">AnatomiaX</p>
+              <p className="mt-3 max-w-md text-3xl font-bold leading-tight tracking-tight text-slate-50">
+                The human body,
+                <br />
+                <span className="text-teal-300">brought to life.</span>
+              </p>
+            </StaggerItem>
+            <StaggerItem>
+              <dl className="mt-8 flex max-w-md flex-col gap-5">
+                {BRAND_POINTS.map(point => (
+                  <div key={point.title} className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400 shadow-glow-sm" />
+                    <div>
+                      <dt className="text-sm font-semibold text-slate-100">{point.title}</dt>
+                      <dd className="mt-0.5 text-sm leading-6 text-slate-400">{point.body}</dd>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </dl>
-            <div className="mt-8 flex flex-wrap gap-2">
-              {['9 body systems', 'Male + female', 'Meshopt 3D'].map(chip => (
-                <span
-                  key={chip}
-                  className="rounded-full border border-slate-700/70 bg-slate-900/60 px-3 py-1 text-[0.7rem] font-medium tracking-widest text-slate-400"
-                >
-                  {chip.toUpperCase()}
-                </span>
-              ))}
-            </div>
-          </motion.div>
+                ))}
+              </dl>
+            </StaggerItem>
+            <StaggerItem>
+              <div className="mt-8 flex flex-wrap gap-2">
+                {['9 body systems', 'Male + female', 'Meshopt 3D'].map(chip => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-slate-700/70 bg-slate-900/60 px-3 py-1 text-[0.7rem] font-medium tracking-widest text-slate-400"
+                  >
+                    {chip.toUpperCase()}
+                  </span>
+                ))}
+              </div>
+            </StaggerItem>
+          </Stagger>
         </div>
 
         {/* Form column — identical contract: brand, h1, subtitle, card, footer. */}
         <div className="mx-auto w-full max-w-md">
-          <p className="text-xs uppercase tracking-widest text-slate-500">
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DURATIONS.fast, ease: EASE.standard }}
+            className="text-xs uppercase tracking-widest text-slate-500"
+          >
             <Link
               to="/"
               className="inline-block rounded-lg px-2 py-2 hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               AnatomiaX
             </Link>
-          </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DURATIONS.base, ease: EASE.standard, delay: 0.04 }}
+            className="mt-2 text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl"
+          >
             {title}
-          </h1>
-          {subtitle ? <p className="mt-2 text-sm leading-6 text-slate-400">{subtitle}</p> : null}
+          </motion.h1>
+          {subtitle ? (
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATIONS.base, ease: EASE.standard, delay: 0.08 }}
+              className="mt-2 text-sm leading-6 text-slate-400"
+            >
+              {subtitle}
+            </motion.p>
+          ) : null}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: DURATIONS.base, ease: EASE.standard, delay: 0.06 }}
+            transition={{ duration: DURATIONS.base, ease: EASE.standard, delay: 0.12 }}
           >
             <Card className="mt-6 shadow-lift">
               <CardContent className="p-4 sm:p-6">{children}</CardContent>
             </Card>
           </motion.div>
-          {footer ? <div className="mt-4 text-center text-sm text-slate-400">{footer}</div> : null}
+          {footer ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: DURATIONS.base, ease: EASE.standard, delay: 0.18 }}
+              className="mt-4 text-center text-sm text-slate-400"
+            >
+              {footer}
+            </motion.div>
+          ) : null}
         </div>
       </div>
     </main>

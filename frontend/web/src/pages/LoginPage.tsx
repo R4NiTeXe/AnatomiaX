@@ -7,6 +7,7 @@ import AuthLayout from '@/components/auth/AuthLayout';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Stagger, StaggerItem } from '@/components/motion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,41 +102,49 @@ export default function LoginPage(): JSX.Element {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="login-email">Email</Label>
-              <Input
-                id="login-email"
-                type="email"
-                required
-                autoComplete="email"
-                data-testid="login-email"
-                aria-invalid={!!errors.email}
-                {...register('email', { required: true })}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="current-password"
-                data-testid="login-password"
-                aria-invalid={!!errors.password}
-                {...register('password', { required: true, minLength: 8 })}
-              />
-            </div>
-            <AuthErrorNotice error={error} testId="login-error" />
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              data-testid="login-submit"
-              className="w-full"
-            >
-              {isSubmitting ? 'Signing in…' : 'Sign in'}
-            </Button>
+          <form onSubmit={onSubmit} noValidate>
+            <Stagger className="flex flex-col gap-3">
+              <StaggerItem>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    data-testid="login-email"
+                    aria-invalid={!!errors.email}
+                    {...register('email', { required: true })}
+                  />
+                </div>
+              </StaggerItem>
+              <StaggerItem>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="login-password">Password</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="current-password"
+                    data-testid="login-password"
+                    aria-invalid={!!errors.password}
+                    {...register('password', { required: true, minLength: 8 })}
+                  />
+                </div>
+              </StaggerItem>
+              <AuthErrorNotice error={error} testId="login-error" />
+              <StaggerItem>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  data-testid="login-submit"
+                  className="w-full"
+                >
+                  {isSubmitting ? 'Signing in…' : 'Sign in'}
+                </Button>
+              </StaggerItem>
+            </Stagger>
           </form>
         )}
         <AuthDivider />

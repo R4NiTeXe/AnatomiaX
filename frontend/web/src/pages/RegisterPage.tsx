@@ -7,6 +7,7 @@ import AuthLayout from '@/components/auth/AuthLayout';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Stagger, StaggerItem } from '@/components/motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,59 +77,69 @@ export default function RegisterPage(): JSX.Element {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="register-email">Email</Label>
-              <Input
-                id="register-email"
-                type="email"
-                required
-                maxLength={254}
-                autoComplete="email"
-                data-testid="register-email"
-                aria-invalid={!!errors.email}
-                {...registerField('email', { required: true, maxLength: 254 })}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="register-name">
-                Name <span className="text-slate-500">(optional)</span>
-              </Label>
-              <Input
-                id="register-name"
-                type="text"
-                maxLength={120}
-                autoComplete="name"
-                data-testid="register-name"
-                aria-invalid={!!errors.name}
-                {...registerField('name', { maxLength: 120 })}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="register-password">
-                Password <span className="text-slate-500">(8+ characters)</span>
-              </Label>
-              <Input
-                id="register-password"
-                type="password"
-                required
-                minLength={8}
-                maxLength={128}
-                autoComplete="new-password"
-                data-testid="register-password"
-                aria-invalid={!!errors.password}
-                {...registerField('password', { required: true, minLength: 8, maxLength: 128 })}
-              />
-            </div>
-            <AuthErrorNotice error={error} testId="register-error" />
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              data-testid="register-submit"
-              className="w-full"
-            >
-              {isSubmitting ? 'Creating account…' : 'Create account'}
-            </Button>
+          <form onSubmit={onSubmit} noValidate>
+            <Stagger className="flex flex-col gap-3">
+              <StaggerItem>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="register-email">Email</Label>
+                  <Input
+                    id="register-email"
+                    type="email"
+                    required
+                    maxLength={254}
+                    autoComplete="email"
+                    data-testid="register-email"
+                    aria-invalid={!!errors.email}
+                    {...registerField('email', { required: true, maxLength: 254 })}
+                  />
+                </div>
+              </StaggerItem>
+              <StaggerItem>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="register-name">
+                    Name <span className="text-slate-500">(optional)</span>
+                  </Label>
+                  <Input
+                    id="register-name"
+                    type="text"
+                    maxLength={120}
+                    autoComplete="name"
+                    data-testid="register-name"
+                    aria-invalid={!!errors.name}
+                    {...registerField('name', { maxLength: 120 })}
+                  />
+                </div>
+              </StaggerItem>
+              <StaggerItem>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="register-password">
+                    Password <span className="text-slate-500">(8+ characters)</span>
+                  </Label>
+                  <Input
+                    id="register-password"
+                    type="password"
+                    required
+                    minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    data-testid="register-password"
+                    aria-invalid={!!errors.password}
+                    {...registerField('password', { required: true, minLength: 8, maxLength: 128 })}
+                  />
+                </div>
+              </StaggerItem>
+              <AuthErrorNotice error={error} testId="register-error" />
+              <StaggerItem>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  data-testid="register-submit"
+                  className="w-full"
+                >
+                  {isSubmitting ? 'Creating account…' : 'Create account'}
+                </Button>
+              </StaggerItem>
+            </Stagger>
           </form>
         )}
         <AuthDivider />

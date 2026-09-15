@@ -6,7 +6,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 
 <!-- Hero -->
 <section class="relative overflow-hidden border-b border-base-300 bg-base-100">
-  <div class="pointer-events-none absolute inset-0">
+  <div data-hero-bg class="pointer-events-none absolute inset-0">
     <div class="absolute inset-0 bg-gradient-to-b from-base-100 via-base-100 to-base-200/50"></div>
     <div
       class="absolute inset-0 opacity-[0.03]"
@@ -19,6 +19,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
     ></div>
     <!-- ambient clinical glows -->
     <div
+      data-hero-glow
       class="absolute -top-32 left-1/2 h-96 w-[60rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
     ></div>
     <div
@@ -67,6 +68,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
         </div>
         <dl
           data-hero-meta
+          data-hero-stats
           class="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-base-300/60 pt-5"
         >
           <div>
@@ -491,13 +493,13 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
     </div>
 
     <div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-base-300 bg-base-200 p-3 sm:p-4">
-      <div class="grid gap-3 sm:grid-cols-3">
-        <div class="rounded-xl border border-base-300 bg-base-100 p-4 text-center">
+      <div class="grid gap-3 sm:grid-cols-3" data-reveal-group>
+        <div data-reveal-item class="rounded-xl border border-base-300 bg-base-100 p-4 text-center">
           <p class="text-xs font-semibold tracking-widest text-primary">NORMAL</p>
           <p class="mt-2 text-sm font-medium">Baseline physiology</p>
           <p class="mt-1 text-xs leading-5 text-base-content/50">Blood flow • breathing • nerve signals</p>
         </div>
-        <div class="relative rounded-xl border border-base-300 bg-base-100 p-4 text-center">
+        <div data-reveal-item class="relative rounded-xl border border-base-300 bg-base-100 p-4 text-center">
           <div class="absolute -left-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-base-300 bg-base-200 text-base-content/30 sm:flex">
             →
           </div>
@@ -505,7 +507,7 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
           <p class="mt-2 text-sm font-medium">Introduce a shift</p>
           <p class="mt-1 text-xs leading-5 text-base-content/50">Exercise • obstruction • signal change</p>
         </div>
-        <div class="relative rounded-xl border border-base-300 bg-base-100 p-4 text-center">
+        <div data-reveal-item class="relative rounded-xl border border-base-300 bg-base-100 p-4 text-center">
           <div class="absolute -left-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-base-300 bg-base-200 text-base-content/30 sm:flex">
             →
           </div>
@@ -537,20 +539,20 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
       <p class="mt-3 max-w-2xl text-sm leading-6 text-base-content/60">
         AnatomiaX is for learning. It complements, never replaces, professional medical judgment.
       </p>
-      <ul class="mt-6 grid gap-3 text-sm sm:grid-cols-2">
-        <li class="flex gap-2">
+      <ul class="mt-6 grid gap-3 text-sm sm:grid-cols-2" data-reveal-group>
+        <li data-reveal-item class="flex gap-2">
           <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
           ><span><span class="font-medium">Educational information</span> — sourced and reviewed</span>
         </li>
-        <li class="flex gap-2">
+        <li data-reveal-item class="flex gap-2">
           <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
           ><span><span class="font-medium">No diagnosis</span> — AI and simulations are for learning</span>
         </li>
-        <li class="flex gap-2">
+        <li data-reveal-item class="flex gap-2">
           <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
           ><span><span class="font-medium">No treatment replacement</span> — always consult clinicians</span>
         </li>
-        <li class="flex gap-2">
+        <li data-reveal-item class="flex gap-2">
           <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></span
           ><span><span class="font-medium">Trusted sources</span> — transparent references</span>
         </li>

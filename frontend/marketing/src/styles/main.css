@@ -18,4 +18,45 @@
   .container-anatomia {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
+
+  /* STEP 8.24.1 card glow response — transform stays with GSAP hover tweens,
+     so CSS touches border/shadow only (no fight over `transform`). */
+  [data-feature-card] {
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  [data-feature-card]:hover {
+    border-color: rgb(20 184 166 / 0.35);
+    box-shadow:
+      0 16px 40px -16px rgb(0 0 0 / 0.6),
+      0 0 24px -8px rgb(20 184 166 / 0.25);
+  }
+
+  /* STEP 8.24.1 CTA press feedback + primary glow lift on hover. */
+  .btn {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .btn:active {
+    transform: scale(0.98);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 28px -6px rgb(20 184 166 / 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-feature-card],
+  [data-feature-card]:hover,
+  .btn,
+  .btn:active,
+  .btn-primary:hover {
+    transform: none;
+    transition: none;
+    box-shadow: none;
+  }
 }

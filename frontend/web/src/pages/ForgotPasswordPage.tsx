@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Stagger, StaggerItem } from '@/components/motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,29 +65,35 @@ export default function ForgotPasswordPage(): JSX.Element {
           .
         </p>
       ) : (
-        <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="forgot-email">Email</Label>
-            <Input
-              id="forgot-email"
-              type="email"
-              required
-              maxLength={254}
-              autoComplete="email"
-              data-testid="forgot-email"
-              aria-invalid={!!errors.email}
-              {...register('email', { required: true, maxLength: 254 })}
-            />
-          </div>
-          <AuthErrorNotice error={error} testId="forgot-error" />
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            data-testid="forgot-submit"
-            className="w-full"
-          >
-            {isSubmitting ? 'Sending…' : 'Send reset instructions'}
-          </Button>
+        <form onSubmit={onSubmit} noValidate>
+          <Stagger className="flex flex-col gap-3">
+            <StaggerItem>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  maxLength={254}
+                  autoComplete="email"
+                  data-testid="forgot-email"
+                  aria-invalid={!!errors.email}
+                  {...register('email', { required: true, maxLength: 254 })}
+                />
+              </div>
+            </StaggerItem>
+            <AuthErrorNotice error={error} testId="forgot-error" />
+            <StaggerItem>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="forgot-submit"
+                className="w-full"
+              >
+                {isSubmitting ? 'Sending…' : 'Send reset instructions'}
+              </Button>
+            </StaggerItem>
+          </Stagger>
         </form>
       )}
     </AuthLayout>

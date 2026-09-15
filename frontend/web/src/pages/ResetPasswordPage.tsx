@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import { Stagger, StaggerItem } from '@/components/motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,54 +59,73 @@ export default function ResetPasswordPage(): JSX.Element {
         </>
       }
     >
-      <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reset-email">Email</Label>
-          <Input
-            id="reset-email"
-            type="email"
-            required
-            maxLength={254}
-            autoComplete="email"
-            data-testid="reset-email"
-            aria-invalid={!!errors.email}
-            {...register('email', { required: true, maxLength: 254 })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reset-token">Reset token</Label>
-          <Input
-            id="reset-token"
-            type="text"
-            required
-            minLength={20}
-            maxLength={512}
-            autoComplete="one-time-code"
-            data-testid="reset-token"
-            aria-invalid={!!errors.token}
-            {...register('token', { required: true, minLength: 20, maxLength: 512 })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reset-password">
-            New password <span className="text-slate-500">(8+ characters)</span>
-          </Label>
-          <Input
-            id="reset-password"
-            type="password"
-            required
-            minLength={8}
-            maxLength={128}
-            autoComplete="new-password"
-            data-testid="reset-password"
-            aria-invalid={!!errors.newPassword}
-            {...register('newPassword', { required: true, minLength: 8, maxLength: 128 })}
-          />
-        </div>
-        <AuthErrorNotice error={error} testId="reset-error" />
-        <Button type="submit" disabled={isSubmitting} data-testid="reset-submit" className="w-full">
-          {isSubmitting ? 'Resetting…' : 'Reset password'}
-        </Button>
+      <form onSubmit={onSubmit} noValidate>
+        <Stagger className="flex flex-col gap-3">
+          <StaggerItem>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                required
+                maxLength={254}
+                autoComplete="email"
+                data-testid="reset-email"
+                aria-invalid={!!errors.email}
+                {...register('email', { required: true, maxLength: 254 })}
+              />
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="reset-token">Reset token</Label>
+              <Input
+                id="reset-token"
+                type="text"
+                required
+                minLength={20}
+                maxLength={512}
+                autoComplete="one-time-code"
+                data-testid="reset-token"
+                aria-invalid={!!errors.token}
+                {...register('token', { required: true, minLength: 20, maxLength: 512 })}
+              />
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="reset-password">
+                New password <span className="text-slate-500">(8+ characters)</span>
+              </Label>
+              <Input
+                id="reset-password"
+                type="password"
+                required
+                minLength={8}
+                maxLength={128}
+                autoComplete="new-password"
+                data-testid="reset-password"
+                aria-invalid={!!errors.newPassword}
+                {...register('newPassword', {
+                  required: true,
+                  minLength: 8,
+                  maxLength: 128,
+                })}
+              />
+            </div>
+          </StaggerItem>
+          <AuthErrorNotice error={error} testId="reset-error" />
+          <StaggerItem>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              data-testid="reset-submit"
+              className="w-full"
+            >
+              {isSubmitting ? 'Resetting…' : 'Reset password'}
+            </Button>
+          </StaggerItem>
+        </Stagger>
       </form>
     </AuthLayout>
   );

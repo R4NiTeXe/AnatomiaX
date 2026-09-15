@@ -11,12 +11,13 @@ export default function AuthErrorNotice({
   testId?: string;
 }): JSX.Element | null {
   if (!error) return null;
-  // Enter-only feedback motion — same testids/contract, no exit delay.
+  // Enter-only feedback motion — subtle horizontal settle draws the eye
+  // without shaking the layout. Same testids/contract, no exit delay.
   return (
     <motion.div
-      initial={{ opacity: 0, y: -4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: DURATIONS.fast, ease: EASE.standard }}
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: DURATIONS.fast, ease: EASE.emphasized }}
     >
       <Alert variant="destructive" data-testid={testId}>
         <AlertDescription>
