@@ -66,14 +66,14 @@
     opacity: 0;
   }
   .js-anim [data-hero-actions] > :first-child {
-    transform: translateY(14px) scale(0.96);
+    transform: translateY(14px) scale(0.98);
   }
   .js-anim [data-hero-actions] > :not(:first-child) {
     transform: translateY(14px);
   }
   .js-anim [data-hero-visual] {
     opacity: 0;
-    transform: translateY(24px) scale(0.96);
+    transform: translateY(16px) scale(0.98);
   }
   /* Masked headline lines — inner spans slide up inside overflow masks. */
   .hero-mask {

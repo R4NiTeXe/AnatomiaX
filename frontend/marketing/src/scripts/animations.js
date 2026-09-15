@@ -7,8 +7,8 @@ gsap.registerPlugin(ScrollTrigger);
 /**
  * AnatomiaX marketing animations
  * - Lenis smooth scroll + GSAP ticker
- * - Hero entrance (once, sequenced with stat strip + visual scale)
- * - Hero ambient: background parallax scrub + glow float (transform-only)
+ * - Hero entrance (once, sequenced timeline with atomic final-state handoff)
+ * - Hero ambient: background parallax scrub (transform-only)
  * - Scroll reveals via ScrollTrigger (+ grouped item staggers)
  * - Feature card hover (subtle lift)
  * - Placeholder scan line (lightweight)
@@ -16,13 +16,37 @@ gsap.registerPlugin(ScrollTrigger);
  * Respects prefers-reduced-motion (all motion below this guard).
  */
 (function () {
+  // 8.24.5 development diagnostics — query-gated (?ax-debug=1), zero production
+  // UI or console noise otherwise. The harness reads window.__axIntro to prove
+  // the intro path executed deterministically on every load.
+  const axDebug = /[?&]ax-debug=1(?:&|$)/.test(window.location.search);
+  const axState = {
+    bootAt: Math.round(performance.now()),
+    readyStateAtInit: null,
+    reducedMotion: false,
+    heroTargetsFound: 0,
+    deferredStart: false,
+    introStarted: false,
+    introStartAt: null,
+    introCompleted: false,
+    introCompleteAt: null,
+  };
+  window.__axIntro = axState;
+  const axTrace = (event, extra) => {
+    if (axDebug) console.info(`[ax-intro] ${event}`, extra ?? '');
+  };
+
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) {
+    axState.reducedMotion = true;
+    axTrace('reduced-motion: gate released, no timeline');
     document.documentElement.classList.remove('js-anim');
     return;
   }
 
   function init() {
+    axState.readyStateAtInit = document.readyState;
+    axTrace('init', { readyState: document.readyState });
     const ctx = gsap.context(() => {
       // Lenis
       const lenis = new Lenis({
@@ -37,7 +61,11 @@ gsap.registerPlugin(ScrollTrigger);
       gsap.ticker.add(time => {
         lenis.raf(time * 1000);
       });
-      gsap.ticker.lagSmoothing(0);
+      // 8.24.5: GSAP default lag smoothing stays ON (the old lagSmoothing(0)
+      // disabled it, so any main-thread stall fast-forwarded every tween past
+      // its visible progression — the intro could jump straight to its final
+      // state on janky loads). With smoothing, stalls pause instead of skip;
+      // Lenis resumes smoothly and position-driven scrub tweens are unaffected.
 
       // Navbar subtle scroll state
       const navbar = document.querySelector('[data-navbar]');
@@ -61,8 +89,10 @@ gsap.registerPlugin(ScrollTrigger);
       // deliberate beats (~1s total). CSS (via the `js-anim` gate) already
       // holds every start-state pre-paint, so these `to` tweens can never
       // flash or flicker — without JS everything simply stays visible.
-      // Beats: ambient 0–150ms → kicker 150–350 → headline 300–800 →
-      // text 450–850 → CTAs 550–950 → stats 650–1000 → visual 600–1050.
+      // 8.24.3: single power2.out easing, small distances, staggered beats —
+      // calm and cinematic, never flashy. Beats: ambient 0–150ms →
+      // kicker 150–350 → headline 300–900 → text 450–850 → CTAs 550–1000 →
+      // stats 600–1100 → visual 600–1050.
       const heroBgOnly = document.querySelector('[data-hero-bg]');
       const heroLabelOnly = document.querySelector('[data-hero-label]');
       const heroLines = document.querySelectorAll('.hero-line');
@@ -78,35 +108,68 @@ gsap.registerPlugin(ScrollTrigger);
         heroCtas.length ||
         heroStatsOnly.length ||
         heroVisualOnly;
-      if (hasHero) {
+      // 8.24.4: NO per-tween clearProps — clearing inline styles while the
+      // `js-anim` gate is still present snaps elements back to the hidden
+      // start-state for a frame (the post-settle blink; worse on CTAs, whose
+      // CSS `transition: transform` re-animates the snap). Instead the gate
+      // is removed and all intro props cleared atomically in the same
+      // synchronous onComplete, so the browser never paints in between.
+      // 8.24.5: the intro starts only while the page is visible. A
+      // background/prerendered tab has no running rAF clock, so starting
+      // there would burn the one-shot entrance unseen; the curtain simply
+      // holds until the tab is shown.
+      const beginIntro = () => {
+        axTrace('intro begin (page visible)');
+        // Every intro target, collected once for the single atomic cleanup.
+        const introTargets = [
+          heroBgOnly,
+          heroLabelOnly,
+          ...heroLines,
+          heroTextOnly,
+          ...heroCtas,
+          ...heroStatsOnly,
+          heroVisualOnly,
+        ].filter(Boolean);
+        axState.heroTargetsFound = introTargets.length;
+        axTrace('hero targets collected', { count: introTargets.length });
         const intro = gsap.timeline({
           defaults: { ease: 'power2.out', overwrite: 'auto' },
-          // Belt-and-braces: drop the pre-paint gate once the intro lands so
-          // no CSS start-state can ever re-apply (clearProps already restores
-          // natural inline values first).
-          onComplete: () => document.documentElement.classList.remove('js-anim'),
+          onStart: () => {
+            axState.introStarted = true;
+            axState.introStartAt = Math.round(performance.now());
+            axTrace('intro started');
+          },
+          onComplete: () => {
+            document.documentElement.classList.remove('js-anim');
+            gsap.set(introTargets, { clearProps: 'all' });
+            axState.introCompleted = true;
+            axState.introCompleteAt = Math.round(performance.now());
+            axTrace('intro completed', {
+              durationMs: axState.introCompleteAt - (axState.introStartAt ?? 0),
+            });
+          },
         });
         if (heroBgOnly) {
-          intro.to(heroBgOnly, { opacity: 1, duration: 0.25, clearProps: 'opacity' }, 0);
+          intro.to(heroBgOnly, { opacity: 1, duration: 0.25 }, 0);
         }
         if (heroLabelOnly) {
           intro.to(
             heroLabelOnly,
-            { opacity: 1, y: 0, duration: 0.3, clearProps: 'opacity,transform' },
+            { opacity: 1, y: 0, duration: 0.3 },
             0.15
           );
         }
         if (heroLines.length) {
           intro.to(
             heroLines,
-            { y: 0, duration: 0.55, stagger: 0.12, ease: 'power3.out', clearProps: 'transform' },
+            { y: 0, duration: 0.6, stagger: 0.12 },
             0.3
           );
         }
         if (heroTextOnly) {
           intro.to(
             heroTextOnly,
-            { opacity: 1, y: 0, duration: 0.4, clearProps: 'opacity,transform' },
+            { opacity: 1, y: 0, duration: 0.4 },
             0.45
           );
         }
@@ -119,7 +182,6 @@ gsap.registerPlugin(ScrollTrigger);
               scale: 1,
               duration: 0.35,
               stagger: 0.1,
-              clearProps: 'opacity,transform',
             },
             0.55
           );
@@ -127,8 +189,8 @@ gsap.registerPlugin(ScrollTrigger);
         if (heroStatsOnly.length) {
           intro.to(
             heroStatsOnly,
-            { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, clearProps: 'opacity,transform' },
-            0.65
+            { opacity: 1, y: 0, duration: 0.35, stagger: 0.05 },
+            0.6
           );
         }
         if (heroVisualOnly) {
@@ -138,19 +200,36 @@ gsap.registerPlugin(ScrollTrigger);
               opacity: 1,
               y: 0,
               scale: 1,
-              duration: 0.5,
-              ease: 'power3.out',
-              clearProps: 'opacity,transform',
+              duration: 0.45,
             },
             0.6
           );
         }
+      };
+
+      if (!hasHero) {
+        axTrace('no hero targets — intro skipped');
+      } else if (document.visibilityState === 'hidden') {
+        // Background/prerendered tab: hold the curtain, play on reveal.
+        axState.deferredStart = true;
+        axTrace('deferred: tab hidden, curtain holds until visible');
+        const onVisible = () => {
+          if (document.visibilityState === 'hidden') return;
+          document.removeEventListener('visibilitychange', onVisible);
+          axTrace('visible: starting intro');
+          beginIntro();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+      } else {
+        beginIntro();
       }
 
-      // Hero ambient — background parallax scrub + glow float.
-      // Transform-only; scrub tied to scroll, float is a cheap yoyo loop.
+      // Hero ambient — background parallax scrub only (transform-only, tied
+      // to scroll). 8.24.3: the glow float loop is gone — the static brand
+      // glow stays as treatment, and nothing ambient competes with the
+      // headline, CTAs, or product visual.
       const heroBg = document.querySelector('[data-hero-bg]');
-      const heroSection = heroVisual ? heroVisual.closest('section') : null;
+      const heroSection = heroVisualOnly ? heroVisualOnly.closest('section') : null;
       if (heroBg && heroSection) {
         gsap.to(heroBg, {
           yPercent: 12,
@@ -163,37 +242,28 @@ gsap.registerPlugin(ScrollTrigger);
           },
         });
       }
-      const heroGlow = document.querySelector('[data-hero-glow]');
-      if (heroGlow) {
-        gsap.to(heroGlow, {
-          y: -12,
-          duration: 6,
-          ease: 'sine.inOut',
-          repeat: -1,
-          yoyo: true,
-        });
-      }
 
-      // Placeholder scan line (lightweight ambient)
+      // Placeholder scan line — barely-there shimmer so the panel feels alive
+      // without pulsing. 8.24.3: slowed well down from the original tempo.
       const scanLine = document.querySelector('[data-placeholder-scan]');
       if (scanLine) {
         gsap.to(scanLine, {
           yPercent: 220,
-          duration: 3.2,
+          duration: 7,
           ease: 'none',
           repeat: -1,
           yoyo: false,
-          repeatDelay: 0.6,
+          repeatDelay: 2,
         });
       }
 
-      // Section reveals
+      // Section reveals — subtle: small rise, calm timing.
       const reveals = document.querySelectorAll('[data-reveal]');
       reveals.forEach(el => {
         gsap.from(el, {
           opacity: 0,
-          y: 16,
-          duration: 0.65,
+          y: 14,
+          duration: 0.55,
           ease: 'power2.out',
           clearProps: 'all',
           scrollTrigger: {
@@ -211,9 +281,9 @@ gsap.registerPlugin(ScrollTrigger);
         if (!items.length) return;
         gsap.from(items, {
           opacity: 0,
-          y: 14,
-          duration: 0.55,
-          stagger: 0.09,
+          y: 12,
+          duration: 0.5,
+          stagger: 0.08,
           ease: 'power2.out',
           clearProps: 'all',
           scrollTrigger: {
@@ -242,10 +312,10 @@ gsap.registerPlugin(ScrollTrigger);
         });
       }
 
-      // Feature card hover (lift; border glow handled in CSS)
+      // Feature card hover — restrained 3px lift (border glow handled in CSS)
       featureCards.forEach(card => {
         card.addEventListener('mouseenter', () => {
-          gsap.to(card, { y: -4, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
+          gsap.to(card, { y: -3, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
         });
         card.addEventListener('mouseleave', () => {
           gsap.to(card, { y: 0, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
