@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyCohortError } from '@/components/auth/friendlyAuthError';
+import { Reveal, Stagger, StaggerItem } from '@/components/motion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -219,533 +220,554 @@ export default function CohortDashboardPage(): JSX.Element {
       className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8"
     >
       {/* Top navigation + header hierarchy */}
-      <div className="flex flex-col gap-4">
-        <Link
-          to={`/cohorts/${cohort.id}`}
-          className="w-fit rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-        >
-          ← Back to cohort
-        </Link>
+      <Reveal>
+        <div className="flex flex-col gap-4">
+          <Link
+            to={`/cohorts/${cohort.id}`}
+            className="w-fit rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+          >
+            ← Back to cohort
+          </Link>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-widest text-teal-400">
-                Teacher dashboard
-              </p>
-              <h1
-                className="mt-1 break-words text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl"
-                data-testid="dashboard-cohort-name"
-              >
-                {cohort.name}
-              </h1>
-              <p className="mt-1 text-sm text-slate-400" data-testid="dashboard-institution">
-                {cohort.institutionLabel ?? 'No institution'}
-                <span className="mx-2 text-slate-600">·</span>
-                <span className="text-slate-500">Created {formatDate(cohort.createdAt)}</span>
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge data-testid="dashboard-role-badge" className="capitalize">
-                {cohort.myRole ?? 'MEMBER'}
-              </Badge>
-              {archivedBadge}
-              {!isArchived ? (
-                <Badge variant="outline" className="border-emerald-900/50 text-emerald-300">
-                  Active
+          <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-900/20 p-4 shadow-soft sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="ax-kicker">Teacher dashboard</p>
+                <h1
+                  className="mt-1 break-words text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl"
+                  data-testid="dashboard-cohort-name"
+                >
+                  {cohort.name}
+                </h1>
+                <p className="mt-1 text-sm text-slate-400" data-testid="dashboard-institution">
+                  {cohort.institutionLabel ?? 'No institution'}
+                  <span className="mx-2 text-slate-600">·</span>
+                  <span className="text-slate-500">Created {formatDate(cohort.createdAt)}</span>
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge data-testid="dashboard-role-badge" className="capitalize">
+                  {cohort.myRole ?? 'MEMBER'}
                 </Badge>
-              ) : null}
+                {archivedBadge}
+                {!isArchived ? (
+                  <Badge variant="outline" className="border-emerald-900/50 text-emerald-300">
+                    Active
+                  </Badge>
+                ) : null}
+              </div>
             </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Cohort progress is server-authorized. Only owners and admins can view member details.
+              Studied structures link to <span className="font-mono">/human?focus=</span> where
+              available.
+            </p>
           </div>
-          <p className="text-xs leading-5 text-slate-500">
-            Cohort progress is server-authorized. Only owners and admins can view member details.
-            Studied structures link to <span className="font-mono">/human?focus=</span> where
-            available.
-          </p>
         </div>
-      </div>
+      </Reveal>
 
       {isArchived ? (
-        <Alert
-          variant="default"
-          className="border-amber-900/50 bg-amber-950/30 text-amber-200"
-          data-testid="dashboard-archived-notice"
-        >
-          <AlertDescription>
-            This cohort is archived and read-only. Progress is frozen from archive time. Members
-            cannot be added and settings cannot be changed.
-          </AlertDescription>
-        </Alert>
+        <Reveal delay={0.05}>
+          <Alert
+            variant="default"
+            className="border-amber-900/50 bg-amber-950/30 text-amber-200"
+            data-testid="dashboard-archived-notice"
+          >
+            <AlertDescription>
+              This cohort is archived and read-only. Progress is frozen from archive time. Members
+              cannot be added and settings cannot be changed.
+            </AlertDescription>
+          </Alert>
+        </Reveal>
       ) : null}
 
-      {/* KPI hierarchy — 4 cards, responsive 2→4 */}
-      <section aria-labelledby="kpi-heading">
-        <h2 id="kpi-heading" className="sr-only">
-          Cohort overview
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="dashboard-summary">
-          <Card className="border-slate-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Members
-              </CardTitle>
-              <CardDescription>Total enrolled</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold tracking-tight" data-testid="dashboard-member-count">
-                {totalMembers ?? '—'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {isArchived ? 'Archived · read-only' : 'Active cohort'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Studied
-              </CardTitle>
-              <CardDescription>Structures explored</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p
-                className="text-3xl font-bold tracking-tight"
-                data-testid="dashboard-studied-total"
-              >
-                {progress ? aggregateStudied : '—'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {progress && totalMembers
-                  ? `avg ${(aggregateStudied / Math.max(1, totalMembers)).toFixed(1)} / member`
-                  : 'across members'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Quizzes
-              </CardTitle>
-              <CardDescription>Completed attempts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p
-                className="text-3xl font-bold tracking-tight"
-                data-testid="dashboard-quizzes-total"
-              >
-                {progress ? aggregateQuizzes : '—'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {progress && totalMembers
-                  ? `avg ${(aggregateQuizzes / Math.max(1, totalMembers)).toFixed(1)} / member`
-                  : 'total'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-800 bg-slate-900/60">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Performance
-              </CardTitle>
-              <CardDescription>Best · Latest</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold tracking-tight" data-testid="dashboard-best">
-                {progress ? bestOverall : '—'}
-              </p>
-              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                <span>Latest</span>
-                <Badge variant="secondary" className="font-mono text-[11px]">
-                  {progress ? latestOverall : '—'}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* Member progress — searchable, shadcn empty/loading/error */}
-      <section aria-labelledby="members-heading">
-        <Card className="border-slate-800">
-          <CardHeader className="space-y-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <CardTitle
-                  id="members-heading"
-                  className="text-sm font-semibold uppercase tracking-widest text-slate-200"
-                >
-                  Member progress
+      {/* KPI hierarchy — operational cards with subtle glow on primary */}
+      <Reveal delay={0.05}>
+        <section aria-labelledby="kpi-heading">
+          <h2 id="kpi-heading" className="sr-only">
+            Cohort overview
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="dashboard-summary">
+            <Card className="border-teal-900/30 bg-gradient-to-br from-teal-950/20 via-slate-900/60 to-slate-900/40 shadow-glow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-teal-300/80">
+                  Members
                 </CardTitle>
-                <CardDescription>
-                  Searchable, server-authorized. Non-owners see 403. Links open{' '}
-                  <span className="font-mono">/human?focus=</span> where structureKey exists.
-                </CardDescription>
-              </div>
-              {showProgress && progress && progress.length > 0 ? (
-                <Badge variant="outline" className="shrink-0">
-                  {filteredProgress?.length ?? 0} / {progress.length}
-                </Badge>
-              ) : null}
-            </div>
+                <CardDescription>Total enrolled</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p
+                  className="text-3xl font-bold tracking-tight"
+                  data-testid="dashboard-member-count"
+                >
+                  {totalMembers ?? '—'}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {isArchived ? 'Archived · read-only' : 'Active cohort'}
+                </p>
+              </CardContent>
+            </Card>
 
-            {showProgress && progress && progress.length > 1 ? (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="dashboard-member-search" className="text-xs text-slate-400">
-                  Filter members
-                </Label>
-                <Input
-                  id="dashboard-member-search"
-                  data-testid="dashboard-member-search"
-                  placeholder="Search by name or role…"
-                  value={memberQuery}
-                  onChange={e => setMemberQuery(e.target.value)}
-                  className="max-w-sm bg-slate-950/40"
-                  aria-label="Filter members by name or role"
-                />
-              </div>
-            ) : null}
-          </CardHeader>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Studied
+                </CardTitle>
+                <CardDescription>Structures explored</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p
+                  className="text-3xl font-bold tracking-tight"
+                  data-testid="dashboard-studied-total"
+                >
+                  {progress ? aggregateStudied : '—'}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {progress && totalMembers
+                    ? `avg ${(aggregateStudied / Math.max(1, totalMembers)).toFixed(1)} / member`
+                    : 'across members'}
+                </p>
+              </CardContent>
+            </Card>
 
-          <CardContent>
-            {!showProgress ? (
-              <Alert variant="destructive" data-testid="dashboard-progress-denied">
-                <AlertDescription>
-                  Only the cohort owner (or admin) can view member progress. You have{' '}
-                  <span className="font-medium">{cohort.myRole ?? 'no access'}</span> access.
-                </AlertDescription>
-              </Alert>
-            ) : isProgressLoading ? (
-              <div className="flex flex-col gap-3" data-testid="dashboard-progress-loading">
-                <Skeleton className="h-20 w-full rounded-xl" />
-                <Skeleton className="h-20 w-full rounded-xl" />
-                <Skeleton className="h-10 w-32" />
-              </div>
-            ) : isProgressError ? (
-              <div className="flex flex-col gap-3 rounded-xl border border-red-900/50 bg-red-950/20 p-4">
-                <AuthErrorNotice
-                  error={friendlyCohortError(progressQuery.error)}
-                  testId="dashboard-progress-error"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => progressQuery.refetch()}
-                    data-testid="dashboard-progress-retry"
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Quizzes
+                </CardTitle>
+                <CardDescription>Completed attempts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p
+                  className="text-3xl font-bold tracking-tight"
+                  data-testid="dashboard-quizzes-total"
+                >
+                  {progress ? aggregateQuizzes : '—'}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {progress && totalMembers
+                    ? `avg ${(aggregateQuizzes / Math.max(1, totalMembers)).toFixed(1)} / member`
+                    : 'total'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-700/50 bg-slate-900/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Performance
+                </CardTitle>
+                <CardDescription>Best · Latest</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold tracking-tight" data-testid="dashboard-best">
+                  {progress ? bestOverall : '—'}
+                </p>
+                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  <span>Latest</span>
+                  <Badge variant="secondary" className="font-mono text-[11px]">
+                    {progress ? latestOverall : '—'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </Reveal>
+
+      {/* Member progress — searchable, operational density */}
+      <Reveal delay={0.08}>
+        <section aria-labelledby="members-heading">
+          <Card>
+            <CardHeader className="space-y-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="ax-kicker">Roster</p>
+                  <CardTitle
+                    id="members-heading"
+                    className="mt-1 text-sm font-bold tracking-tight text-slate-100"
                   >
-                    Retry
-                  </Button>
-                  <Button variant="ghost" asChild>
-                    <Link to="/cohorts">Back to cohorts</Link>
+                    Member progress
+                  </CardTitle>
+                  <CardDescription>
+                    Searchable, server-authorized. Non-owners see 403. Links open{' '}
+                    <span className="font-mono">/human?focus=</span> where structureKey exists.
+                  </CardDescription>
+                </div>
+                {showProgress && progress && progress.length > 0 ? (
+                  <Badge variant="outline" className="shrink-0 font-mono text-xs">
+                    {filteredProgress?.length ?? 0} / {progress.length}
+                  </Badge>
+                ) : null}
+              </div>
+
+              {showProgress && progress && progress.length > 1 ? (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="dashboard-member-search" className="text-xs text-slate-400">
+                    Filter members
+                  </Label>
+                  <Input
+                    id="dashboard-member-search"
+                    data-testid="dashboard-member-search"
+                    placeholder="Search by name or role…"
+                    value={memberQuery}
+                    onChange={e => setMemberQuery(e.target.value)}
+                    className="max-w-sm bg-slate-950/40"
+                    aria-label="Filter members by name or role"
+                  />
+                </div>
+              ) : null}
+            </CardHeader>
+
+            <CardContent>
+              {!showProgress ? (
+                <Alert variant="destructive" data-testid="dashboard-progress-denied">
+                  <AlertDescription>
+                    Only the cohort owner (or admin) can view member progress. You have{' '}
+                    <span className="font-medium">{cohort.myRole ?? 'no access'}</span> access.
+                  </AlertDescription>
+                </Alert>
+              ) : isProgressLoading ? (
+                <div className="flex flex-col gap-3" data-testid="dashboard-progress-loading">
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              ) : isProgressError ? (
+                <div className="flex flex-col gap-3 rounded-xl border border-red-900/50 bg-red-950/20 p-4">
+                  <AuthErrorNotice
+                    error={friendlyCohortError(progressQuery.error)}
+                    testId="dashboard-progress-error"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => progressQuery.refetch()}
+                      data-testid="dashboard-progress-retry"
+                    >
+                      Retry
+                    </Button>
+                    <Button variant="ghost" asChild>
+                      <Link to="/cohorts">Back to cohorts</Link>
+                    </Button>
+                  </div>
+                </div>
+              ) : !progress || progress.length === 0 ? (
+                <div
+                  className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-10 text-center"
+                  data-testid="dashboard-progress-empty"
+                >
+                  <h3 className="text-sm font-semibold text-slate-200">No members yet</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
+                    Share the invite code from the cohort page. Once members join and explore
+                    anatomy or complete quizzes, their progress will appear here.
+                  </p>
+                  <Button variant="outline" size="sm" asChild className="mt-4">
+                    <Link to={`/cohorts/${cohort.id}`}>Go to cohort</Link>
                   </Button>
                 </div>
-              </div>
-            ) : !progress || progress.length === 0 ? (
-              <div
-                className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-10 text-center"
-                data-testid="dashboard-progress-empty"
-              >
-                <h3 className="text-sm font-semibold text-slate-200">No members yet</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
-                  Share the invite code from the cohort page. Once members join and explore anatomy
-                  or complete quizzes, their progress will appear here.
-                </p>
-                <Button variant="outline" size="sm" asChild className="mt-4">
-                  <Link to={`/cohorts/${cohort.id}`}>Go to cohort</Link>
-                </Button>
-              </div>
-            ) : filteredProgress && filteredProgress.length === 0 ? (
-              <div
-                className="rounded-xl border border-slate-800 bg-slate-950/30 px-6 py-8 text-center"
-                data-testid="dashboard-progress-empty"
-              >
-                <p className="text-sm text-slate-400">No members match “{memberQuery}”.</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMemberQuery('')}
-                  className="mt-2"
-                  data-testid="dashboard-progress-clear-filter"
+              ) : filteredProgress && filteredProgress.length === 0 ? (
+                <div
+                  className="rounded-xl border border-slate-800 bg-slate-950/30 px-6 py-8 text-center"
+                  data-testid="dashboard-progress-empty"
                 >
-                  Clear filter
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4" data-testid="dashboard-progress-list">
-                {filteredProgress!.map(member => {
-                  const studiedCount = member.studiedKeys.length;
-                  const totalQuizzes = member.quizAttempts.length;
-                  const sortedAttempts = [...member.quizAttempts].sort(
-                    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
-                  );
-                  const latest = sortedAttempts[0] ?? null;
-                  const best = bestScoreText(member.quizAttempts);
-                  const lastActivity = latest ? formatDateTime(latest.completedAt) : '—';
-                  const recentKey = member.studiedKeys[0] ?? null;
-                  const isTopPerformer =
-                    member.quizAttempts.length > 0 &&
-                    bestScoreText(member.quizAttempts) === bestOverall &&
-                    bestOverall !== '—';
-                  return (
-                    <Card
-                      key={member.userId}
-                      className={`overflow-hidden border-slate-800 bg-slate-950/60 transition-colors hover:border-slate-700 ${isArchived ? 'opacity-90' : ''}`}
-                      data-testid="dashboard-member-progress"
-                    >
-                      <CardContent className="p-0">
-                        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3
-                                className="truncate text-sm font-semibold text-slate-100"
-                                data-testid="dashboard-member-name"
-                              >
-                                {member.name ?? 'Unnamed member'}
-                              </h3>
-                              <Badge
-                                variant={member.role === 'TEACHER' ? 'secondary' : 'outline'}
-                                className="capitalize"
-                              >
-                                {member.role.toLowerCase()}
-                              </Badge>
-                              {isTopPerformer ? (
-                                <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
-                                  Top
-                                </Badge>
-                              ) : null}
-                            </div>
-                            <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:flex sm:flex-wrap sm:gap-3">
-                              <div className="flex items-center gap-1">
-                                <dt className="text-slate-500">Studied</dt>
-                                <dd
-                                  className="font-medium text-slate-200"
-                                  data-testid="dashboard-member-studied"
-                                >
-                                  {studiedCount}
-                                </dd>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <dt className="text-slate-500">Quizzes</dt>
-                                <dd
-                                  className="font-medium text-slate-200"
-                                  data-testid="dashboard-member-quizzes"
-                                >
-                                  {totalQuizzes}
-                                </dd>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <dt className="text-slate-500">Best</dt>
-                                <dd
-                                  className="font-mono text-slate-300"
-                                  data-testid="dashboard-member-best"
-                                >
-                                  {best}
-                                </dd>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <dt className="text-slate-500">Latest</dt>
-                                <dd className="font-mono" data-testid="dashboard-member-latest">
-                                  <Badge
-                                    variant={
-                                      latest && latest.score === latest.total ? 'teal' : 'secondary'
-                                    }
-                                    className="font-mono text-xs"
-                                  >
-                                    {latest ? `${latest.score}/${latest.total}` : '—'}
-                                  </Badge>
-                                </dd>
-                              </div>
-                            </dl>
-                            <p className="mt-2 text-xs text-slate-500">
-                              Joined {formatDate(member.joinedAt)} · Last activity{' '}
-                              <span className="text-slate-400">{lastActivity}</span>
-                            </p>
-                          </div>
-
-                          <div className="flex shrink-0 flex-wrap items-center gap-2">
-                            {recentKey ? (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                asChild
-                                className="h-8 bg-teal-600 text-white hover:bg-teal-700"
-                              >
-                                <Link
-                                  to={buildHumanFocusUrl(recentKey)}
-                                  data-testid="dashboard-member-focus"
-                                  aria-label={`Open ${member.name ?? 'member'} recent structure in 3D`}
-                                >
-                                  Open recent in 3D →
-                                </Link>
-                              </Button>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        {member.studiedKeys.length > 0 ? (
-                          <div className="border-t border-slate-800 bg-slate-900/30 px-4 py-3">
-                            <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                              Recent structures
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {member.studiedKeys.slice(0, 3).map(k => {
-                                const short = k.split(':').pop() ?? k;
-                                const label = short.length > 28 ? `${short.slice(0, 28)}…` : short;
-                                return (
-                                  <Button
-                                    key={k}
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                    className="h-7 border-slate-700 bg-slate-800/40 px-2.5 text-xs hover:bg-slate-700"
-                                  >
-                                    <Link
-                                      to={buildHumanFocusUrl(k)}
-                                      data-testid="dashboard-member-open"
-                                      aria-label={`Open ${short} in 3D viewer`}
-                                      title={k}
+                  <p className="text-sm text-slate-400">No members match “{memberQuery}”.</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMemberQuery('')}
+                    className="mt-2"
+                    data-testid="dashboard-progress-clear-filter"
+                  >
+                    Clear filter
+                  </Button>
+                </div>
+              ) : (
+                <Stagger>
+                  <div className="flex flex-col gap-4" data-testid="dashboard-progress-list">
+                    {filteredProgress!.map(member => {
+                      const studiedCount = member.studiedKeys.length;
+                      const totalQuizzes = member.quizAttempts.length;
+                      const sortedAttempts = [...member.quizAttempts].sort(
+                        (a, b) =>
+                          new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+                      );
+                      const latest = sortedAttempts[0] ?? null;
+                      const best = bestScoreText(member.quizAttempts);
+                      const lastActivity = latest ? formatDateTime(latest.completedAt) : '—';
+                      const recentKey = member.studiedKeys[0] ?? null;
+                      const isTopPerformer =
+                        member.quizAttempts.length > 0 &&
+                        bestScoreText(member.quizAttempts) === bestOverall &&
+                        bestOverall !== '—';
+                      return (
+                        <StaggerItem key={member.userId} data-testid="dashboard-member-progress">
+                          <Card
+                            className={`overflow-hidden border-slate-800 bg-slate-950/60 transition-colors hover:border-slate-700 ${isArchived ? 'opacity-90' : ''}`}
+                          >
+                            <CardContent className="p-0">
+                              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3
+                                      className="truncate text-sm font-semibold text-slate-100"
+                                      data-testid="dashboard-member-name"
                                     >
-                                      Open {label}
-                                    </Link>
-                                  </Button>
-                                );
-                              })}
-                              {member.studiedKeys.length > 3 ? (
-                                <span className="inline-flex items-center px-2 py-1 text-xs text-slate-500">
-                                  +{member.studiedKeys.length - 3} more
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {member.quizAttempts.length > 0 ? (
-                          <div className="border-t border-slate-800 px-4 py-3">
-                            <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                              Quiz attempts
-                            </p>
-                            <ul
-                              className="mt-2 flex flex-col gap-1.5"
-                              data-testid="dashboard-member-attempts"
-                            >
-                              {sortedAttempts.slice(0, 3).map(a => (
-                                <li
-                                  key={a.id}
-                                  data-testid="dashboard-member-attempt"
-                                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs"
-                                >
-                                  <span className="flex items-center gap-2">
+                                      {member.name ?? 'Unnamed member'}
+                                    </h3>
                                     <Badge
-                                      variant={a.score === a.total ? 'teal' : 'secondary'}
-                                      className="font-mono"
+                                      variant={member.role === 'TEACHER' ? 'secondary' : 'outline'}
+                                      className="capitalize"
                                     >
-                                      {a.score}/{a.total}
+                                      {member.role.toLowerCase()}
                                     </Badge>
-                                    <span className="text-slate-400">{a.bodyModel}</span>
-                                  </span>
-                                  <span className="text-slate-500">
-                                    {formatDate(a.completedAt)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : (
-                          <div className="border-t border-slate-800 px-4 py-3">
-                            <p className="text-xs italic text-slate-500">No quizzes yet</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-            {progressDenied ? (
-              <p
-                className="mt-3 rounded-lg border border-amber-900/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/80"
-                data-testid="dashboard-progress-forbidden"
-              >
-                View requires owner/admin — your role is{' '}
-                <span className="font-medium">{cohort.myRole}</span>.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      </section>
+                                    {isTopPerformer ? (
+                                      <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
+                                        Top
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                  <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:flex sm:flex-wrap sm:gap-3">
+                                    <div className="flex items-center gap-1">
+                                      <dt className="text-slate-500">Studied</dt>
+                                      <dd
+                                        className="font-medium text-slate-200"
+                                        data-testid="dashboard-member-studied"
+                                      >
+                                        {studiedCount}
+                                      </dd>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <dt className="text-slate-500">Quizzes</dt>
+                                      <dd
+                                        className="font-medium text-slate-200"
+                                        data-testid="dashboard-member-quizzes"
+                                      >
+                                        {totalQuizzes}
+                                      </dd>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <dt className="text-slate-500">Best</dt>
+                                      <dd
+                                        className="font-mono text-slate-300"
+                                        data-testid="dashboard-member-best"
+                                      >
+                                        {best}
+                                      </dd>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <dt className="text-slate-500">Latest</dt>
+                                      <dd
+                                        className="font-mono"
+                                        data-testid="dashboard-member-latest"
+                                      >
+                                        <Badge
+                                          variant={
+                                            latest && latest.score === latest.total
+                                              ? 'teal'
+                                              : 'secondary'
+                                          }
+                                          className="font-mono text-xs"
+                                        >
+                                          {latest ? `${latest.score}/${latest.total}` : '—'}
+                                        </Badge>
+                                      </dd>
+                                    </div>
+                                  </dl>
+                                  <p className="mt-2 text-xs text-slate-500">
+                                    Joined {formatDate(member.joinedAt)} · Last activity{' '}
+                                    <span className="text-slate-400">{lastActivity}</span>
+                                  </p>
+                                </div>
+
+                                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                  {recentKey ? (
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      asChild
+                                      className="h-8 bg-teal-600 text-white hover:bg-teal-700"
+                                    >
+                                      <Link
+                                        to={buildHumanFocusUrl(recentKey)}
+                                        data-testid="dashboard-member-focus"
+                                        aria-label={`Open ${member.name ?? 'member'} recent structure in 3D`}
+                                      >
+                                        Open recent in 3D →
+                                      </Link>
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              {member.studiedKeys.length > 0 ? (
+                                <div className="border-t border-slate-800 bg-slate-900/30 px-4 py-3">
+                                  <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+                                    Recent structures
+                                  </p>
+                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {member.studiedKeys.slice(0, 3).map(k => {
+                                      const short = k.split(':').pop() ?? k;
+                                      const label =
+                                        short.length > 28 ? `${short.slice(0, 28)}…` : short;
+                                      return (
+                                        <Button
+                                          key={k}
+                                          variant="outline"
+                                          size="sm"
+                                          asChild
+                                          className="h-7 border-slate-700 bg-slate-800/40 px-2.5 text-xs hover:bg-slate-700"
+                                        >
+                                          <Link
+                                            to={buildHumanFocusUrl(k)}
+                                            data-testid="dashboard-member-open"
+                                            aria-label={`Open ${short} in 3D viewer`}
+                                            title={k}
+                                          >
+                                            Open {label}
+                                          </Link>
+                                        </Button>
+                                      );
+                                    })}
+                                    {member.studiedKeys.length > 3 ? (
+                                      <span className="inline-flex items-center px-2 py-1 text-xs text-slate-500">
+                                        +{member.studiedKeys.length - 3} more
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {member.quizAttempts.length > 0 ? (
+                                <div className="border-t border-slate-800 px-4 py-3">
+                                  <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+                                    Quiz attempts
+                                  </p>
+                                  <ul
+                                    className="mt-2 flex flex-col gap-1.5"
+                                    data-testid="dashboard-member-attempts"
+                                  >
+                                    {sortedAttempts.slice(0, 3).map(a => (
+                                      <li
+                                        key={a.id}
+                                        data-testid="dashboard-member-attempt"
+                                        className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs"
+                                      >
+                                        <span className="flex items-center gap-2">
+                                          <Badge
+                                            variant={a.score === a.total ? 'teal' : 'secondary'}
+                                            className="font-mono"
+                                          >
+                                            {a.score}/{a.total}
+                                          </Badge>
+                                          <span className="text-slate-400">{a.bodyModel}</span>
+                                        </span>
+                                        <span className="text-slate-500">
+                                          {formatDate(a.completedAt)}
+                                        </span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : (
+                                <div className="border-t border-slate-800 px-4 py-3">
+                                  <p className="text-xs italic text-slate-500">No quizzes yet</p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </StaggerItem>
+                      );
+                    })}
+                  </div>
+                </Stagger>
+              )}
+              {progressDenied ? (
+                <p
+                  className="mt-3 rounded-lg border border-amber-900/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/80"
+                  data-testid="dashboard-progress-forbidden"
+                >
+                  View requires owner/admin — your role is{' '}
+                  <span className="font-medium">{cohort.myRole}</span>.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </section>
+      </Reveal>
 
       {/* Recent activity — quiz attempts, deep-link where structureKey exists */}
-      <section aria-labelledby="activity-heading">
-        <Card className="border-slate-800">
-          <CardHeader>
-            <CardTitle
-              id="activity-heading"
-              className="text-sm font-semibold uppercase tracking-widest text-slate-200"
-            >
-              Recent activity
-            </CardTitle>
-            <CardDescription>
-              Latest 5 quiz completions across members. Studied structures link to 3D.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isProgressLoading ? (
-              <div className="flex flex-col gap-2" data-testid="dashboard-activity-loading">
-                <Skeleton className="h-12 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-              </div>
-            ) : recentAttempts.length === 0 ? (
-              <div
-                className="rounded-xl border border-dashed border-slate-700 bg-slate-950/20 px-6 py-10 text-center"
-                data-testid="dashboard-activity-empty"
+      <Reveal delay={0.08}>
+        <section aria-labelledby="activity-heading">
+          <Card>
+            <CardHeader>
+              <CardTitle
+                id="activity-heading"
+                className="text-sm font-semibold uppercase tracking-widest text-slate-200"
               >
-                <h3 className="text-sm font-semibold text-slate-300">No recent quizzes</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
-                  Quiz completions will appear here once members start learning. Studied structures
-                  are shown in member cards above.
-                </p>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-2" data-testid="dashboard-activity-list">
-                {recentAttempts.map(a => {
-                  const pct = Math.round((a.score / Math.max(1, a.total)) * 100);
-                  return (
-                    <li
-                      key={a.id}
-                      data-testid="dashboard-activity-item"
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-3 transition-colors hover:border-slate-700 sm:px-4"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="flex flex-wrap items-center gap-2 truncate text-sm font-medium text-slate-100">
-                          <span className="truncate">{a.name ?? 'Member'}</span>
-                          <Badge
-                            variant={pct === 100 ? 'teal' : pct >= 60 ? 'secondary' : 'outline'}
-                          >
-                            {a.score}/{a.total} · {pct}%
-                          </Badge>
-                        </p>
-                        <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                          <span>{formatDateTime(a.completedAt)}</span>
-                          <span className="hidden sm:inline">·</span>
-                          <Badge variant="outline" className="capitalize">
-                            {a.bodyModel}
-                          </Badge>
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="hidden text-xs text-slate-500 sm:inline">Quiz</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+                Recent activity
+              </CardTitle>
+              <CardDescription>
+                Latest 5 quiz completions across members. Studied structures link to 3D.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isProgressLoading ? (
+                <div className="flex flex-col gap-2" data-testid="dashboard-activity-loading">
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
+              ) : recentAttempts.length === 0 ? (
+                <div
+                  className="rounded-xl border border-dashed border-slate-700 bg-slate-950/20 px-6 py-10 text-center"
+                  data-testid="dashboard-activity-empty"
+                >
+                  <h3 className="text-sm font-semibold text-slate-300">No recent quizzes</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
+                    Quiz completions will appear here once members start learning. Studied
+                    structures are shown in member cards above.
+                  </p>
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-2" data-testid="dashboard-activity-list">
+                  {recentAttempts.map(a => {
+                    const pct = Math.round((a.score / Math.max(1, a.total)) * 100);
+                    return (
+                      <li
+                        key={a.id}
+                        data-testid="dashboard-activity-item"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-3 transition-colors hover:border-slate-700 sm:px-4"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="flex flex-wrap items-center gap-2 truncate text-sm font-medium text-slate-100">
+                            <span className="truncate">{a.name ?? 'Member'}</span>
+                            <Badge
+                              variant={pct === 100 ? 'teal' : pct >= 60 ? 'secondary' : 'outline'}
+                            >
+                              {a.score}/{a.total} · {pct}%
+                            </Badge>
+                          </p>
+                          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span>{formatDateTime(a.completedAt)}</span>
+                            <span className="hidden sm:inline">·</span>
+                            <Badge variant="outline" className="capitalize">
+                              {a.bodyModel}
+                            </Badge>
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="hidden text-xs text-slate-500 sm:inline">Quiz</span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      </Reveal>
 
       <p className="text-center text-xs text-slate-600">
         Dashboard data is live from{' '}
