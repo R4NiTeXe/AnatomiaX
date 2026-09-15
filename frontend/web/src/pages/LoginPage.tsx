@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
+import AuthDivider from '@/components/auth/AuthDivider';
 import AuthLayout from '@/components/auth/AuthLayout';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -137,6 +138,7 @@ export default function LoginPage(): JSX.Element {
             </Button>
           </form>
         )}
+        <AuthDivider />
         <GoogleSignInButton />
         <p className="text-center text-xs text-slate-500">
           <Link

@@ -21,10 +21,10 @@
             class="menu menu-sm dropdown-content mt-3 w-64 rounded-xl border border-base-300 bg-base-100 p-2 shadow-xl"
           >
             <li><a href="/#explore">Explore</a></li>
-            <li><a href="/medical-learning/">Medical Learning</a></li>
-            <li><a href="/simulation/">Simulation</a></li>
-            <li><a href="/ai/">AI Health</a></li>
-            <li><a href="/clinical-cases/">Clinical Cases</a></li>
+            <li><a href="/medical-learning/" {% if page.url == "/medical-learning/" %}aria-current="page" class="active"{% endif %}>Medical Learning</a></li>
+            <li><a href="/simulation/" {% if page.url == "/simulation/" %}aria-current="page" class="active"{% endif %}>Simulation</a></li>
+            <li><a href="/ai/" {% if page.url == "/ai/" %}aria-current="page" class="active"{% endif %}>AI Health</a></li>
+            <li><a href="/clinical-cases/" {% if page.url == "/clinical-cases/" %}aria-current="page" class="active"{% endif %}>Clinical Cases</a></li>
             <li class="mt-2 border-t border-base-300 pt-2">
               <a href="{{ site.loginUrl }}" class="justify-center">Login</a>
             </li>
@@ -40,16 +40,20 @@
       <div class="navbar-center hidden lg:flex">
         <ul class="menu menu-horizontal gap-1 px-1 text-[0.9rem]">
           <li><a href="/#explore" class="font-medium">Explore</a></li>
-          <li><a href="/medical-learning/">Medical Learning</a></li>
-          <li><a href="/simulation/">Simulation</a></li>
-          <li><a href="/ai/">AI Health</a></li>
-          <li><a href="/clinical-cases/">Clinical Cases</a></li>
+          <li><a href="/medical-learning/" {% if page.url == "/medical-learning/" %}aria-current="page" class="active"{% endif %}>Medical Learning</a></li>
+          <li><a href="/simulation/" {% if page.url == "/simulation/" %}aria-current="page" class="active"{% endif %}>Simulation</a></li>
+          <li><a href="/ai/" {% if page.url == "/ai/" %}aria-current="page" class="active"{% endif %}>AI Health</a></li>
+          <li><a href="/clinical-cases/" {% if page.url == "/clinical-cases/" %}aria-current="page" class="active"{% endif %}>Clinical Cases</a></li>
         </ul>
       </div>
 
       <div class="navbar-end hidden gap-2 lg:flex">
         <a href="{{ site.loginUrl }}" class="btn btn-ghost btn-sm">Login</a>
-        <a href="{{ site.getStartedUrl }}" class="btn btn-primary btn-sm">Get Started</a>
+        <a
+          href="{{ site.getStartedUrl }}"
+          class="btn btn-primary btn-sm shadow-[0_0_20px_-6px_rgba(20,184,166,0.6)]"
+          >Get Started</a
+        >
       </div>
 
       <div class="navbar-end lg:hidden">

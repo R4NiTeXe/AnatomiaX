@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthLayout from '@/components/auth/AuthLayout';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { Skeleton } from '@/components/ui/skeleton';
 import { acceptCallbackSession } from '@/lib/auth';
 import { safeAuthDestination } from '@/lib/authRedirect';
 
@@ -88,6 +89,15 @@ export default function AuthCallbackPage(): JSX.Element {
         <p className="text-sm text-slate-400" role="status" data-testid="callback-status">
           {notice ?? 'Checking your Google session…'}
         </p>
+        {!notice ? (
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-slate-800"
+            aria-hidden="true"
+            data-testid="callback-progress"
+          >
+            <Skeleton className="h-full w-1/2 rounded-full" />
+          </div>
+        ) : null}
         {notice ? <GoogleSignInButton testId="callback-retry" /> : null}
         {urlError ? (
           <p className="text-xs text-slate-500" data-testid="callback-error">

@@ -17,41 +17,92 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
         background-size: 48px 48px;
       "
     ></div>
+    <!-- ambient clinical glows -->
+    <div
+      class="absolute -top-32 left-1/2 h-96 w-[60rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+    ></div>
+    <div
+      class="absolute -right-40 top-1/3 h-80 w-80 rounded-full bg-secondary/10 blur-3xl"
+    ></div>
   </div>
-  <div class="container-anatomia relative py-10 sm:py-14 lg:py-20">
-    <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-8">
+  <div class="container-anatomia relative py-12 sm:py-16 lg:py-24">
+    <div class="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
       <div class="max-w-xl">
         <div
           data-hero-label
-          class="inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-200 px-3 py-1 text-[0.7rem] font-medium tracking-widest text-base-content/60"
+          class="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[0.7rem] font-medium tracking-widest text-primary"
         >
-          <span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
-          PREMIUM MEDICAL TECHNOLOGY
+          <span class="relative flex h-1.5 w-1.5">
+            <span
+              class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 motion-safe:animate-ping"
+            ></span>
+            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
+          </span>
+          INTERACTIVE 3D ANATOMY PLATFORM
         </div>
         <h1
           data-hero-heading
-          class="mt-6 text-4xl font-bold tracking-tight text-base-content sm:text-5xl lg:text-[3rem] lg:leading-[1.05]"
+          class="mt-6 text-5xl font-bold tracking-tight text-base-content sm:text-6xl lg:text-[4.25rem] lg:leading-[1.02]"
         >
           The Human Body,<br />
-          <span class="text-primary">Brought to Life.</span>
+          <span
+            class="bg-gradient-to-r from-primary via-teal-300 to-cyan-300 bg-clip-text text-transparent"
+            >Brought to Life.</span
+          >
         </h1>
         <p
           data-hero-text
-          class="mt-5 max-w-[36rem] text-sm leading-7 text-base-content/65 sm:text-[0.95rem]"
+          class="mt-6 max-w-[34rem] text-sm leading-7 text-base-content/65 sm:text-base sm:leading-8"
         >
           Explore human anatomy through interactive 3D visualization, AI-assisted health education,
           medical learning, and simulation.
         </p>
-        <div data-hero-actions class="mt-8 flex flex-col gap-3 sm:flex-row">
-          <a href="/#explore" class="btn btn-primary">Explore AnatomiaX</a>
+        <div data-hero-actions class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a
+            href="/#explore"
+            class="btn btn-primary shadow-[0_0_28px_-6px_rgba(20,184,166,0.55)]"
+            >Explore AnatomiaX</a
+          >
           <a href="{{ site.getStartedUrl }}" class="btn btn-outline">Get Started</a>
         </div>
-        <p data-hero-meta class="mt-4 text-xs text-base-content/45">Browser-based. No install required.</p>
+        <dl
+          data-hero-meta
+          class="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-base-300/60 pt-5"
+        >
+          <div>
+            <dt class="text-[0.65rem] font-medium tracking-widest text-base-content/40">
+              BODY SYSTEMS
+            </dt>
+            <dd class="mt-1 text-xl font-bold text-base-content">9</dd>
+          </div>
+          <div>
+            <dt class="text-[0.65rem] font-medium tracking-widest text-base-content/40">
+              BODY MODELS
+            </dt>
+            <dd class="mt-1 text-xl font-bold text-base-content">2</dd>
+          </div>
+          <div>
+            <dt class="text-[0.65rem] font-medium tracking-widest text-base-content/40">
+              3D MODELS
+            </dt>
+            <dd class="mt-1 text-xl font-bold text-base-content">18</dd>
+          </div>
+          <div>
+            <dt class="text-[0.65rem] font-medium tracking-widest text-base-content/40">ACCESS</dt>
+            <dd class="mt-1 text-xl font-bold text-base-content">100% Web</dd>
+          </div>
+        </dl>
       </div>
 
-      <!-- Visual placeholder for future 3D human -->
+      <!-- Visual: interactive anatomy preview -->
       <div data-hero-visual class="relative">
-        <div class="rounded-[1.25rem] border border-base-300 bg-base-200 p-2 sm:p-3">
+        <div
+          class="absolute -inset-3 rounded-[1.75rem] bg-gradient-to-b from-primary/15 via-transparent to-secondary/10 blur-2xl"
+          aria-hidden="true"
+        ></div>
+        <div
+          class="relative rounded-[1.25rem] border border-base-300 bg-base-200 p-2 shadow-[0_24px_64px_-24px_rgba(0,0,0,0.7)] sm:p-3"
+        >
           <div
             class="relative overflow-hidden rounded-xl border border-base-300 bg-base-100"
             aria-hidden="true"
@@ -142,11 +193,13 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
               </div>
 
               <div class="flex items-center justify-between border-t border-base-300/60 pt-3">
-                <div class="flex items-center gap-2 text-[0.65rem] tracking-widest text-base-content/40">
-                  <span class="h-px w-6 bg-base-300"></span>
-                  AXIAL • CORONAL • SAGITTAL
-                </div>
-                <span class="text-[0.65rem] tracking-widest text-base-content/30">SCALE 1:1 • WEBGL</span>
+              <div class="flex items-center gap-2 text-[0.65rem] tracking-widest text-base-content/40">
+                <span class="h-px w-6 bg-primary/40"></span>
+                AXIAL • CORONAL • SAGITTAL
+              </div>
+              <span class="text-[0.65rem] tracking-widest text-base-content/30"
+                >MESHOPT • WEBGL</span
+              >
               </div>
             </div>
           </div>
@@ -187,7 +240,8 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
   <div class="container-anatomia">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">Explore AnatomiaX</h2>
+        <p class="text-xs font-semibold tracking-widest text-primary">PLATFORM</p>
+        <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Explore AnatomiaX</h2>
         <p class="mt-2 max-w-xl text-sm leading-6 text-base-content/60">
           Six focused areas, designed to connect structure, function, and clinical reasoning.
         </p>
@@ -196,20 +250,27 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
     </div>
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <!-- 3D Human -->
+      <!-- 3D Human (featured) -->
       <article
         data-feature-card
-        class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
+        class="group relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-base-100 via-base-100 to-primary/5 p-6 transition-colors hover:border-primary/30 sm:col-span-2 lg:col-span-2"
       >
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
+        <div
+          class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden="true"
+        ></div>
+        <div class="relative flex h-9 w-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-4 w-4" aria-hidden="true">
             <path d="M12 3L20 7.5v9L12 21 4 16.5v-9L12 3Z" />
             <path d="M12 3v18M4 7.5l8 4.5 8-4.5" />
           </svg>
         </div>
-        <h3 class="mt-4 text-[0.95rem] font-semibold">3D Human</h3>
-        <p class="mt-1.5 text-sm leading-6 text-base-content/60">
+        <h3 class="relative mt-4 text-[0.95rem] font-semibold">3D Human</h3>
+        <p class="relative mt-1.5 max-w-md text-sm leading-6 text-base-content/60">
           Explore anatomy layer by layer through an interactive digital human.
+        </p>
+        <p class="relative mt-3 text-[0.7rem] font-medium tracking-widest text-base-content/40">
+          9 SYSTEMS • MALE + FEMALE • MESHOPT
         </p>
       </article>
 
@@ -282,22 +343,27 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
         </p>
       </article>
 
-      <!-- Learn -->
+      <!-- Learn (wide strip) -->
       <article
         data-feature-card
-        class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 hover:bg-base-100"
+        class="group rounded-2xl border border-base-300 bg-base-100 p-6 transition-colors hover:border-primary/25 sm:col-span-2 lg:col-span-3"
       >
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-4 w-4" aria-hidden="true">
-            <path d="M4 6l8-3 8 3-8 3-8-3Z" />
-            <path d="M4 10l8 3 8-3" />
-            <path d="M4 14l8 3 8-3" />
-          </svg>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-base-content/70">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-4 w-4" aria-hidden="true">
+              <path d="M4 6l8-3 8 3-8 3-8-3Z" />
+              <path d="M4 10l8 3 8-3" />
+              <path d="M4 14l8 3 8-3" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-[0.95rem] font-semibold">Learn</h3>
+            <p class="mt-1.5 text-sm leading-6 text-base-content/60">
+              Build knowledge through structured lessons, quizzes, and interactive exploration.
+            </p>
+          </div>
+          <a href="/medical-learning/" class="link link-primary shrink-0 text-sm">View learning paths →</a>
         </div>
-        <h3 class="mt-4 text-[0.95rem] font-semibold">Learn</h3>
-        <p class="mt-1.5 text-sm leading-6 text-base-content/60">
-          Build knowledge through structured lessons, quizzes, and interactive exploration.
-        </p>
       </article>
     </div>
   </div>
@@ -375,7 +441,8 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 <section data-reveal class="border-b border-base-300 bg-base-200 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl text-center">
-      <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">Ask about the human body.</h2>
+      <p class="text-xs font-semibold tracking-widest text-primary">AI HEALTH</p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Ask about the human body.</h2>
       <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-base-content/60">
         A focused example of how AI Health explains concepts — clearly, with context, without
         diagnosis.
@@ -415,7 +482,8 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 <section data-reveal class="border-b border-base-300 bg-base-100 py-14 sm:py-16">
   <div class="container-anatomia">
     <div class="mx-auto max-w-3xl text-center">
-      <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">See biology in motion.</h2>
+      <p class="text-xs font-semibold tracking-widest text-primary">SIMULATION</p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">See biology in motion.</h2>
       <p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-base-content/60">
         Future simulations can visualize how the body responds — from normal function to change and
         effect — for education, not prediction.
@@ -496,17 +564,22 @@ description: "Explore the human body through interactive 3D anatomy, medical lea
 </section>
 
 <!-- Final CTA -->
-<section data-reveal class="bg-base-100 py-14 sm:py-16 lg:py-20">
-  <div class="container-anatomia">
-    <div class="mx-auto max-w-3xl rounded-2xl border border-base-300 bg-gradient-to-b from-base-100 to-base-200/40 p-8 text-center shadow-sm sm:p-12">
-      <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+<section data-reveal class="relative overflow-hidden bg-base-100 py-14 sm:py-16 lg:py-20">
+  <div
+    class="pointer-events-none absolute left-1/2 top-1/2 h-72 w-[46rem] max-w-none -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
+    aria-hidden="true"
+  ></div>
+  <div class="container-anatomia relative">
+    <div class="mx-auto max-w-3xl rounded-2xl border border-primary/20 bg-gradient-to-b from-base-100 to-base-200/40 p-8 text-center shadow-[0_24px_64px_-32px_rgba(20,184,166,0.35)] sm:p-12">
+      <p class="text-xs font-semibold tracking-widest text-primary">GET STARTED</p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
         Explore a new way to understand the human body.
       </h2>
       <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-base-content/60">
         Start with anatomy, deepen with physiology and cases — all in one coherent platform.
       </p>
       <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <a href="/#explore" class="btn btn-primary">Explore AnatomiaX</a>
+        <a href="/#explore" class="btn btn-primary shadow-[0_0_28px_-6px_rgba(20,184,166,0.55)]">Explore AnatomiaX</a>
         <a href="{{ site.getStartedUrl }}" class="btn btn-outline">Get Started</a>
       </div>
     </div>
