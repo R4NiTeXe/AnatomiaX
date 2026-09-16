@@ -113,12 +113,18 @@ export default function AnatomySearchBox(): JSX.Element {
       <p className="mb-1 px-1 text-xs text-slate-500">Search all anatomy</p>
       <div className="relative">
         <div className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2">
+          {/* STEP 8.28: decorative only — the input owns search state.
+              Binary inspection shows an unverified "State Machine 1" /
+              "ifActive" pair of unknown type, so no input is wired. The
+              `key` follows the real dropdown state (`isOpen`); Rive never
+              drives logic, adds no delays, and the poster is the
+              reduced-motion equivalent. Keyboard/focus behavior unchanged. */}
           <RivePlayer
             key={isOpen ? 'active' : 'idle'}
             src={animationSrc('search-interaction')}
+            autoplay
             width={16}
             height={16}
-            ariaLabel=""
             poster={<span className="text-slate-500 text-xs">🔍</span>}
           />
         </div>

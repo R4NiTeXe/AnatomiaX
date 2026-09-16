@@ -72,9 +72,18 @@ export default function SiteNav(): JSX.Element {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open navigation">
                 <span className="h-5 w-5" aria-hidden="true">
+                  {/* STEP 8.28: React (`mobileOpen`) is the source of truth.
+                      The asset exposes no verifiable state-machine/input
+                      binding (binary inspection only shows unverified
+                      "switch"/"toggleX" strings of unknown type), so no
+                      input is wired. The `key` remount replays the toggle
+                      timeline to mirror the actual nav state; the Lucide
+                      poster is the reduced-motion/failure equivalent and
+                      Rive can never block navigation (see RivePlayer). */}
                   <RivePlayer
                     key={mobileOpen ? 'open' : 'closed'}
                     src={animationSrc('menu-close-toggle')}
+                    autoplay
                     width={20}
                     height={20}
                     ariaLabel={mobileOpen ? 'Close navigation' : 'Open navigation'}

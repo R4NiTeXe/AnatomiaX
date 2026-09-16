@@ -73,6 +73,8 @@ export const ANIMATION_REGISTRY = {
     intendedUsage: 'Responsive navigation menu/close toggle',
     loading: 'lazy',
     sizeKB: 1.0,
+    notes:
+      'STEP 8.28: no verifiable state-machine/input binding (only unverified "switch"/"toggleX" strings of unknown type) — React mobileOpen stays authoritative, Rive replays to mirror it.',
   },
   'theme-toggle': {
     id: 'theme-toggle',
@@ -81,7 +83,8 @@ export const ANIMATION_REGISTRY = {
     intendedUsage: 'Theme control — only if state machine maps reliably to app theme state',
     loading: 'lazy',
     sizeKB: 4.1,
-    notes: 'Deferred: no theme toggle exists yet; registry entry reserves the slot.',
+    notes:
+      'STEP 8.28: still unused — app has no theme provider (dark-only) and the asset uses a "mode" view-model with Light/Dark/System states that cannot map safely without building theme architecture.',
   },
   'progress-bar': {
     id: 'progress-bar',
@@ -100,6 +103,8 @@ export const ANIMATION_REGISTRY = {
     intendedUsage: 'Quiz/learning completion feedback — compact, controlled',
     loading: 'lazy',
     sizeKB: 7.7,
+    notes:
+      'STEP 8.28: unverified "State Machine 1", no verifiable inputs — autoplays once, mounted only on the all-correct completion transition.',
   },
   'notification-bell': {
     id: 'notification-bell',
@@ -116,6 +121,8 @@ export const ANIMATION_REGISTRY = {
     intendedUsage: 'Search trigger/input — authoritative search state stays in React',
     loading: 'lazy',
     sizeKB: 3.2,
+    notes:
+      'STEP 8.28: unverified "State Machine 1"/"ifActive" pair of unknown type — not wired. Decorative mark follows the real dropdown state.',
   },
   'bookmark-interaction': {
     id: 'bookmark-interaction',
@@ -124,6 +131,8 @@ export const ANIMATION_REGISTRY = {
     intendedUsage: 'Save/bookmark/studied-structure interaction — visual only',
     loading: 'lazy',
     sizeKB: 5.8,
+    notes:
+      'STEP 8.28: unverified "Bookmark State Machine"/"Marked" strings of unknown type — not wired. Memoized mark reflects the authoritative studied keys.',
   },
 } as const satisfies Record<string, AnimationAsset>;
 

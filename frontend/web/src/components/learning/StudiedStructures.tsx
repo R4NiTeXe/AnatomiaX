@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { getAnatomyInformationByStructureKey } from '@anatomiax/anatomy-core';
@@ -21,6 +22,35 @@ export function displayNameForStudiedKey(key: string): string {
 function displayNameFor(key: string): string {
   return displayNameForStudiedKey(key);
 }
+
+// STEP 8.28: memoized so the mark never replays on unrelated parent renders
+// (stable row key + stable props keep the mounted instance). React's studied
+// keys are authoritative; the asset's unverified "Bookmark State Machine" /
+// "Marked" strings (unknown type) are not wired. Server/optimistic behavior,
+// button semantics, and labels are unchanged; the index poster is the
+// reduced-motion equivalent.
+const StudiedBookmarkMark = memo(function StudiedBookmarkMark({
+  label,
+  index,
+}: {
+  label: string;
+  index: number;
+}): JSX.Element {
+  return (
+    <RivePlayer
+      src={animationSrc('bookmark-interaction')}
+      autoplay
+      width={20}
+      height={20}
+      ariaLabel={`Bookmarked ${label}`}
+      poster={
+        <span className="text-xs font-bold tabular-nums text-teal-300/80">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+      }
+    />
+  );
+});
 
 export default function StudiedStructures({
   preview = false,
@@ -82,17 +112,7 @@ export default function StudiedStructures({
               <StaggerItem as="li" key={key} data-testid="studied-item">
                 <Card className="flex items-center gap-3 px-3 py-2.5">
                   <div className="w-6 shrink-0 text-center">
-                    <RivePlayer
-                      src={animationSrc('bookmark-interaction')}
-                      width={20}
-                      height={20}
-                      ariaLabel={`Bookmarked ${label}`}
-                      poster={
-                        <span className="text-xs font-bold tabular-nums text-teal-300/80">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                      }
-                    />
+                    <StudiedBookmarkMark label={label} index={index} />
                   </div>
                   <Link
                     to={href}

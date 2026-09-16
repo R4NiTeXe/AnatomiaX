@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useSubmitQuizAttempt } from '@/hooks/useProgress';
 import { RivePlayer, animationSrc } from '@/components/animation';
@@ -11,6 +11,25 @@ import {
 
 export type { AttemptAnswerLike, AttemptQuestionLike };
 export { buildAttemptInput };
+
+// STEP 8.28: memoized one-shot mark, mounted only on the real all-correct
+// completion transition (see usage below). The asset exposes an unverified
+// "State Machine 1" with no verifiable inputs, so nothing is wired — it
+// autoplays once on mount and never replays on unrelated renders (no `key`,
+// stable props). Subordinate 28px mark beside the result text; the ✓ poster
+// is the reduced-motion equivalent and result rendering never waits on Rive.
+const QuizSuccessMark = memo(function QuizSuccessMark(): JSX.Element {
+  return (
+    <RivePlayer
+      src={animationSrc('success-check')}
+      autoplay
+      width={28}
+      height={28}
+      ariaLabel="All correct"
+      poster={<span className="text-teal-300 text-sm">✓</span>}
+    />
+  );
+});
 
 export default function AnatomyQuiz(): JSX.Element {
   const {
@@ -256,13 +275,7 @@ export default function AnatomyQuiz(): JSX.Element {
                     className="flex items-center gap-3"
                     data-testid="anatomy-quiz-review-all-correct"
                   >
-                    <RivePlayer
-                      src={animationSrc('success-check')}
-                      width={28}
-                      height={28}
-                      ariaLabel="All correct"
-                      poster={<span className="text-teal-300 text-sm">✓</span>}
-                    />
+                    <QuizSuccessMark />
                     <p className="text-sm text-teal-300">All correct — nice work!</p>
                   </div>
                 ) : (
