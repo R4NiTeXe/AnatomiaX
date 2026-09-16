@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAnatomyState } from './AnatomyStateContext';
 import { searchStructures } from './anatomyRegistry';
 import type { AnatomySearchResult } from './anatomyTypes';
+import { RivePlayer, animationSrc } from '@/components/animation';
 
 export default function AnatomySearchBox(): JSX.Element {
   const { registry, selectedBodyModel, selectStructure, setHoveredStructure, setCompareStructure } =
@@ -111,6 +112,16 @@ export default function AnatomySearchBox(): JSX.Element {
     <div className="relative">
       <p className="mb-1 px-1 text-xs text-slate-500">Search all anatomy</p>
       <div className="relative">
+        <div className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2">
+          <RivePlayer
+            key={isOpen ? 'active' : 'idle'}
+            src={animationSrc('search-interaction')}
+            width={16}
+            height={16}
+            ariaLabel=""
+            poster={<span className="text-slate-500 text-xs">🔍</span>}
+          />
+        </div>
         <input
           ref={inputRef}
           type="text"
@@ -134,7 +145,7 @@ export default function AnatomySearchBox(): JSX.Element {
               ? `anatomy-search-option-${results[activeIndex].structureKey}`
               : undefined
           }
-          className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 pr-8 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+          className="w-full rounded-lg border border-slate-700 bg-slate-800/50 py-2 pl-8 pr-8 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
           data-testid="anatomy-search-input"
         />
         {query && (

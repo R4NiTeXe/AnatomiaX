@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ActiveNavPill } from '@/components/motion';
+import { RivePlayer, animationSrc } from '@/components/animation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const linkClass = ({ isActive }: { isActive: boolean }): string =>
   `relative inline-flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${isActive ? 'text-teal-100' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`;
@@ -47,6 +49,7 @@ function NavLinkSet({ pillId }: { pillId: string }): JSX.Element {
 }
 
 export default function SiteNav(): JSX.Element {
+  const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <nav
       aria-label="Primary"
@@ -65,10 +68,22 @@ export default function SiteNav(): JSX.Element {
           <NavLinkSet pillId="ax-nav-active-desktop" />
         </div>
         <div className="sm:hidden">
-          <Sheet>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open navigation">
-                <Menu className="h-5 w-5" />
+                <span className="h-5 w-5" aria-hidden="true">
+                  <RivePlayer
+                    key={mobileOpen ? 'open' : 'closed'}
+                    src={animationSrc('menu-close-toggle')}
+                    width={20}
+                    height={20}
+                    ariaLabel={mobileOpen ? 'Close navigation' : 'Open navigation'}
+                    poster={mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  />
+                </span>
+                <span className="sr-only">
+                  {mobileOpen ? 'Close navigation' : 'Open navigation'}
+                </span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-64 bg-slate-950">

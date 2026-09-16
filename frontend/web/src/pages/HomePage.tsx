@@ -8,6 +8,7 @@ import { documentedCoverage } from '@/components/learning/coverage';
 import ProgressRing from '@/components/learning/ProgressRing';
 import SectionHeader from '@/components/learning/SectionHeader';
 import { Reveal } from '@/components/motion';
+import { LottiePlayer, animationSrc } from '@/components/animation';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -166,6 +167,45 @@ function PublicHome(): JSX.Element {
           </Button>
         </div>
       </Card>
+
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Card className="overflow-hidden lg:col-span-3">
+          <div className="aspect-[16/10] w-full bg-slate-950/60">
+            <LottiePlayer
+              src={animationSrc('body-scan')}
+              ariaLabel="Body scan animation — secondary to 3D viewer"
+              className="h-full w-full"
+              loop
+              autoplay
+            />
+          </div>
+          <div className="p-4">
+            <p className="ax-kicker">Anatomy preview</p>
+            <h2 className="mt-1 text-sm font-bold tracking-tight text-slate-100">Body scan</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              Supporting visual — the interactive 3D model remains primary.
+            </p>
+          </div>
+        </Card>
+        <Card className="overflow-hidden lg:col-span-2">
+          <div className="aspect-[16/10] w-full bg-slate-950/60">
+            <LottiePlayer
+              src={animationSrc('medical-technology')}
+              ariaLabel="Medical technology animation"
+              className="h-full w-full"
+              loop
+              autoplay
+            />
+          </div>
+          <div className="p-4">
+            <p className="ax-kicker">Technology</p>
+            <h2 className="mt-1 text-sm font-bold tracking-tight text-slate-100">How it works</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              Product content first, animation second — restrained loop.
+            </p>
+          </div>
+        </Card>
+      </div>
 
       <section aria-label="Features" className="grid gap-4 sm:grid-cols-3">
         {[

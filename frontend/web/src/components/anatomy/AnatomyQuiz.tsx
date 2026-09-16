@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useSubmitQuizAttempt } from '@/hooks/useProgress';
+import { RivePlayer, animationSrc } from '@/components/animation';
 import { useAnatomyState } from './AnatomyStateContext';
 import {
   buildAttemptInput,
@@ -251,12 +252,19 @@ export default function AnatomyQuiz(): JSX.Element {
                   {incorrectCount} incorrect
                 </p>
                 {incorrectCount === 0 ? (
-                  <p
-                    className="text-sm text-teal-300"
+                  <div
+                    className="flex items-center gap-3"
                     data-testid="anatomy-quiz-review-all-correct"
                   >
-                    All correct — nice work!
-                  </p>
+                    <RivePlayer
+                      src={animationSrc('success-check')}
+                      width={28}
+                      height={28}
+                      ariaLabel="All correct"
+                      poster={<span className="text-teal-300 text-sm">✓</span>}
+                    />
+                    <p className="text-sm text-teal-300">All correct — nice work!</p>
+                  </div>
                 ) : (
                   <button
                     type="button"

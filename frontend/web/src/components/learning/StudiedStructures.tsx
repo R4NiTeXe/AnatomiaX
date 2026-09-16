@@ -3,6 +3,7 @@ import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { getAnatomyInformationByStructureKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Stagger, StaggerItem } from '@/components/motion';
+import { RivePlayer, animationSrc } from '@/components/animation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -80,12 +81,19 @@ export default function StudiedStructures({
             return (
               <StaggerItem as="li" key={key} data-testid="studied-item">
                 <Card className="flex items-center gap-3 px-3 py-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="w-6 shrink-0 text-center text-xs font-bold tabular-nums text-teal-300/80"
-                  >
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
+                  <div className="w-6 shrink-0 text-center">
+                    <RivePlayer
+                      src={animationSrc('bookmark-interaction')}
+                      width={20}
+                      height={20}
+                      ariaLabel={`Bookmarked ${label}`}
+                      poster={
+                        <span className="text-xs font-bold tabular-nums text-teal-300/80">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      }
+                    />
+                  </div>
                   <Link
                     to={href}
                     data-testid="studied-open-label"

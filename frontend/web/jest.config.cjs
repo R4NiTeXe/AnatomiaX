@@ -11,6 +11,14 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // Mock animation player packages — jsdom lacks the canvas/WASM runtime
+    // they need, so every test that touches a component importing these
+    // packages fails without a mock.
+    '^@lottiefiles/dotlottie-react$':
+      '<rootDir>/src/components/animation/__mocks__/dotlottie-react.tsx',
+    '^@lottiefiles/dotlottie-web$': '<rootDir>/src/components/animation/__mocks__/dotlottie-web.ts',
+    '^@rive-app/react-canvas$':
+      '<rootDir>/src/components/animation/__mocks__/rive-react-canvas.tsx',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { diagnostics: false }],
@@ -29,6 +37,11 @@ module.exports = {
   // ts-jest + three parse contention that pushed the /human import over 5s.
   maxWorkers: '50%',
   coverageDirectory: '<rootDir>/coverage',
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts', '!src/test-setup.ts', '!src/vite-env.d.ts'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/test-setup.ts',
+    '!src/vite-env.d.ts',
+  ],
   coverageReporters: ['text', 'lcov'],
 };
