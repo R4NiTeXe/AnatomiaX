@@ -3,7 +3,11 @@ import { test, expect } from '@playwright/test';
 test.describe('a11y', () => {
   test('skip link, focus, labels', async ({ page }) => {
     await page.route('**/api/v1/auth/me', route =>
-      route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Unauthorized' }) })
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      })
     );
     await page.goto('/login');
     // skip link
@@ -27,7 +31,12 @@ test.describe('a11y', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'a1', email: 'admin@x.test', role: 'ADMIN', createdAt: '2026-01-01' }),
+        body: JSON.stringify({
+          id: 'a1',
+          email: 'admin@x.test',
+          role: 'ADMIN',
+          createdAt: '2026-01-01',
+        }),
       })
     );
     // need to test admin shell separately — we will just check web's AppShell nav
@@ -46,7 +55,12 @@ test.describe('a11y', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'admin-1', email: 'admin@x.test', role: 'ADMIN', createdAt: '2026-01-01' }),
+        body: JSON.stringify({
+          id: 'admin-1',
+          email: 'admin@x.test',
+          role: 'ADMIN',
+          createdAt: '2026-01-01',
+        }),
       })
     );
     await page.route('**/api/v1/admin/overview', route =>
@@ -70,7 +84,12 @@ test.describe('a11y', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 't1', email: 't@x.test', role: 'TEACHER', createdAt: '2026-01-01' }),
+        body: JSON.stringify({
+          id: 't1',
+          email: 't@x.test',
+          role: 'TEACHER',
+          createdAt: '2026-01-01',
+        }),
       })
     );
     await page.route('**/api/v1/cohorts', route =>

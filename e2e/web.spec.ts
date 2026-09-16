@@ -1,9 +1,24 @@
 import { test, expect } from '@playwright/test';
 
-const STUDENT = { id: 's1', email: 's@x.test', name: 'Sam', role: 'STUDENT', createdAt: '2026-01-01' };
-const TEACHER = { id: 't1', email: 't@x.test', name: 'Ada', role: 'TEACHER', createdAt: '2026-01-01' };
+const STUDENT = {
+  id: 's1',
+  email: 's@x.test',
+  name: 'Sam',
+  role: 'STUDENT',
+  createdAt: '2026-01-01',
+};
+const TEACHER = {
+  id: 't1',
+  email: 't@x.test',
+  name: 'Ada',
+  role: 'TEACHER',
+  createdAt: '2026-01-01',
+};
 
-async function mockAuth(page: import('@playwright/test').Page, user: Record<string, unknown> | null) {
+async function mockAuth(
+  page: import('@playwright/test').Page,
+  user: Record<string, unknown> | null
+) {
   if (user) {
     await page.route('**/api/v1/auth/me', route =>
       route.fulfill({
@@ -18,13 +33,21 @@ async function mockAuth(page: import('@playwright/test').Page, user: Record<stri
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ code: 'UNAUTHORIZED', message: 'Unauthorized', requestId: 'req-e2e-1' }),
+        body: JSON.stringify({
+          code: 'UNAUTHORIZED',
+          message: 'Unauthorized',
+          requestId: 'req-e2e-1',
+        }),
         headers: { 'x-request-id': 'req-e2e-1' },
       })
     );
   }
   await page.route('**/api/v1/auth/refresh', route =>
-    route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ message: 'Unauthorized' }) })
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
   );
 }
 
@@ -123,7 +146,14 @@ test.describe('admin route protection (via web admin API mock)', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ id: 'c1', name: 'Bio 101', institutionLabel: null, archivedAt: null, createdAt: new Date().toISOString(), myRole: 'STUDENT' }),
+          body: JSON.stringify({
+            id: 'c1',
+            name: 'Bio 101',
+            institutionLabel: null,
+            archivedAt: null,
+            createdAt: new Date().toISOString(),
+            myRole: 'STUDENT',
+          }),
         });
       } else {
         await route.continue();

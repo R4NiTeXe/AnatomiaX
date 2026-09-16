@@ -17,7 +17,9 @@ export class LoggingInterceptor implements NestInterceptor {
     }>();
     const requestId = typeof req?.id === 'string' ? req.id : '-';
     const method = typeof req?.method === 'string' ? req.method : '?';
-    const url = (typeof req?.originalUrl === 'string' ? req.originalUrl : undefined) ?? (typeof req?.url === 'string' ? req.url : '?');
+    const url =
+      (typeof req?.originalUrl === 'string' ? req.originalUrl : undefined) ??
+      (typeof req?.url === 'string' ? req.url : '?');
     if (isHealthPath(url)) {
       return next.handle();
     }

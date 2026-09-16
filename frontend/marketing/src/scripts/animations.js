@@ -153,25 +153,13 @@ gsap.registerPlugin(ScrollTrigger);
           intro.to(heroBgOnly, { opacity: 1, duration: 0.25 }, 0);
         }
         if (heroLabelOnly) {
-          intro.to(
-            heroLabelOnly,
-            { opacity: 1, y: 0, duration: 0.3 },
-            0.15
-          );
+          intro.to(heroLabelOnly, { opacity: 1, y: 0, duration: 0.3 }, 0.15);
         }
         if (heroLines.length) {
-          intro.to(
-            heroLines,
-            { y: 0, duration: 0.6, stagger: 0.12 },
-            0.3
-          );
+          intro.to(heroLines, { y: 0, duration: 0.6, stagger: 0.12 }, 0.3);
         }
         if (heroTextOnly) {
-          intro.to(
-            heroTextOnly,
-            { opacity: 1, y: 0, duration: 0.4 },
-            0.45
-          );
+          intro.to(heroTextOnly, { opacity: 1, y: 0, duration: 0.4 }, 0.45);
         }
         if (heroCtas.length) {
           intro.to(
@@ -187,11 +175,7 @@ gsap.registerPlugin(ScrollTrigger);
           );
         }
         if (heroStatsOnly.length) {
-          intro.to(
-            heroStatsOnly,
-            { opacity: 1, y: 0, duration: 0.35, stagger: 0.05 },
-            0.6
-          );
+          intro.to(heroStatsOnly, { opacity: 1, y: 0, duration: 0.35, stagger: 0.05 }, 0.6);
         }
         if (heroVisualOnly) {
           intro.to(
