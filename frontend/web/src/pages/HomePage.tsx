@@ -9,6 +9,7 @@ import ProgressRing from '@/components/learning/ProgressRing';
 import SectionHeader from '@/components/learning/SectionHeader';
 import { Reveal } from '@/components/motion';
 import { LottieVisual } from '@/components/animation';
+import { ShaderBackdrop } from '@/components/effects';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -141,30 +142,35 @@ function MasteryStrip(): JSX.Element | null {
 function PublicHome(): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
-      <Card className="p-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl" data-testid="home-title">
-          Learn human anatomy in interactive 3D
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          Explore body systems, search structures, compare anatomy, and test yourself with quizzes.
-          Your progress syncs across devices when you sign in.
-        </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <Button asChild>
-            <Link to="/register" data-testid="home-cta-register">
-              Create a free account
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/login" data-testid="home-cta-login">
-              Sign in
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/human" data-testid="home-cta-explore">
-              Explore anatomy
-            </Link>
-          </Button>
+      <Card className="relative overflow-hidden p-6">
+        {/* STEP 8.30: ambient shader sits above the card wash, below the
+            copy — decorative only, headline/CTA hierarchy unchanged. */}
+        <ShaderBackdrop testId="home-hero-atmosphere" />
+        <div className="relative">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl" data-testid="home-title">
+            Learn human anatomy in interactive 3D
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+            Explore body systems, search structures, compare anatomy, and test yourself with
+            quizzes. Your progress syncs across devices when you sign in.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <Button asChild>
+              <Link to="/register" data-testid="home-cta-register">
+                Create a free account
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/login" data-testid="home-cta-login">
+                Sign in
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/human" data-testid="home-cta-explore">
+                Explore anatomy
+              </Link>
+            </Button>
+          </div>
         </div>
       </Card>
 
