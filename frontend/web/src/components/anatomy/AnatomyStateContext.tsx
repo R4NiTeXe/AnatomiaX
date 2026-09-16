@@ -27,6 +27,7 @@ import {
   getAnatomyInformationByStructureKey as getInfoByStructureKey,
   getAnatomyInformationSeed,
 } from './anatomyInformation';
+import { DEFAULT_SKIN_TONE, type SkinToneId } from './skinTones';
 
 export type SelectedStructure = AnatomySelection;
 export type { AnatomyQuizQuestion } from '@anatomiax/shared-types';
@@ -81,6 +82,9 @@ interface AnatomyStateValue {
   /** Legacy alias for skin — kept for backward compatibility */
   skinOpacity: number;
   setSkinOpacity: (value: number) => void;
+  /** STEP 8.31: session-scoped skin tone (no persistence layer exists). */
+  skinTone: SkinToneId;
+  setSkinTone: (tone: SkinToneId) => void;
   isolatedSystem: AnatomySystemKey | null;
   isolateSystem: (key: AnatomySystemKey) => void;
   resetView: () => void;
@@ -286,6 +290,10 @@ export function AnatomyStateProvider({
     (value: number) => setSystemOpacity('skin', value),
     [setSystemOpacity]
   );
+  const [skinTone, setSkinToneState] = useState<SkinToneId>(DEFAULT_SKIN_TONE);
+  const setSkinTone = useCallback((tone: SkinToneId) => {
+    setSkinToneState(prev => (prev === tone ? prev : tone));
+  }, []);
 
   const isolateSystem = useCallback(
     (key: AnatomySystemKey) => {
@@ -677,6 +685,8 @@ export function AnatomyStateProvider({
       setSystemOpacity,
       skinOpacity,
       setSkinOpacity,
+      skinTone,
+      setSkinTone,
       isolatedSystem,
       isolateSystem,
       resetView,
@@ -726,6 +736,8 @@ export function AnatomyStateProvider({
       setSystemOpacity,
       skinOpacity,
       setSkinOpacity,
+      skinTone,
+      setSkinTone,
       isolatedSystem,
       isolateSystem,
       resetView,

@@ -5,6 +5,8 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useAnatomyState } from './AnatomyStateContext';
 import type { AnatomySystemAsset } from './anatomyTypes';
 import { createStructureKey, extractOntologyId } from './anatomyRegistry';
+import { applySkinToneToEntries, enhanceSkinEntries, isSkinMaterial } from './skinMaterial';
+import type { SkinToneId } from './skinTones';
 
 const HIGHLIGHT_EMISSIVE = new THREE.Color('#2dd4bf');
 const HIGHLIGHT_INTENSITY = 0.6;
@@ -31,6 +33,8 @@ interface MeshMaterialEntry {
   mesh: THREE.Mesh;
   /** Per-mesh clone created on mount — the "normal" material for this mesh. */
   base: THREE.Material | THREE.Material[];
+  /** STEP 8.31: verified skin material (name rule cross-checked with GLBs). */
+  skin: boolean;
 }
 
 function cloneSceneMaterials(scene: THREE.Object3D): MeshMaterialEntry[] {
@@ -39,20 +43,24 @@ function cloneSceneMaterials(scene: THREE.Object3D): MeshMaterialEntry[] {
     const mesh = obj as THREE.Mesh;
     if (!(mesh as unknown as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
     const shared = mesh.material;
+    const sharedList = Array.isArray(shared) ? shared : [shared];
     // Clone so opacity/highlight never mutate materials shared across meshes.
     const cloned = Array.isArray(shared)
       ? shared.map(m => m.clone())
       : (shared as THREE.Material).clone();
     // Preserve original transparency/depthWrite for soft-transparency restore.
     const clonedList = Array.isArray(cloned) ? cloned : [cloned];
-    const sharedList = Array.isArray(shared) ? shared : [shared];
     clonedList.forEach((c, i) => {
       const orig = sharedList[i] as THREE.MeshStandardMaterial;
       (c as unknown as Record<string, unknown>).__originalTransparent = orig.transparent;
       (c as unknown as Record<string, unknown>).__originalDepthWrite = orig.depthWrite;
     });
     mesh.material = cloned;
-    entries.push({ mesh, base: cloned });
+    entries.push({
+      mesh,
+      base: cloned,
+      skin: sharedList.some(m => isSkinMaterial(m as THREE.Material)),
+    });
   });
   return entries;
 }
@@ -166,10 +174,15 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     unregisterSystemScene,
     registry,
     selectedBodyModel,
+    skinTone,
   } = useAnatomyState();
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
   const entryMapRef = useRef<Map<THREE.Mesh, MeshMaterialEntry>>(new Map());
   const keyCacheRef = useRef<Map<THREE.Mesh, CachedMeshKey>>(new Map());
+  // STEP 8.31: mount effect keeps [scene, asset.key] deps; tone is read via
+  // ref so selecting a tone never re-runs enhancement (see tone effect).
+  const skinToneRef = useRef<SkinToneId>(skinTone);
+  skinToneRef.current = skinTone;
   const highlightedRef = useRef<THREE.Mesh[]>([]);
   const hoveredRef = useRef<THREE.Mesh[]>([]);
   const compareRef = useRef<THREE.Mesh[]>([]);
@@ -193,6 +206,12 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     }
     entryMapRef.current = entryMap;
     keyCacheRef.current = keyCache;
+    // STEP 8.31: skin system only — upgrade skin clones to physical realism
+    // + apply the current tone before opacity runs (enhancement re-stamps
+    // the transparency originals that applySystemOpacity reads).
+    if (asset.key === 'skin') {
+      enhanceSkinEntries(entries, skinToneRef.current);
+    }
     applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
     registerSystemStructures(asset.key, scene);
     registerSystemScene(asset.key, scene);
@@ -205,6 +224,13 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     // Keep registry cached on hide — do not unregister here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, asset.key]);
+
+  // STEP 8.31: cheap in-place tone switch — recolors skin materials only,
+  // no refetch, no remount, no new materials (highlight clones included).
+  useEffect(() => {
+    if (asset.key !== 'skin' || entriesRef.current.length === 0) return;
+    applySkinToneToEntries(entriesRef.current, skinTone);
+  }, [asset.key, skinTone]);
 
   useEffect(() => {
     applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);

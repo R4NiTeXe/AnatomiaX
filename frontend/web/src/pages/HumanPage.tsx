@@ -13,6 +13,7 @@ import AnatomyViewer from '@/components/anatomy/AnatomyViewer';
 import AnatomySystemPanel from '@/components/anatomy/AnatomySystemPanel';
 import AnatomyVerticalNavigator from '@/components/anatomy/AnatomyVerticalNavigator';
 import { AnatomyStateProvider, useAnatomyState } from '@/components/anatomy/AnatomyStateContext';
+import { SKIN_TONES } from '@/components/anatomy/skinTones';
 import { getAnatomySystem } from '@/components/anatomy/anatomyAssetConfig';
 
 function LoadingOverlays(): JSX.Element | null {
@@ -129,6 +130,57 @@ function BodyModelSelector({
   );
 }
 
+// STEP 8.31: session-scoped tone control next to the body-model switch.
+// Same segmented-button language; swatch + visible text label + ring so the
+// selected state never relies on color alone.
+function SkinToneSelector(): JSX.Element {
+  const { skinTone, setSkinTone } = useAnatomyState();
+
+  return (
+    <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+      <p
+        id="skin-tone-label"
+        className="text-xs font-semibold uppercase tracking-widest text-slate-400"
+      >
+        Skin tone
+      </p>
+      <div
+        role="group"
+        aria-labelledby="skin-tone-label"
+        className="mt-2 flex flex-wrap gap-2"
+        data-testid="skin-tone-group"
+      >
+        {SKIN_TONES.map(preset => {
+          const selected = skinTone === preset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`Skin tone: ${preset.label}`}
+              title={preset.label}
+              data-testid={`skin-tone-${preset.id}`}
+              onClick={() => setSkinTone(preset.id)}
+              className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                selected
+                  ? 'border-teal-500 bg-teal-500/20 font-semibold text-teal-200 ring-1 ring-inset ring-teal-400/60'
+                  : 'border-slate-700 bg-slate-800/50 font-normal text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                style={{ backgroundColor: preset.color }}
+                className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-white/25"
+              />
+              {preset.shortLabel}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function HumanPage(): JSX.Element {
   const [resetSignal, setResetSignal] = useState(0);
   const [vertical, setVertical] = useState(0.5);
@@ -191,6 +243,7 @@ export default function HumanPage(): JSX.Element {
           <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:w-72 lg:overflow-y-auto">
             <AnatomySearchBox />
             <BodyModelSelector onVerticalChange={setVertical} onResetCamera={handleResetCamera} />
+            <SkinToneSelector />
             <AnatomyStructureExplorer />
             <AnatomyInformationPanel />
             <AnatomyComparePanel />
