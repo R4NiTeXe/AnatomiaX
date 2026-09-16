@@ -1,5 +1,6 @@
-import { Component, Suspense, lazy, useEffect, useState } from 'react';
+import { Component, Suspense, lazy } from 'react';
 import type { ReactNode } from 'react';
+import usePrefersReducedMotion from './usePrefersReducedMotion';
 
 interface RivePlayerProps {
   src: string;
@@ -35,25 +36,6 @@ const LazyRive = lazy(async () => {
     },
   };
 });
-
-function usePrefersReducedMotion(): boolean {
-  // Lazy initializer reads the media query synchronously so reduced-motion
-  // users never flash the animated path (which would also lazy-load the
-  // Rive runtime unnecessarily). Guarded for non-DOM environments.
-  const [reduced, setReduced] = useState<boolean>(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false
-  );
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return reduced;
-}
 
 /**
  * Isolates Rive runtime/asset failures to the poster fallback so a broken

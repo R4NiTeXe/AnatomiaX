@@ -1,14 +1,17 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Component, Suspense, lazy } from 'react';
+import type { ReactNode } from 'react';
+import usePrefersReducedMotion from './usePrefersReducedMotion';
 
 interface LottiePlayerProps {
   src: string;
   className?: string;
   width?: number | string;
   height?: number | string;
+  /** Default false (STEP 8.29): looping must be explicitly justified. */
   loop?: boolean;
   autoplay?: boolean;
   ariaLabel?: string;
-  poster?: React.ReactNode;
+  poster?: ReactNode;
 }
 
 // Lazy dotLottie — keeps the player out of the main bundle.
@@ -38,16 +41,30 @@ const LazyDotLottie = lazy(async () => {
   return { default: Comp };
 });
 
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () => setReduced(mq.matches);
-    setReduced(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return reduced;
+/**
+ * Isolates Lottie runtime/asset failures to the poster fallback so a broken
+ * animation can never crash its host UI.
+ */
+class LottieErrorBoundary extends Component<
+  { resetKey: string; fallback: ReactNode; children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  componentDidUpdate(prevProps: { resetKey: string }): void {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.failed) {
+      // eslint-disable-next-line react/no-did-update-set-state
+      this.setState({ failed: false });
+    }
+  }
+
+  render(): ReactNode {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
 }
 
 export default function LottiePlayer({
@@ -55,7 +72,7 @@ export default function LottiePlayer({
   className,
   width,
   height,
-  loop = true,
+  loop = false,
   autoplay = true,
   ariaLabel,
   poster,
@@ -75,15 +92,17 @@ export default function LottiePlayer({
     );
   }
 
+  const fallback = (
+    <div aria-hidden="true" className={className} style={{ width, height }}>
+      {poster ?? null}
+    </div>
+  );
+
   return (
-    <Suspense
-      fallback={
-        <div aria-hidden="true" className={className} style={{ width, height }}>
-          {poster ?? null}
-        </div>
-      }
-    >
-      <LazyDotLottie src={src} loop={loop} autoplay={autoplay} className={className} />
-    </Suspense>
+    <LottieErrorBoundary resetKey={src} fallback={fallback}>
+      <Suspense fallback={fallback}>
+        <LazyDotLottie src={src} loop={loop} autoplay={autoplay} className={className} />
+      </Suspense>
+    </LottieErrorBoundary>
   );
 }
