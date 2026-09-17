@@ -233,7 +233,16 @@ export default function HumanPage(): JSX.Element {
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden sm:p-6">
-          <section className="order-1 flex min-h-0 flex-1 flex-col lg:order-2">
+          {/* STEP 8.32: the section must never collapse to 0 height. In the
+              scrollable mobile/tablet column, `flex-1 + min-h-0` shrank it to
+              zero next to the tall sidebar, so the min-h-[55vh] viewer box
+              overflowed visibly over the sidebar — and the positioned R3F
+              canvas wrapper then won hit-testing over static sidebar buttons.
+              `lg:min-h-0` preserves the original desktop row behavior. */}
+          <section
+            data-testid="human-viewer-section"
+            className="order-1 flex min-h-[55vh] flex-1 flex-col lg:order-2 lg:min-h-0"
+          >
             <HumanViewer
               resetSignal={resetSignal}
               vertical={vertical}
