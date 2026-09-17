@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { useGLTF } from '@react-three/drei';
+import { DURATIONS, EASE } from '@/components/motion';
 import { useAnatomyState } from './AnatomyStateContext';
 import { getAnatomySystem, maleAnatomyAssets } from './anatomyAssetConfig';
 
@@ -76,7 +78,7 @@ export default function AnatomySystemPanel({
                       data-testid={`toggle-${asset.key}`}
                       disabled={!asset.available}
                       onClick={() => handleToggle(asset.key)}
-                      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-400 disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-40 ${
                         isVisible
                           ? 'border-teal-500 bg-teal-500/30'
                           : 'border-slate-700 bg-slate-800'
@@ -107,7 +109,7 @@ export default function AnatomySystemPanel({
                             type="button"
                             data-testid={`retry-${asset.key}`}
                             onClick={() => handleRetry(asset.key)}
-                            className="underline hover:text-red-300"
+                            className="rounded underline hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                           >
                             Retry
                           </button>
@@ -124,7 +126,7 @@ export default function AnatomySystemPanel({
                       aria-pressed={isOpacityOpen}
                       data-testid={`opacity-toggle-${asset.key}`}
                       onClick={() => setOpenOpacityKey(isOpacityOpen ? null : asset.key)}
-                      className={`rounded px-2 py-1 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-400 ${
+                      className={`rounded px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
                         isOpacityOpen
                           ? 'bg-slate-700 text-slate-100'
                           : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -139,7 +141,7 @@ export default function AnatomySystemPanel({
                       data-testid={`isolate-${asset.key}`}
                       disabled={!asset.available}
                       onClick={() => isolateSystem(asset.key)}
-                      className={`rounded px-2 py-1 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-400 disabled:opacity-40 ${
+                      className={`rounded px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-40 ${
                         isIsolated
                           ? 'bg-teal-500/20 text-teal-300'
                           : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -182,7 +184,7 @@ export default function AnatomySystemPanel({
             data-testid="reset-view"
             aria-label="Reset anatomy view"
             onClick={resetView}
-            className="flex-1 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-400"
+            className="flex-1 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             Reset view
           </button>
@@ -191,7 +193,7 @@ export default function AnatomySystemPanel({
             data-testid="reset-camera"
             aria-label="Reset camera"
             onClick={onResetCamera}
-            className="flex-1 rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-900 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-400"
+            className="flex-1 rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-900 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             Reset camera
           </button>
@@ -199,8 +201,11 @@ export default function AnatomySystemPanel({
       </section>
 
       {selectedStructure && (
-        <section
-          className="rounded-xl border border-teal-900/60 bg-teal-950/20 p-4"
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: DURATIONS.fast, ease: EASE.standard }}
+          className="rounded-xl border border-teal-900/60 bg-teal-950/20 p-4 shadow-glow-sm"
           data-testid="selection-panel"
         >
           <h2 className="text-xs font-semibold uppercase tracking-widest text-teal-500">
@@ -228,11 +233,11 @@ export default function AnatomySystemPanel({
             type="button"
             data-testid="clear-selection"
             onClick={() => selectStructure(null)}
-            className="mt-3 rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+            className="mt-3 rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             Clear selection
           </button>
-        </section>
+        </motion.section>
       )}
     </div>
   );

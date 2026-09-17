@@ -15,7 +15,6 @@ import AnatomyVerticalNavigator from '@/components/anatomy/AnatomyVerticalNaviga
 import { AnatomyStateProvider, useAnatomyState } from '@/components/anatomy/AnatomyStateContext';
 import { SKIN_TONES } from '@/components/anatomy/skinTones';
 import { getAnatomySystem } from '@/components/anatomy/anatomyAssetConfig';
-
 function LoadingOverlays(): JSX.Element | null {
   const { status } = useAnatomyState();
 
@@ -54,7 +53,7 @@ function HumanViewer({
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
       <div
-        className="relative min-h-[55vh] flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
+        className="relative min-h-[55vh] flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-glow-sm"
         style={{ touchAction: 'none' }}
       >
         <AnatomyViewer resetSignal={resetSignal} vertical={vertical} />
@@ -67,7 +66,11 @@ function HumanViewer({
 
         {status.skin === 'loading' && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/50">
-            <div className="flex flex-col items-center gap-3">
+            <div
+              className="flex flex-col items-center gap-3"
+              role="status"
+              aria-label="Loading anatomy"
+            >
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-teal-400" />
               <p className="text-sm tracking-wide text-slate-300" data-testid="loading-anatomy">
                 Loading anatomy…
@@ -86,14 +89,16 @@ function HumanViewer({
   );
 }
 
-function BodyModelSelector({
+// STEP 8.33: Body model + skin tone grouped as one Appearance card — same
+// controls, testids, labels, and session behavior, clearer visual hierarchy.
+function AppearanceSelector({
   onVerticalChange,
   onResetCamera,
 }: {
   onVerticalChange: (value: number) => void;
   onResetCamera: () => void;
 }): JSX.Element {
-  const { selectedBodyModel, setSelectedBodyModel } = useAnatomyState();
+  const { selectedBodyModel, setSelectedBodyModel, skinTone, setSkinTone } = useAnatomyState();
 
   const handleBodyModelChange = useCallback(
     (model: 'male' | 'female') => {
@@ -106,9 +111,16 @@ function BodyModelSelector({
   );
 
   return (
-    <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Body model</p>
-      <div className="mt-2 flex gap-2">
+    <section
+      className="mb-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3"
+      aria-label="Appearance"
+      data-testid="appearance-selector"
+    >
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">Appearance</h2>
+      <p className="mt-2 text-xs font-medium uppercase tracking-widest text-slate-500">
+        Body model
+      </p>
+      <div className="mt-1.5 flex gap-2">
         {(['male', 'female'] as const).map(model => (
           <button
             key={model}
@@ -118,7 +130,7 @@ function BodyModelSelector({
             onClick={() => handleBodyModelChange(model)}
             className={`flex-1 rounded-lg border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
               selectedBodyModel === model
-                ? 'border-teal-500 bg-teal-500/20 text-teal-300'
+                ? 'border-teal-500 bg-teal-500/20 font-medium text-teal-200'
                 : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
             }`}
           >
@@ -126,28 +138,17 @@ function BodyModelSelector({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-// STEP 8.31: session-scoped tone control next to the body-model switch.
-// Same segmented-button language; swatch + visible text label + ring so the
-// selected state never relies on color alone.
-function SkinToneSelector(): JSX.Element {
-  const { skinTone, setSkinTone } = useAnatomyState();
-
-  return (
-    <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+      <div className="my-3 border-t border-slate-800" aria-hidden="true" />
       <p
         id="skin-tone-label"
-        className="text-xs font-semibold uppercase tracking-widest text-slate-400"
+        className="text-xs font-medium uppercase tracking-widest text-slate-500"
       >
         Skin tone
       </p>
       <div
         role="group"
         aria-labelledby="skin-tone-label"
-        className="mt-2 flex flex-wrap gap-2"
+        className="mt-1.5 flex flex-wrap gap-2"
         data-testid="skin-tone-group"
       >
         {SKIN_TONES.map(preset => {
@@ -170,14 +171,43 @@ function SkinToneSelector(): JSX.Element {
               <span
                 aria-hidden="true"
                 style={{ backgroundColor: preset.color }}
-                className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-white/25"
+                className="h-4 w-4 shrink-0 rounded-full ring-1 ring-inset ring-white/25"
               />
               {preset.shortLabel}
             </button>
           );
         })}
       </div>
-    </div>
+    </section>
+  );
+}
+
+// STEP 8.33: read-only viewer context — model, tone, selection at a glance.
+// Presentation only; all state and behavior live in existing architecture.
+function ViewerStatus(): JSX.Element {
+  const { selectedBodyModel, skinTone, selectedStructure } = useAnatomyState();
+  const toneLabel = SKIN_TONES.find(preset => preset.id === skinTone)?.label ?? skinTone;
+
+  return (
+    <p
+      className="mt-1 hidden max-w-md truncate text-xs capitalize text-slate-500 md:block"
+      data-testid="viewer-status"
+      aria-label={`Viewing ${selectedBodyModel} model with ${toneLabel} skin tone${selectedStructure ? `, selected ${selectedStructure.name}` : ''}`}
+    >
+      <span className="text-slate-400">{selectedBodyModel}</span>
+      <span aria-hidden="true" className="mx-1.5 text-slate-700">
+        •
+      </span>
+      <span>{toneLabel} skin</span>
+      {selectedStructure && (
+        <>
+          <span aria-hidden="true" className="mx-1.5 text-slate-700">
+            •
+          </span>
+          <span className="text-teal-300/90 normal-case">{selectedStructure.name}</span>
+        </>
+      )}
+    </p>
   );
 }
 
@@ -197,13 +227,14 @@ export default function HumanPage(): JSX.Element {
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex h-screen min-h-screen flex-col bg-slate-950 text-slate-100"
+        className="ax-app-bg flex h-screen min-h-screen flex-col text-slate-100"
       >
         <header className="border-b border-slate-900 px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-2">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-widest text-slate-500">AnatomiaX</p>
               <h1 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">Human anatomy</h1>
+              <ViewerStatus />
             </div>
             <nav
               aria-label="Primary"
@@ -251,8 +282,7 @@ export default function HumanPage(): JSX.Element {
           </section>
           <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:w-72 lg:overflow-y-auto">
             <AnatomySearchBox />
-            <BodyModelSelector onVerticalChange={setVertical} onResetCamera={handleResetCamera} />
-            <SkinToneSelector />
+            <AppearanceSelector onVerticalChange={setVertical} onResetCamera={handleResetCamera} />
             <AnatomyStructureExplorer />
             <AnatomyInformationPanel />
             <AnatomyComparePanel />

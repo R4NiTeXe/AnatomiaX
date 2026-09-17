@@ -57,4 +57,19 @@ describe('HumanPage viewer layout (8.32)', () => {
     fireEvent.click(female);
     expect(female).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('appearance groups body model and skin tone with readable status (8.33)', () => {
+    render(<HumanPage />, ['/human']);
+    const card = screen.getByTestId('appearance-selector');
+    expect(card).toHaveAttribute('aria-label', 'Appearance');
+    // Both controls keep their contracts inside the grouped card.
+    expect(card.contains(screen.getByTestId('body-model-male'))).toBe(true);
+    expect(card.contains(screen.getByTestId('skin-tone-group'))).toBe(true);
+    const status = screen.getByTestId('viewer-status');
+    expect(status).toHaveTextContent(/male/i);
+    expect(status).toHaveTextContent(/medium/i);
+    // Selecting a tone updates the header context readout.
+    fireEvent.click(screen.getByTestId('skin-tone-deep'));
+    expect(screen.getByTestId('viewer-status')).toHaveTextContent(/deep/i);
+  });
 });

@@ -205,7 +205,7 @@ export default function AnatomyVerticalNavigator({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       onKeyDown={handleKeyDown}
-      className="absolute right-2 top-1/2 z-10 flex h-56 w-3 -translate-y-1/2 cursor-pointer flex-col items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/70 p-1 backdrop-blur-sm transition-colors hover:bg-slate-800/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:right-3 sm:w-3"
+      className="absolute right-2 top-1/2 z-10 flex h-56 w-3 -translate-y-1/2 cursor-pointer flex-col items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/70 p-1 backdrop-blur-sm transition-colors before:absolute before:-inset-4 before:content-[''] hover:bg-slate-800/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:right-3 sm:w-3"
       style={{ touchAction: 'none' }}
       title="Move through anatomy vertically"
     >

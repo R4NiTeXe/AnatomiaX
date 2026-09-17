@@ -347,7 +347,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                       onClick={() => toggleSystem(systemKey)}
                       aria-expanded={isSystemExpanded}
                       data-testid={`anatomy-explorer-system-toggle-${systemKey}`}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest hover:bg-slate-700/50 focus-visible:outline-none ${isSystemExpanded ? 'bg-slate-700 text-slate-100' : 'bg-slate-800/50 text-slate-400'}`}
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold uppercase tracking-widest hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400 ${isSystemExpanded ? 'bg-slate-700 text-slate-100' : 'bg-slate-800/50 text-slate-400'}`}
                     >
                       <span>
                         {systemLabel} ({systemCount})
@@ -385,7 +385,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
                                 onClick={() => toggleParent(systemKey, parentRaw)}
                                 aria-expanded={isParentExpanded}
                                 data-testid={`anatomy-explorer-parent-toggle-${systemKey}-${parentRaw}`}
-                                className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 pl-6 text-left text-xs font-medium hover:bg-slate-700/30 focus-visible:outline-none ${isParentExpanded ? 'border-teal-500/50 bg-slate-700/20 text-slate-200' : 'border-slate-700/50 bg-slate-800/30 text-slate-300'}`}
+                                className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 pl-6 text-left text-xs font-medium hover:bg-slate-700/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400 ${isParentExpanded ? 'border-teal-500/50 bg-slate-700/20 text-slate-200' : 'border-slate-700/50 bg-slate-800/30 text-slate-300'}`}
                               >
                                 <span className="truncate">
                                   {parentLabel} ({structures.length})
