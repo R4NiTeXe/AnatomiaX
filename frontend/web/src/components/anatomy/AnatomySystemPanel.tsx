@@ -2,12 +2,56 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useGLTF } from '@react-three/drei';
 import { DURATIONS, EASE } from '@/components/motion';
+import { useProgressSnapshot } from '@/hooks/useProgress';
 import { useAnatomyState } from './AnatomyStateContext';
 import { getAnatomySystem, maleAnatomyAssets } from './anatomyAssetConfig';
 
 type AnatomySystemPanelProps = {
   onResetCamera: () => void;
 };
+
+// STEP 8.40: "have I covered this?" signal from verified studied state —
+// local recent history (immediate) plus the persisted snapshot (same
+// react-query cache as AnatomyProgressSync, so zero extra requests).
+function SelectedStudiedMark({ structureKey }: { structureKey: string }): JSX.Element | null {
+  const { recentHistory } = useAnatomyState();
+  const snapshotQuery = useProgressSnapshot();
+  const studied =
+    recentHistory.some(item => item.structureKey === structureKey) ||
+    (snapshotQuery.data?.studiedKeys ?? []).includes(structureKey);
+  if (!studied) return null;
+  return (
+    <span
+      className="shrink-0 rounded bg-teal-500/20 px-2 py-0.5 text-xs font-medium text-teal-200"
+      data-testid="selected-studied"
+    >
+      ✓ Studied
+    </span>
+  );
+}
+
+// STEP 8.40: verified location context from GLB lineage (same parent rule
+// as the explorer tree). Renders only when it adds information beyond the
+// system line — never invented, never for bare model roots.
+function SelectedParentLine({
+  structureKey,
+  objectName,
+}: {
+  structureKey: string;
+  objectName: string;
+}): JSX.Element | null {
+  const { registry } = useAnatomyState();
+  const parentRaw = registry.findByStructureKey(structureKey)?.lineage?.[1];
+  if (!parentRaw || parentRaw === 'VH_M' || parentRaw === 'VH_F') return null;
+  const humanize = (raw: string): string => raw.replace(/^VH_[MF]_/, '').replace(/_/g, ' ');
+  const parent = humanize(parentRaw);
+  if (!parent || parent.toLowerCase() === humanize(objectName).toLowerCase()) return null;
+  return (
+    <p className="mt-1 text-xs text-slate-500" data-testid="selected-parent">
+      Located in: {parent}
+    </p>
+  );
+}
 
 export default function AnatomySystemPanel({
   onResetCamera,
@@ -209,9 +253,12 @@ export default function AnatomySystemPanel({
           className="rounded-xl border border-teal-900/60 bg-teal-950/20 p-4 shadow-glow-sm"
           data-testid="selection-panel"
         >
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-teal-500">
-            Selected structure
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-teal-500">
+              Selected structure
+            </h2>
+            <SelectedStudiedMark structureKey={selectedStructure.structureKey} />
+          </div>
           <p
             className="mt-2 break-words font-mono text-xs leading-5 text-slate-200"
             data-testid="selected-structure-name"
@@ -221,6 +268,10 @@ export default function AnatomySystemPanel({
           <p className="mt-1 text-xs text-slate-500" data-testid="selected-system">
             System: {getAnatomySystem(selectedStructure.systemKey).label}
           </p>
+          <SelectedParentLine
+            structureKey={selectedStructure.structureKey}
+            objectName={selectedStructure.objectName}
+          />
           <p
             className="mt-1 break-words font-mono text-xs leading-5 text-slate-400"
             data-testid="selected-ontology"
