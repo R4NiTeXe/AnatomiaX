@@ -312,6 +312,13 @@ export default function AnatomyQuiz(): JSX.Element {
                         bodyModel: q.bodyModel,
                         ontologyId: q.ontologyId,
                       });
+                      // STEP 8.38: return leg of the loop — bring the viewer
+                      // back into view (mirrors the scroll-to-quiz on start;
+                      // no-op on wide layouts and under reduced motion).
+                      const viewer = document.querySelector('[data-testid="human-viewer-section"]');
+                      if (viewer instanceof HTMLElement) {
+                        viewer.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+                      }
                     };
                     return (
                       <li

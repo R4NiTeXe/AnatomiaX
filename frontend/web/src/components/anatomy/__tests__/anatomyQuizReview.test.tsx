@@ -176,6 +176,31 @@ describe('AnatomyQuizReview', () => {
     expect(screen.getByTestId('dbg-selected')).toHaveTextContent(expected);
   });
 
+  it('revisit returns the viewport to the viewer (8.38)', () => {
+    Element.prototype.scrollIntoView = jest.fn();
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('show-all'));
+    completeQuiz(['wrong', 'correct', 'correct', 'correct', 'correct']);
+    // No viewer section in this harness — guarded no-op, selection still set.
+    fireEvent.click(screen.getByTestId('anatomy-quiz-review-structure-0'));
+    const expected = screen.getByTestId('dbg-q0-key').textContent;
+    expect(screen.getByTestId('dbg-selected')).toHaveTextContent(expected);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    // With a viewer section present, revisit scrolls back to it.
+    const viewer = document.createElement('section');
+    viewer.setAttribute('data-testid', 'human-viewer-section');
+    document.body.appendChild(viewer);
+    try {
+      fireEvent.click(screen.getByTestId('anatomy-quiz-review-structure-0'));
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    } finally {
+      viewer.remove();
+    }
+  });
+
   it('Retry clears review history', () => {
     renderWithProvider();
     completeQuiz(['correct', 'wrong', 'correct', 'wrong', 'correct']);
