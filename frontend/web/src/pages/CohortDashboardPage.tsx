@@ -703,7 +703,7 @@ export default function CohortDashboardPage(): JSX.Element {
             <CardHeader>
               <CardTitle
                 id="activity-heading"
-                className="text-sm font-semibold uppercase tracking-widest text-slate-200"
+                className="text-xs font-semibold uppercase tracking-widest text-slate-400"
               >
                 Recent activity
               </CardTitle>
@@ -720,7 +720,7 @@ export default function CohortDashboardPage(): JSX.Element {
                 </div>
               ) : recentAttempts.length === 0 ? (
                 <div
-                  className="rounded-xl border border-dashed border-slate-700 bg-slate-950/20 px-6 py-10 text-center"
+                  className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-10 text-center"
                   data-testid="dashboard-activity-empty"
                 >
                   <h3 className="text-sm font-semibold text-slate-300">No recent quizzes</h3>
