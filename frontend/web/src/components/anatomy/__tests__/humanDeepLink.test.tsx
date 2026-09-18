@@ -20,11 +20,12 @@ function jsonResponse(data: unknown, status = 200) {
 }
 
 function Probe() {
-  const { selectedStructure, selectedBodyModel } = useAnatomyState();
+  const { selectedStructure, selectedBodyModel, visibleSystems } = useAnatomyState();
   return (
     <div>
       <div data-testid="deep-model">{selectedBodyModel}</div>
       <div data-testid="deep-selection">{selectedStructure?.structureKey ?? 'none'}</div>
+      <div data-testid="deep-visible">{JSON.stringify(visibleSystems)}</div>
     </div>
   );
 }
@@ -82,5 +83,14 @@ describe('HumanDeepLink (/human regression guard)', () => {
     renderDeepLink(['/human']);
     await screen.findByTestId('deep-selection');
     expect(screen.getByTestId('deep-selection')).toHaveTextContent('none');
+  });
+
+  it('reveals a hidden target system so the landing selects visibly (8.39)', async () => {
+    // Cardiovascular starts hidden — previously the deep link silently cleared.
+    renderDeepLink(['/human?focus=male%3Acardiovascular%3AUBERON%3A0002084']);
+    expect(
+      await screen.findByText('male:cardiovascular:UBERON:0002084', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('deep-visible').textContent).toContain('"cardiovascular":true');
   });
 });

@@ -18,8 +18,14 @@ import { useAnatomyState } from './AnatomyStateContext';
  */
 export default function HumanDeepLink(): null {
   const [searchParams] = useSearchParams();
-  const { selectedBodyModel, setSelectedBodyModel, selectStructure, selectedStructure } =
-    useAnatomyState();
+  const {
+    selectedBodyModel,
+    setSelectedBodyModel,
+    selectStructure,
+    selectedStructure,
+    visibleSystems,
+    toggleSystem,
+  } = useAnatomyState();
   const appliedRef = useRef<string | null>(null);
   const [awaitingModel, setAwaitingModel] = useState(false);
 
@@ -59,6 +65,10 @@ export default function HumanDeepLink(): null {
       return;
     }
     appliedRef.current = focusRaw;
+    // STEP 8.39: deep links usually target non-skin systems, which start
+    // hidden — reveal first (same batch) or the hidden-system invariant
+    // clears the selection and the landing shows nothing.
+    if (!visibleSystems[parsed.systemKey]) toggleSystem(parsed.systemKey);
     selectStructure(parsed);
   }, [
     focusRaw,
@@ -67,6 +77,8 @@ export default function HumanDeepLink(): null {
     awaitingModel,
     setSelectedBodyModel,
     selectStructure,
+    visibleSystems,
+    toggleSystem,
   ]);
 
   return null;
