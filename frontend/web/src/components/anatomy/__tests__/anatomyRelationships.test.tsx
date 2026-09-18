@@ -40,6 +40,7 @@ function Harness() {
     <div>
       <AnatomyInformationPanel />
       <span data-testid="dbg-selected">{selectedStructure?.structureKey ?? 'null'}</span>
+      <span data-testid="dbg-visible">{JSON.stringify(visibleSystems)}</span>
       <button
         data-testid="show-all"
         onClick={() => ALL_SYSTEMS.forEach(k => !visibleSystems[k] && toggleSystem(k))}
@@ -245,6 +246,22 @@ describe('anatomy relationships — panel', () => {
     );
     expect(screen.getByTestId('anatomy-information-canonical-name')).toHaveTextContent(
       'Right ventricle'
+    );
+  });
+
+  it('recent history resumes a hidden system visibly (8.36)', () => {
+    renderWithProvider();
+    // Cardiovascular starts hidden: selecting LV records history but the
+    // selection itself clears (existing hidden-system invariant).
+    fireEvent.click(screen.getByTestId('select-lv'));
+    expect(screen.getByTestId('dbg-selected')).toHaveTextContent('null');
+    expect(screen.getByTestId('anatomy-recent-item-0')).toBeInTheDocument();
+    expect(screen.getByTestId('dbg-visible').textContent).not.toContain('"cardiovascular":true');
+    // Resuming from history reveals the system instead of a dead end.
+    fireEvent.click(screen.getByTestId('anatomy-recent-item-0'));
+    expect(screen.getByTestId('dbg-visible').textContent).toContain('"cardiovascular":true');
+    expect(screen.getByTestId('dbg-selected')).toHaveTextContent(
+      'male:cardiovascular:UBERON:0002084'
     );
   });
 

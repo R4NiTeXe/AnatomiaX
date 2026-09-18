@@ -4,7 +4,14 @@ import { getAnatomyInformation, getRelatedAnatomyInformation } from './anatomyIn
 import { getAnatomySystem } from './anatomyAssetConfig';
 
 export default function AnatomyInformationPanel(): JSX.Element | null {
-  const { selectedStructure, hoveredStructure, recentHistory, selectStructure } = useAnatomyState();
+  const {
+    selectedStructure,
+    hoveredStructure,
+    recentHistory,
+    selectStructure,
+    visibleSystems,
+    toggleSystem,
+  } = useAnatomyState();
 
   const displayStructure = hoveredStructure || selectedStructure;
 
@@ -222,6 +229,10 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
             <ul className="flex flex-col gap-2" data-testid="anatomy-recent-list">
               {recentHistory.map((item, index) => {
                 const handleSelect = () => {
+                  // STEP 8.36: history outlives visibility — a recent item may
+                  // belong to a now-hidden system. Reveal it so resuming is
+                  // visible instead of silently clearing.
+                  if (!visibleSystems[item.systemKey]) toggleSystem(item.systemKey);
                   selectStructure({
                     structureKey: item.structureKey,
                     name: item.name,

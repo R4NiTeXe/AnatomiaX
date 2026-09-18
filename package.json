@@ -14,6 +14,9 @@
   "scripts": {
     "dev": "npm run dev -w @anatomiax/marketing",
     "build": "npm run build -w @anatomiax/marketing",
+    "build:api": "npm run build -w @anatomiax/api",
+    "start:api": "npm run start:prod -w @anatomiax/api",
+    "migrate:api": "npx prisma migrate deploy --schema backend/api/prisma/schema.prisma",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

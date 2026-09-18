@@ -5,8 +5,15 @@ import type { AnatomySearchResult } from './anatomyTypes';
 import { RivePlayer, animationSrc } from '@/components/animation';
 
 export default function AnatomySearchBox(): JSX.Element {
-  const { registry, selectedBodyModel, selectStructure, setHoveredStructure, setCompareStructure } =
-    useAnatomyState();
+  const {
+    registry,
+    selectedBodyModel,
+    selectStructure,
+    setHoveredStructure,
+    setCompareStructure,
+    visibleSystems,
+    toggleSystem,
+  } = useAnatomyState();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -33,6 +40,12 @@ export default function AnatomySearchBox(): JSX.Element {
   const handleSelect = useCallback(
     (result: AnatomySearchResult, e?: React.MouseEvent) => {
       const isShift = (e as unknown as { shiftKey?: boolean })?.shiftKey;
+      // STEP 8.36: the registry keeps cached hidden-system entries, so a
+      // result may live in a hidden system — reveal it, never a dead end.
+      // Compare (shift) previews against the current view and stays as-is.
+      if (!isShift && !visibleSystems[result.systemKey as never]) {
+        toggleSystem(result.systemKey as never);
+      }
       if (isShift) {
         setCompareStructure({
           structureKey: result.structureKey,
@@ -55,7 +68,7 @@ export default function AnatomySearchBox(): JSX.Element {
       setIsOpen(false);
       setActiveIndex(-1);
     },
-    [selectStructure, setCompareStructure]
+    [selectStructure, setCompareStructure, visibleSystems, toggleSystem]
   );
 
   const handleClear = useCallback(() => {

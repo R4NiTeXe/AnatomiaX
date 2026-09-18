@@ -47,6 +47,8 @@ export default function AnatomyQuiz(): JSX.Element {
     selectedStructure,
     selectStructure,
     selectedBodyModel,
+    visibleSystems,
+    toggleSystem,
   } = useAnatomyState();
   const { user, status } = useAuth();
   const submitAttempt = useSubmitQuizAttempt();
@@ -298,6 +300,9 @@ export default function AnatomyQuiz(): JSX.Element {
                     if (!q) return null;
                     const isCorrect = answer.selectedChoice === answer.correctIndex;
                     const handleRevisit = () => {
+                      // STEP 8.36: quiz questions may span hidden systems —
+                      // reveal the target so review lands on something visible.
+                      if (!visibleSystems[q.systemKey]) toggleSystem(q.systemKey);
                       selectStructure({
                         structureKey: q.structureKey,
                         name: q.canonicalName,

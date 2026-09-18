@@ -3,10 +3,16 @@ import '@testing-library/jest-dom';
 import * as THREE from 'three';
 import { AnatomyStateProvider, useAnatomyState } from '../AnatomyStateContext';
 import AnatomyStructureExplorer from '../AnatomyStructureExplorer';
+import { createStructureKey } from '../anatomyRegistry';
 
 function Harness() {
-  const { registerSystemStructures, toggleSystem, setSelectedBodyModel, visibleSystems } =
-    useAnatomyState();
+  const {
+    registerSystemStructures,
+    toggleSystem,
+    setSelectedBodyModel,
+    visibleSystems,
+    selectStructure,
+  } = useAnatomyState();
   return (
     <div>
       <AnatomyStructureExplorer />
@@ -55,6 +61,21 @@ function Harness() {
       </button>
       <button data-testid="toggle-nervous" onClick={() => toggleSystem('nervous')}>
         toggle-nervous
+      </button>
+      <button
+        data-testid="select-brain-external"
+        onClick={() =>
+          selectStructure({
+            structureKey: createStructureKey('nervous', 'UBERON:0000955', 'VH_M_brain', 'male'),
+            name: 'VH_M_brain',
+            objectName: 'VH_M_brain',
+            systemKey: 'nervous',
+            bodyModel: 'male',
+            ontologyId: 'UBERON:0000955',
+          } as never)
+        }
+      >
+        select-brain-external
       </button>
       <button data-testid="switch-female" onClick={() => setSelectedBodyModel('female')}>
         switch-female
@@ -144,6 +165,20 @@ describe('AnatomyStructureExplorer', () => {
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     const option = screen.getByTestId('anatomy-explorer-option-0');
     fireEvent.click(option);
+    expect(option).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('external selection reveals its collapsed branch (8.36)', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    // Collapse the system branch — options unmount.
+    fireEvent.click(screen.getByTestId('anatomy-explorer-system-toggle-nervous'));
+    expect(screen.queryByTestId('anatomy-explorer-option-0')).not.toBeInTheDocument();
+    // Canvas-like external selection re-expands and highlights the row.
+    fireEvent.click(screen.getByTestId('select-brain-external'));
+    const option = screen.getByTestId('anatomy-explorer-option-0');
+    expect(option).toHaveTextContent(/brain/i);
     expect(option).toHaveAttribute('aria-selected', 'true');
   });
 

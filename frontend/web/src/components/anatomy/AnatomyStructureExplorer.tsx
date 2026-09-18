@@ -123,6 +123,28 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     setActiveIndex(flatFiltered.length > 0 ? 0 : -1);
   }, [flatFiltered]);
 
+  // STEP 8.36: reveal selection in the tree. Selecting via canvas, search,
+  // related links, or quiz review otherwise leaves the explorer collapsed
+  // with no visible context. Only expands (never collapses, never focuses);
+  // the existing activeIndex scroll reveals the row.
+  const selectedKey = selectedStructure?.structureKey ?? null;
+  useEffect(() => {
+    if (!selectedKey) return;
+    const idx = flatFiltered.findIndex(s => s.structureKey === selectedKey);
+    if (idx < 0) return;
+    setActiveIndex(idx);
+    const target = flatFiltered[idx];
+    const parentRaw = target.lineage[1] ?? target.systemKey;
+    const parentKey =
+      !parentRaw || parentRaw === 'VH_M' || parentRaw === 'VH_F' ? target.systemKey : parentRaw;
+    setExpandedSystems(prev =>
+      prev.has(target.systemKey) ? prev : new Set(prev).add(target.systemKey)
+    );
+    setExpandedParents(prev => {
+      const key = `${target.systemKey}:${parentKey}`;
+      return prev.has(key) ? prev : new Set(prev).add(key);
+    });
+  }, [selectedKey, flatFiltered]);
   // Auto-expand systems/parents when filtering or initial load
   useEffect(() => {
     if (filtered.length > 0 && filtered.length <= 20) {
