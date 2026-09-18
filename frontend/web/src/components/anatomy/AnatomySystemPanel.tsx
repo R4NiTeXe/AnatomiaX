@@ -5,6 +5,7 @@ import { DURATIONS, EASE } from '@/components/motion';
 import { useProgressSnapshot } from '@/hooks/useProgress';
 import { useAnatomyState } from './AnatomyStateContext';
 import { getAnatomySystem, maleAnatomyAssets } from './anatomyAssetConfig';
+import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 
 type AnatomySystemPanelProps = {
   onResetCamera: () => void;
@@ -289,25 +290,33 @@ export default function AnatomySystemPanel({
           >
             Clear selection
           </button>
-          <button
-            type="button"
-            data-testid="quiz-this-structure"
-            onClick={() => {
-              // STEP 8.37: guided next action — startQuiz already builds
-              // question 1 from the current selection; bring the quiz into
-              // view and focus so keyboard/SR users land in context.
-              // (Global reduced-motion CSS makes the scroll instant.)
-              startQuiz();
-              const quiz = document.querySelector('[data-testid="anatomy-quiz"]');
-              if (quiz instanceof HTMLElement) {
-                quiz.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
-                quiz.focus({ preventScroll: true });
-              }
-            }}
-            className="mt-2 w-full rounded-lg bg-teal-500/20 px-3 py-1.5 text-xs font-medium text-teal-300 transition-colors hover:bg-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-          >
-            Quiz on this structure
-          </button>
+          {getAnatomyInformationByStructureKey(selectedStructure.structureKey) ? (
+            <button
+              type="button"
+              data-testid="quiz-this-structure"
+              onClick={() => {
+                // STEP 8.37: guided next action — startQuiz already builds
+                // question 1 from the current selection; bring the quiz into
+                // view and focus so keyboard/SR users land in context.
+                // (Global reduced-motion CSS makes the scroll instant.)
+                startQuiz();
+                const quiz = document.querySelector('[data-testid="anatomy-quiz"]');
+                if (quiz instanceof HTMLElement) {
+                  quiz.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+                  quiz.focus({ preventScroll: true });
+                }
+              }}
+              className="mt-2 w-full rounded-lg bg-teal-500/20 px-3 py-1.5 text-xs font-medium text-teal-300 transition-colors hover:bg-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            >
+              Quiz on this structure
+            </button>
+          ) : (
+            // STEP 8.41: no verified record means startQuiz cannot target
+            // this structure — say so instead of promising a generic quiz.
+            <p className="mt-2 text-xs text-slate-500" data-testid="quiz-unavailable-note">
+              Quiz isn&apos;t available for this structure yet.
+            </p>
+          )}
         </motion.section>
       )}
     </div>

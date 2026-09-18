@@ -66,4 +66,40 @@ describe('selection to quiz flow (8.37)', () => {
     fireEvent.click(screen.getByTestId('quiz-this-structure'));
     expect(screen.getByTestId('dbg-quiz-count')).toHaveTextContent('5');
   });
+
+  it('withholds the targeted quiz action without a verified record (8.41)', () => {
+    const SelectUnknownButton = () => {
+      const { selectStructure } = useAnatomyState();
+      return (
+        <button
+          data-testid="select-unknown"
+          onClick={() =>
+            selectStructure({
+              structureKey: 'male:skin:UBERON:9999999',
+              name: 'VH_M_unknown',
+              objectName: 'VH_M_unknown',
+              systemKey: 'skin',
+              bodyModel: 'male',
+              ontologyId: null,
+            } as never)
+          }
+        >
+          select-unknown
+        </button>
+      );
+    };
+    render(
+      <AnatomyStateProvider>
+        <AnatomySystemPanel onResetCamera={() => {}} />
+        <SelectUnknownButton />
+      </AnatomyStateProvider>,
+      ['/human']
+    );
+    fireEvent.click(screen.getByTestId('select-unknown'));
+    expect(screen.getByTestId('selection-panel')).toBeInTheDocument();
+    // No verified record: no misleading targeted-quiz promise, honest note.
+    expect(screen.queryByTestId('quiz-this-structure')).not.toBeInTheDocument();
+    expect(screen.getByTestId('quiz-unavailable-note')).toHaveTextContent(/isn.*t available/i);
+    expect(screen.getByTestId('clear-selection')).toBeInTheDocument();
+  });
 });
