@@ -26,6 +26,7 @@ export default function AnatomySystemPanel({
     selectStructure,
     retrySystem,
     setSystemStatus,
+    startQuiz,
   } = useAnatomyState();
 
   const [openOpacityKey, setOpenOpacityKey] = useState<string | null>(null);
@@ -236,6 +237,25 @@ export default function AnatomySystemPanel({
             className="mt-3 rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             Clear selection
+          </button>
+          <button
+            type="button"
+            data-testid="quiz-this-structure"
+            onClick={() => {
+              // STEP 8.37: guided next action — startQuiz already builds
+              // question 1 from the current selection; bring the quiz into
+              // view and focus so keyboard/SR users land in context.
+              // (Global reduced-motion CSS makes the scroll instant.)
+              startQuiz();
+              const quiz = document.querySelector('[data-testid="anatomy-quiz"]');
+              if (quiz instanceof HTMLElement) {
+                quiz.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+                quiz.focus({ preventScroll: true });
+              }
+            }}
+            className="mt-2 w-full rounded-lg bg-teal-500/20 px-3 py-1.5 text-xs font-medium text-teal-300 transition-colors hover:bg-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          >
+            Quiz on this structure
           </button>
         </motion.section>
       )}

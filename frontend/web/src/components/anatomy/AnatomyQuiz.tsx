@@ -109,6 +109,7 @@ export default function AnatomyQuiz(): JSX.Element {
       className="rounded-xl border border-slate-800 bg-slate-900/40"
       data-testid="anatomy-quiz"
       aria-label="Anatomy quiz"
+      tabIndex={-1}
     >
       <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
