@@ -113,6 +113,8 @@ interface AnatomyStateValue {
   /** Prepared for shared viewer — /human remains male */
   selectedBodyModel: AnatomyBodyModelKey;
   setSelectedBodyModel: (model: AnatomyBodyModelKey) => void;
+  /** Synchronous per-body reset for UI model switches (see resetModelState). */
+  resetModelState: (model: AnatomyBodyModelKey) => void;
   status: SystemLoadStatusMap;
   setSystemStatus: (key: AnatomySystemKey, status: SystemLoadStatus) => void;
   errorMessages: Record<AnatomySystemKey, string>;
@@ -125,6 +127,7 @@ interface AnatomyStateValue {
   unregisterSystemStructures: (key: AnatomySystemKey) => void;
   registerSystemScene: (key: AnatomySystemKey, scene: THREE.Object3D) => void;
   unregisterSystemScene: (key: AnatomySystemKey) => void;
+  hasSystemScene: (key: AnatomySystemKey) => boolean;
   getMeshesForStructure: (selection: SelectedStructure | null) => THREE.Mesh[];
 }
 
@@ -228,11 +231,17 @@ export function AnatomyStateProvider({
     }
   }, [isolatedSystem, selectedStructure, visibleSystems]);
 
-  // Handle body model switch — clear per-body state but keep GLTF cache
-  const prevBodyModelRef = useRef(selectedBodyModel);
-  useEffect(() => {
-    if (prevBodyModelRef.current !== selectedBodyModel) {
-      prevBodyModelRef.current = selectedBodyModel;
+  // Handle body model switch — clear per-body state but keep GLTF cache.
+  // Split into a callback so UI switches can reset synchronously BEFORE
+  // setSelectedBodyModel: child effects (slot mount → 'loaded') otherwise
+  // run before this parent effect and the reset clobbers them back to IDLE,
+  // stranding remounted cached scenes in 'loading' forever (STEP 8.45).
+  // lastResetModelRef is the receipt: the effect below skips when the reset
+  // for this model already ran (UI path), and still covers programmatic
+  // switches such as deep-links and direct test switches.
+  const lastResetModelRef = useRef<AnatomyBodyModelKey | null>(null);
+  const resetModelState = useCallback(
+    (model: AnatomyBodyModelKey) => {
       registryRef.current.clear();
       systemScenesRef.current.clear();
       setRegistryVersion(v => v + 1);
@@ -273,8 +282,20 @@ export function AnatomyStateProvider({
       });
       setVisibleSystems(initialVisibleSystems);
       setSystemOpacityMap(INITIAL_OPACITY);
+      lastResetModelRef.current = model;
+    },
+    [setHoveredStructureSafe]
+  );
+
+  const prevBodyModelRef = useRef(selectedBodyModel);
+  useEffect(() => {
+    if (prevBodyModelRef.current !== selectedBodyModel) {
+      prevBodyModelRef.current = selectedBodyModel;
+      if (lastResetModelRef.current !== selectedBodyModel) {
+        resetModelState(selectedBodyModel);
+      }
     }
-  }, [selectedBodyModel]);
+  }, [selectedBodyModel, resetModelState]);
 
   const toggleSystem = useCallback((key: AnatomySystemKey) => {
     setVisibleSystems(prev => ({ ...prev, [key]: !prev[key] }));
@@ -621,6 +642,10 @@ export function AnatomyStateProvider({
     systemScenesRef.current.delete(key);
   }, []);
 
+  const hasSystemScene = useCallback((key: AnatomySystemKey): boolean => {
+    return systemScenesRef.current.has(key);
+  }, []);
+
   const getMeshesForStructure = useCallback((selection: SelectedStructure | null): THREE.Mesh[] => {
     if (!selection) return [];
     const scene = systemScenesRef.current.get(selection.systemKey);
@@ -715,6 +740,7 @@ export function AnatomyStateProvider({
       resetQuiz,
       selectedBodyModel,
       setSelectedBodyModel,
+      resetModelState,
       status,
       setSystemStatus,
       errorMessages,
@@ -727,6 +753,7 @@ export function AnatomyStateProvider({
       unregisterSystemStructures,
       registerSystemScene,
       unregisterSystemScene,
+      hasSystemScene,
       getMeshesForStructure,
     }),
     [
@@ -763,6 +790,7 @@ export function AnatomyStateProvider({
       retryQuiz,
       resetQuiz,
       selectedBodyModel,
+      resetModelState,
       status,
       setSystemStatus,
       errorMessages,
@@ -774,6 +802,7 @@ export function AnatomyStateProvider({
       unregisterSystemStructures,
       registerSystemScene,
       unregisterSystemScene,
+      hasSystemScene,
       getMeshesForStructure,
     ]
   );

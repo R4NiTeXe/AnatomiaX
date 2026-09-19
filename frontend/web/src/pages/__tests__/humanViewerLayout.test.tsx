@@ -72,4 +72,21 @@ describe('HumanPage viewer layout (8.32)', () => {
     fireEvent.click(screen.getByTestId('skin-tone-deep'));
     expect(screen.getByTestId('viewer-status')).toHaveTextContent(/deep/i);
   });
+
+  it('model switch resets per-body state synchronously (8.45)', () => {
+    render(<HumanPage />, ['/human']);
+    // Hide skin, then switch models: the synchronous reset restores defaults
+    // in the same commit (no stranded hidden/loading leftovers).
+    fireEvent.click(screen.getByTestId('toggle-skin'));
+    expect(screen.getByTestId('toggle-skin')).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(screen.getByTestId('body-model-female'));
+    expect(screen.getByTestId('body-model-female')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('toggle-skin')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('viewer-status')).toHaveTextContent(/female/i);
+    // And back: receipt-guarded provider effect must not clobber.
+    fireEvent.click(screen.getByTestId('body-model-male'));
+    expect(screen.getByTestId('body-model-male')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('toggle-skin')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('viewer-mock')).toBeInTheDocument();
+  });
 });

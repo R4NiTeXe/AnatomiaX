@@ -49,7 +49,6 @@ function HumanViewer({
   onVerticalChange: (value: number) => void;
 }): JSX.Element {
   const { status } = useAnatomyState();
-
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
       <div
@@ -98,16 +97,23 @@ function AppearanceSelector({
   onVerticalChange: (value: number) => void;
   onResetCamera: () => void;
 }): JSX.Element {
-  const { selectedBodyModel, setSelectedBodyModel, skinTone, setSkinTone } = useAnatomyState();
+  const { selectedBodyModel, setSelectedBodyModel, resetModelState, skinTone, setSkinTone } =
+    useAnatomyState();
 
   const handleBodyModelChange = useCallback(
     (model: 'male' | 'female') => {
       if (model === selectedBodyModel) return;
+      // Reset synchronously BEFORE the model flips so the fresh slot mount
+      // reports 'loaded' after the reset commits (STEP 8.45: otherwise the
+      // parent reset effect clobbers it back to IDLE and cached scenes hang
+      // in 'loading'). The provider effect re-runs idempotently for
+      // programmatic switches (deep-link).
+      resetModelState(model);
       setSelectedBodyModel(model);
       onVerticalChange(0.5);
       onResetCamera();
     },
-    [selectedBodyModel, setSelectedBodyModel, onVerticalChange, onResetCamera]
+    [selectedBodyModel, setSelectedBodyModel, resetModelState, onVerticalChange, onResetCamera]
   );
 
   return (

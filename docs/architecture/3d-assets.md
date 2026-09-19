@@ -66,17 +66,17 @@ Typed definitions live in `frontend/web/src/components/anatomy/anatomyAssets.ts`
 ## Loading Flow
 
 ```
-User selects model (ModelSelector)
+User toggles a system (AnatomySystemPanel)
     ↓
-Asset definition (anatomyAssets.ts: key → path/type)
+Asset definition (anatomyAssetConfig.ts: key → path/type)
     ↓
 Lazy load (React.lazy / dynamic import, Suspense)
     ↓
-GLB/GLTF loader (useGLTF from @react-three/drei / three)
+GLB/GLTF loader (useGLTF from @react-three/drei / three, Meshopt decoder)
     ↓
-Loading state (LoadingState.tsx, lightweight, no Lottie/Rive)
+Loading state (inline spinner overlay, lightweight, no Lottie/Rive)
     ↓
-3D model (AnatomyModel.tsx, <primitive> or scene)
+3D system (AnatomySystemSlot, per-system scene isolation + error boundary)
     ↓
 Error state if loading fails (model not found, invalid GLB, network failure)
 ```

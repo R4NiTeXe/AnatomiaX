@@ -21,7 +21,7 @@ function FitController({ resetSignal }: { resetSignal: number }): null {
 }
 
 function AnatomySystems(): JSX.Element {
-  const { visibleSystems, status, setSystemStatus, attempts, selectedBodyModel } =
+  const { visibleSystems, status, setSystemStatus, attempts, selectedBodyModel, hasSystemScene } =
     useAnatomyState();
   // STEP 8.20.9: memoize asset list — Object.values() creates a new array
   // every render, which previously retriggered the status effect on each
@@ -33,18 +33,34 @@ function AnatomySystems(): JSX.Element {
 
   useEffect(() => {
     for (const asset of assets) {
-      if (visibleSystems[asset.key] && asset.available && status[asset.key] === 'idle') {
+      // STEP 8.45: skip systems whose scene already arrived (same commit as
+      // a model-switch reset). Marking them 'loading' here would clobber the
+      // mount's 'loaded' with a stale read and strand cached scenes forever.
+      if (
+        visibleSystems[asset.key] &&
+        asset.available &&
+        status[asset.key] === 'idle' &&
+        !hasSystemScene(asset.key)
+      ) {
         setSystemStatus(asset.key, 'loading');
       }
     }
-  }, [visibleSystems, status, setSystemStatus, assets]);
+  }, [visibleSystems, status, setSystemStatus, assets, hasSystemScene]);
 
   return (
     <>
       {assets
         .filter(asset => asset.available && visibleSystems[asset.key])
         .map(asset => (
-          <AnatomySystemSlot key={`${asset.key}:${attempts[asset.key]}`} asset={asset} />
+          // STEP 8.45: identity includes the body model so each model gets a
+          // deterministic remount. Reusing one slot instance across an
+          // asset-path change left the mount effect with an unchanged
+          // [scene, asset.key] identity on cached scenes, so 'loaded' never
+          // re-fired after a switch-back.
+          <AnatomySystemSlot
+            key={`${selectedBodyModel}:${asset.key}:${attempts[asset.key]}`}
+            asset={asset}
+          />
         ))}
     </>
   );

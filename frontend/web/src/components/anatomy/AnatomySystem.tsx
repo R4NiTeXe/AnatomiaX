@@ -220,6 +220,26 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     setSystemStatus(asset.key, 'loaded');
     return () => {
       unregisterSystemScene(asset.key);
+      // STEP 8.45: release per-mesh material clones on unmount (model switch
+      // or hide). Covers base clones and any mounted highlight clones.
+      // Geometries stay cached — they are owned by the GLTF loader cache.
+      const seen = new Set<THREE.Material>();
+      for (const entry of entries) {
+        const baseList = Array.isArray(entry.base) ? entry.base : [entry.base];
+        const current = entry.mesh.material as THREE.Material | THREE.Material[];
+        const currentList = Array.isArray(current) ? current : [current];
+        for (const material of [...baseList, ...currentList]) {
+          const m = material as THREE.Material;
+          if (m && !seen.has(m)) {
+            seen.add(m);
+            try {
+              m.dispose?.();
+            } catch {
+              // ignore dispose errors
+            }
+          }
+        }
+      }
     };
     // Keep registry cached on hide — do not unregister here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
