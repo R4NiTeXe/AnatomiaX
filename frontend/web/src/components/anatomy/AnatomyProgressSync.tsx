@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useMergeStudied, useProgressSnapshot } from '@/hooks/useProgress';
-import { mergeStudiedKeys as postStudiedKeys } from '@/lib/progress';
 import { useAnatomyState, type SelectedStructure } from './AnatomyStateContext';
 
 const STUDIED_SYNC_DEBOUNCE_MS = 1500;
@@ -105,8 +104,19 @@ export default function AnatomyProgressSync(): null {
           .map(item => item.structureKey)
           .filter(key => !syncedKeys.current.has(key));
         if (batch.length > 0) {
+          // Mark upfront: nothing else can send after unmount, and this
+          // prevents a duplicate if the effect re-runs (StrictMode).
           batch.forEach(key => syncedKeys.current.add(key));
-          postStudiedKeys(batch, selectedBodyModel).catch(() => {});
+          // Via mutate so the shared onSuccess cache merge applies here too.
+          mergeStudiedKeys(
+            { keys: batch, bodyModel: selectedBodyModel },
+            {
+              onSuccess: data => {
+                (data.studiedKeys ?? []).forEach(key => syncedKeys.current.add(key));
+                batch.forEach(key => syncedKeys.current.add(key));
+              },
+            }
+          );
         }
       }
     };

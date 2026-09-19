@@ -5,6 +5,7 @@ import {
   listQuizAttempts,
   mergeStudiedKeys,
   submitQuizAttempt,
+  type ProgressSnapshotRecord,
   type SubmitAttemptInput,
 } from '@/lib/progress';
 
@@ -76,8 +77,26 @@ export function useSubmitQuizAttempt() {
 }
 
 export function useMergeStudied() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: ({ keys, bodyModel }: { keys: string[]; bodyModel?: 'male' | 'female' }) =>
       mergeStudiedKeys(keys, bodyModel),
+    // STEP 8.43: fold the server's authoritative keys into the snapshot
+    // cache so Dashboard/Learn never show stale progress inside staleTime.
+    // No extra fetch in the common path; a missing cache refetches instead.
+    onSuccess: data => {
+      const key = progressSnapshotKey(user?.id);
+      const serverKeys = Array.isArray(data?.studiedKeys) ? data.studiedKeys : [];
+      const cached = queryClient.getQueryData<ProgressSnapshotRecord>(key);
+      if (!cached) {
+        queryClient.invalidateQueries({ queryKey: key });
+        return;
+      }
+      queryClient.setQueryData<ProgressSnapshotRecord>(key, {
+        ...cached,
+        studiedKeys: [...new Set([...serverKeys, ...cached.studiedKeys])],
+      });
+    },
   });
 }
