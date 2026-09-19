@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useMergeStudied, useProgressSnapshot } from '@/hooks/useProgress';
+import { mergeStudiedKeys as postStudiedKeys } from '@/lib/progress';
 import { useAnatomyState, type SelectedStructure } from './AnatomyStateContext';
 
 const STUDIED_SYNC_DEBOUNCE_MS = 1500;
@@ -92,9 +93,21 @@ export default function AnatomyProgressSync(): null {
       );
     }, STUDIED_SYNC_DEBOUNCE_MS);
     return () => {
+      // STEP 8.42: leaving /human inside the debounce window previously
+      // dropped the pending marks (timer cleared, history discarded with the
+      // provider). Flush them instead — SPA navigation never aborts the
+      // fetch, so fire-and-forget is safe; failure outcome matches status
+      // quo (a later selection re-derives unsynced keys from the snapshot).
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
         debounceTimer.current = null;
+        const batch = recentHistory
+          .map(item => item.structureKey)
+          .filter(key => !syncedKeys.current.has(key));
+        if (batch.length > 0) {
+          batch.forEach(key => syncedKeys.current.add(key));
+          postStudiedKeys(batch, selectedBodyModel).catch(() => {});
+        }
       }
     };
   }, [recentHistory, status, user, selectedBodyModel, mergeStudiedKeys]);

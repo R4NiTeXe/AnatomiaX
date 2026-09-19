@@ -2,7 +2,7 @@ import { screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { renderWithAppProviders as render } from '@/test-utils';
 import { __resetAuthForTests } from '@/lib/auth';
-import { AnatomyStateProvider } from '../AnatomyStateContext';
+import { AnatomyStateProvider, useAnatomyState } from '../AnatomyStateContext';
 import AnatomyInformationPanel from '../AnatomyInformationPanel';
 import AnatomyProgressSync, { parseStudiedKey } from '../AnatomyProgressSync';
 
@@ -90,10 +90,31 @@ describe('AnatomyProgressSync', () => {
   });
 
   function renderTree() {
+    const SelectBrain = () => {
+      const { selectStructure } = useAnatomyState();
+      return (
+        <button
+          data-testid="select-brain"
+          onClick={() =>
+            selectStructure({
+              structureKey: 'male:nervous:UBERON:0000955',
+              name: 'Brain',
+              objectName: 'VH_M_brain',
+              systemKey: 'nervous',
+              bodyModel: 'male',
+              ontologyId: 'UBERON:0000955',
+            } as never)
+          }
+        >
+          select-brain
+        </button>
+      );
+    };
     return render(
       <AnatomyStateProvider>
         <AnatomyProgressSync />
         <AnatomyInformationPanel />
+        <SelectBrain />
       </AnatomyStateProvider>
     );
   }
@@ -127,5 +148,22 @@ describe('AnatomyProgressSync', () => {
     await screen.findByTestId('anatomy-account-login', {}, { timeout: 4000 });
     expect(screen.queryAllByTestId(/anatomy-recent-item-/)).toHaveLength(0);
     expect(screen.getByTestId('anatomy-session-studied-empty')).toBeInTheDocument();
+  });
+
+  it('unmount inside the debounce window flushes pending marks (8.42)', async () => {
+    const tree = renderTree();
+    await screen.findAllByTestId(/anatomy-recent-item-/, {}, { timeout: 4000 });
+    (global.fetch as jest.Mock).mockClear();
+    // New selection starts the 1.5s debounce; unmount immediately after.
+    fireEvent.click(screen.getByTestId('select-brain'));
+    tree.unmount();
+    await Promise.resolve();
+    const patchCalls = (global.fetch as jest.Mock).mock.calls.filter(([url]: [string]) =>
+      (url as string).endsWith('/api/v1/progress/snapshot/studied')
+    );
+    expect(patchCalls.length).toBe(1);
+    expect(JSON.parse((patchCalls[0][1] as { body: string }).body).keys).toContain(
+      'male:nervous:UBERON:0000955'
+    );
   });
 });
