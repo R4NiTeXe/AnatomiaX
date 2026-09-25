@@ -361,9 +361,10 @@ describe('learn/progress surface (8.20.3)', () => {
     expect(screen.getAllByTestId('studied-item')).toHaveLength(3);
     expect(screen.getAllByTestId('quiz-item')).toHaveLength(3);
     expect(screen.getAllByTestId('quiz-review')).toHaveLength(2);
+    // Curriculum Continue: skin module leads unfinished content → first unstudied skin record.
     expect(screen.getByTestId('learn-continue-link')).toHaveAttribute(
       'href',
-      `/human?focus=${encodeURIComponent(KEY_HEART)}`
+      `/human?focus=${encodeURIComponent('female:skin:UBERON:0002097')}`
     );
   });
 

@@ -12,6 +12,7 @@ const MedicalLabPage = lazy(() => import('@/pages/MedicalLabPage'));
 const SimulationPage = lazy(() => import('@/pages/SimulationPage'));
 const ClinicalCasesPage = lazy(() => import('@/pages/ClinicalCasesPage'));
 const LearnPage = lazy(() => import('@/pages/LearnPage'));
+const ModulePage = lazy(() => import('@/pages/ModulePage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
@@ -45,6 +46,7 @@ export default function App(): JSX.Element {
           <Route element={<AppShell />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/learn" element={<LearnPage />} />
+            <Route path="/learn/:systemKey" element={<ModulePage />} />
             <Route
               path="/account"
               element={

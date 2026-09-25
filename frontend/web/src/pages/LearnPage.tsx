@@ -5,13 +5,79 @@ import { QuizHistoryList } from '@/components/learning/QuizAttempts';
 import StudiedStructures, {
   displayNameForStudiedKey,
 } from '@/components/learning/StudiedStructures';
+import {
+  buildLearningModules,
+  findContinueTarget,
+  moduleProgress,
+} from '@/components/learning/modules';
 import SectionHeader from '@/components/learning/SectionHeader';
 import { Reveal } from '@/components/motion';
+import ProgressRing from '@/components/learning/ProgressRing';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProgressSnapshot } from '@/hooks/useProgress';
 import { buildHumanFocusUrl } from '@/lib/humanLink';
+
+function ModulesSection(): JSX.Element | null {
+  const { status } = useAuth();
+  const snapshotQuery = useProgressSnapshot();
+  if (status !== 'authenticated') return null;
+
+  const modules = buildLearningModules();
+  const studiedKeys =
+    snapshotQuery.isLoading && !snapshotQuery.data ? null : (snapshotQuery.data?.studiedKeys ?? []);
+
+  return (
+    <section
+      aria-label="Study modules"
+      className="flex flex-col gap-3 rounded-xl border border-slate-800/70 bg-slate-900/40 p-4 shadow-soft sm:p-5"
+      data-testid="learn-modules"
+    >
+      <SectionHeader
+        kicker="Curriculum"
+        title="Study modules"
+        description="One module per body system, built from verified records. Progress is derived from your studied structures."
+      />
+      {studiedKeys === null ? (
+        <Skeleton className="h-20 w-full" data-testid="learn-modules-loading" />
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2" data-testid="learn-module-list">
+          {modules.map(module => {
+            const progress = moduleProgress(module, studiedKeys);
+            return (
+              <li key={module.key} data-testid="learn-module">
+                <Link
+                  to={`/learn/${module.key}`}
+                  data-testid={`learn-module-link-${module.key}`}
+                  aria-label={`${module.title} module, ${progress.studied} of ${progress.total} studied`}
+                  className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-3 shadow-soft transition-colors hover:border-slate-700 hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 sm:px-4"
+                >
+                  <ProgressRing
+                    value={progress.studied}
+                    max={progress.total}
+                    size={44}
+                    strokeWidth={5}
+                    testId={`learn-module-ring-${module.key}`}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-slate-100">
+                      {module.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs tabular-nums text-slate-500">
+                      {progress.studied} / {progress.total} studied
+                      {progress.status === 'complete' ? ' · Complete' : ''}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 function ContinueSection(): JSX.Element | null {
   const { status } = useAuth();
@@ -23,8 +89,9 @@ function ContinueSection(): JSX.Element | null {
   }
 
   const keys = snapshotQuery.data?.studiedKeys ?? [];
-  const target = keys.length > 0 ? keys[0] : null;
-  const targetName = target ? displayNameForStudiedKey(target) : null;
+  // Curriculum-first Continue: unfinished module content, then recency.
+  const target = findContinueTarget(buildLearningModules(), keys);
+  const targetName = target ? displayNameForStudiedKey(target.structureKey) : null;
 
   return (
     <section
@@ -49,7 +116,7 @@ function ContinueSection(): JSX.Element | null {
       <div className="mt-4">
         <Button asChild>
           <Link
-            to={target ? buildHumanFocusUrl(target) : '/human'}
+            to={target ? buildHumanFocusUrl(target.structureKey) : '/human'}
             data-testid="learn-continue-link"
           >
             {target ? 'Continue in 3D viewer' : 'Open 3D viewer'}
@@ -114,6 +181,9 @@ export default function LearnPage(): JSX.Element {
           </Reveal>
           <Reveal delay={0.05}>
             <ContinueSection />
+          </Reveal>
+          <Reveal delay={0.05}>
+            <ModulesSection />
           </Reveal>
           <Reveal delay={0.05}>
             <section

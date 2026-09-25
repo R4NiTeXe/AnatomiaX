@@ -333,9 +333,10 @@ describe('progress hub (8.20.6)', () => {
     });
     renderLearn();
     await screen.findByTestId('learn-continue-link', {}, { timeout: 4000 });
+    // Curriculum Continue: heart studied → first unstudied cardiovascular record.
     expect(screen.getByTestId('learn-continue-link')).toHaveAttribute(
       'href',
-      `/human?focus=${encodeURIComponent(KEY_HEART)}`
+      `/human?focus=${encodeURIComponent('female:cardiovascular:UBERON:0000948')}`
     );
     fireEvent.click(await screen.findByTestId('quiz-details-trigger', {}, { timeout: 4000 }));
     await screen.findByTestId('quiz-detail', {}, { timeout: 4000 });
@@ -373,5 +374,17 @@ describe('progress hub (8.20.6)', () => {
     fireEvent.click(await screen.findByTestId('quiz-details-trigger', {}, { timeout: 4000 }));
     await screen.findByTestId('quiz-detail', {}, { timeout: 4000 });
     expect(screen.getByTestId('quiz-detail-correct')).toHaveTextContent('1 of 2 correct');
+  });
+
+  it('lists nine study modules with honest progress and links', async () => {
+    mockBackend({ user: USER_A, snapshotKeys: [KEY_HEART], attempts: [] });
+    renderLearn();
+    expect(await screen.findByTestId('learn-modules', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(await screen.findAllByTestId('learn-module', {}, { timeout: 4000 })).toHaveLength(9);
+    const nervous = screen.getByTestId('learn-module-link-nervous');
+    expect(nervous).toHaveAttribute('href', '/learn/nervous');
+    expect(nervous).toHaveAttribute('aria-label', expect.stringContaining('0 of 12'));
+    const cardio = screen.getByTestId('learn-module-link-cardiovascular');
+    expect(cardio).toHaveAttribute('aria-label', expect.stringContaining('1 of 8'));
   });
 });
