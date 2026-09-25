@@ -247,7 +247,14 @@ export function QuizRecent(): JSX.Element | null {
   if (attempts.length === 0) {
     return (
       <p className="text-sm text-slate-500" data-testid="quiz-empty">
-        No quiz attempts yet. Take a quiz in the 3D viewer to see results here.
+        No quiz attempts yet.{' '}
+        <Link
+          to="/human"
+          className="text-teal-300 underline hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+        >
+          Take a quiz in the 3D viewer
+        </Link>{' '}
+        to see results here.
       </p>
     );
   }
@@ -304,7 +311,14 @@ export function QuizHistoryList(): JSX.Element | null {
   if (attempts.length === 0) {
     return (
       <p className="text-sm text-slate-500" data-testid="history-empty">
-        No quiz attempts yet. Take a quiz in the 3D viewer to build history.
+        No quiz attempts yet.{' '}
+        <Link
+          to="/human"
+          className="text-teal-300 underline hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+        >
+          Take a quiz in the 3D viewer
+        </Link>{' '}
+        to build history.
       </p>
     );
   }

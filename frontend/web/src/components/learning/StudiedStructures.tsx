@@ -91,7 +91,14 @@ export default function StudiedStructures({
   if (keys.length === 0) {
     return (
       <p className="text-sm text-slate-500" data-testid="studied-empty">
-        No structures studied yet. Open the 3D viewer and select a structure to begin.
+        No structures studied yet.{' '}
+        <Link
+          to="/human"
+          className="text-teal-300 underline hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+        >
+          Open the 3D viewer
+        </Link>{' '}
+        and select a structure to begin.
       </p>
     );
   }

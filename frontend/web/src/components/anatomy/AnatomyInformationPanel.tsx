@@ -95,9 +95,9 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
               </p>
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                   Function
-                </p>
+                </h4>
                 <p
                   className="mt-1 text-sm leading-5 text-slate-300"
                   data-testid="anatomy-information-function"
@@ -128,12 +128,12 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
                   >
                     {partOf.length > 0 && (
                       <div>
-                        <p
+                        <h4
                           className="text-xs font-semibold uppercase tracking-widest text-slate-500"
                           data-testid="anatomy-partof-heading"
                         >
                           Part of
-                        </p>
+                        </h4>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {partOf.map((r, index) => (
                             <button
@@ -152,12 +152,12 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
                     )}
                     {relatedTo.length > 0 && (
                       <div>
-                        <p
+                        <h4
                           className="text-xs font-semibold uppercase tracking-widest text-slate-500"
                           data-testid="anatomy-related-heading"
                         >
                           Related structures
-                        </p>
+                        </h4>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {relatedTo.map((r, index) => (
                             <button
@@ -179,9 +179,9 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
               })()}
 
               <div className="border-t border-slate-800 pt-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                   Source
-                </p>
+                </h4>
                 <p className="mt-1 text-xs text-slate-400" data-testid="anatomy-information-source">
                   {info.source}
                 </p>
@@ -220,12 +220,12 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
         {/* Recent history section — always visible when history exists, not hidden by hover */}
         {recentHistory.length > 0 && (
           <div className="border-t border-slate-800 pt-3 mt-3">
-            <p
+            <h4
               className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2"
               data-testid="anatomy-recent-heading"
             >
               Recent
-            </p>
+            </h4>
             <ul className="flex flex-col gap-2" data-testid="anatomy-recent-list">
               {recentHistory.map((item, index) => {
                 const handleSelect = () => {
