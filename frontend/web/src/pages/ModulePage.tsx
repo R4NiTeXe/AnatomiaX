@@ -108,7 +108,9 @@ function ModuleContent({ systemKey }: { systemKey: string }): JSX.Element {
               <div className="mt-3">
                 <Button asChild>
                   <Link to={buildHumanFocusUrl(nextKey)} data-testid="module-continue-link">
-                    Continue with {displayNameForStudiedKey(nextKey)}
+                    {progress.studied === 0
+                      ? `Start study with ${displayNameForStudiedKey(nextKey)}`
+                      : `Continue with ${displayNameForStudiedKey(nextKey)}`}
                   </Link>
                 </Button>
               </div>

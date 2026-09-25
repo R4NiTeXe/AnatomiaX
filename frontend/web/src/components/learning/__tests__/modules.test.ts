@@ -3,8 +3,8 @@ import {
   findContinueTarget,
   getLearningModule,
   moduleProgress,
+  sessionPositionFor,
 } from '../modules';
-
 describe('learning modules (8.49)', () => {
   it('builds one deterministic module per anatomy system', () => {
     const modules = buildLearningModules();
@@ -88,5 +88,34 @@ describe('learning modules (8.49)', () => {
     expect(fresh?.reason).toBe('next-unstudied');
     expect(fresh?.structureKey).toBe(modules[0].structureKeys[0]);
     expect(findContinueTarget([], [])).toBeNull();
+  });
+
+  it('derives session position with previous and next targets', () => {
+    const modules = buildLearningModules();
+    const nervous = getLearningModule('nervous') as NonNullable<
+      ReturnType<typeof getLearningModule>
+    >;
+    const [first, second, third] = nervous.structureKeys;
+    // Mid-list: previous is positional, next skips studied records.
+    const mid = sessionPositionFor(modules, second, [second]);
+    expect(mid).toMatchObject({
+      index: 1,
+      total: nervous.totalStructures,
+      previousKey: first,
+      nextKey: third,
+    });
+    expect(mid?.module.key).toBe('nervous');
+    // Start: no previous.
+    expect(sessionPositionFor(modules, first, [])).toMatchObject({
+      index: 0,
+      previousKey: null,
+      nextKey: second,
+    });
+    // End with everything studied: no next.
+    const last = nervous.structureKeys[nervous.structureKeys.length - 1];
+    expect(sessionPositionFor(modules, last, nervous.structureKeys)?.nextKey).toBeNull();
+    // Unknown keys resolve to no session.
+    expect(sessionPositionFor(modules, 'bogus', [])).toBeNull();
+    expect(sessionPositionFor([], first, [])).toBeNull();
   });
 });

@@ -82,6 +82,7 @@ describe('module page (8.49)', () => {
     expect(links.length).toBe(12);
     expect(links[0]).toHaveAttribute('href', expect.stringContaining('/human?focus='));
     expect(screen.queryByTestId('module-structure-studied')).not.toBeInTheDocument();
+    expect(screen.getByTestId('module-continue-link')).toHaveTextContent(/Start study/);
   });
 
   it('marks studied structures and offers module continue', async () => {
@@ -97,6 +98,7 @@ describe('module page (8.49)', () => {
       'href',
       expect.stringContaining('/human?focus=')
     );
+    expect(screen.getByTestId('module-continue-link')).toHaveTextContent(/Continue with/);
   });
 
   it('rejects invalid modules honestly', async () => {

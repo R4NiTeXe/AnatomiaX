@@ -82,8 +82,7 @@ export function moduleProgress(
  * 2. most recent valid studied key (revisit)
  * 3. first unstudied record overall
  * Returns null only when no target exists at all.
- */
-export function findContinueTarget(
+ */ export function findContinueTarget(
   modules: readonly LearningModule[],
   studiedKeys: readonly string[]
 ): ContinueTarget | null {
@@ -111,4 +110,35 @@ export function findContinueTarget(
     if (next) return { structureKey: next, moduleKey: module.key, reason: 'next-unstudied' };
   }
   return null;
+}
+
+/**
+ * Derived study-session position (STEP 8.50). Pure function of the current
+ * selection plus studied keys — no stored session, so refresh, back/forward,
+ * and deep-links all resolve the same position. Order is navigational only,
+ * never a claim of medical importance.
+ */
+export interface SessionPosition {
+  module: LearningModule;
+  /** Zero-based position of structureKey in module order. */
+  index: number;
+  total: number;
+  /** Previous structure for review, or null at the start. */
+  previousKey: string | null;
+  /** First unstudied structure after the current one, or null at the end. */
+  nextKey: string | null;
+}
+
+export function sessionPositionFor(
+  modules: readonly LearningModule[],
+  structureKey: string,
+  studiedKeys: readonly string[]
+): SessionPosition | null {
+  const module = modules.find(m => m.structureKeys.includes(structureKey));
+  if (!module) return null;
+  const studied = new Set([...studiedKeys, structureKey]);
+  const index = module.structureKeys.indexOf(structureKey);
+  const previousKey = index > 0 ? module.structureKeys[index - 1] : null;
+  const nextKey = module.structureKeys.slice(index + 1).find(key => !studied.has(key)) ?? null;
+  return { module, index, total: module.totalStructures, previousKey, nextKey };
 }

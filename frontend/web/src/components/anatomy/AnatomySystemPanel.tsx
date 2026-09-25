@@ -10,10 +10,74 @@ import {
   maleAnatomyAssets,
 } from './anatomyAssetConfig';
 import { getAnatomyInformationByStructureKey } from './anatomyInformation';
+import { parseStudiedKey } from '@anatomiax/anatomy-core';
+import { buildLearningModules, sessionPositionFor } from '@/components/learning/modules';
 
 type AnatomySystemPanelProps = {
   onResetCamera: () => void;
 };
+
+// STEP 8.50: derived study-sequence navigator. Position, previous, and next
+// all derive from the module order plus studied keys — no stored session, so
+// refresh, back/forward, and deep-links resolve identically. Order is
+// navigational only, never a medical claim.
+function SessionNavigator({ structureKey }: { structureKey: string }): JSX.Element | null {
+  const { selectStructure, visibleSystems, toggleSystem, recentHistory } = useAnatomyState();
+  const snapshotQuery = useProgressSnapshot();
+  const studiedKeys = [
+    ...(snapshotQuery.data?.studiedKeys ?? []),
+    ...recentHistory.map(item => item.structureKey),
+  ];
+  const position = sessionPositionFor(buildLearningModules(), structureKey, studiedKeys);
+  if (!position) return null;
+
+  const go = (key: string | null) => {
+    if (!key) return;
+    const target = parseStudiedKey(key);
+    if (!target) return;
+    if (!visibleSystems[target.systemKey]) toggleSystem(target.systemKey);
+    selectStructure(target);
+  };
+
+  const buttonClass =
+    'flex-1 rounded-lg border border-slate-700 px-2 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-40';
+
+  return (
+    <div className="mt-3 border-t border-slate-800 pt-3" data-testid="session-navigator">
+      <p
+        className="text-xs tabular-nums text-slate-500"
+        data-testid="session-position"
+        aria-label={`Structure ${position.index + 1} of ${position.total} in ${position.module.title}`}
+      >
+        {position.index + 1} of {position.total} · {position.module.title}
+      </p>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          disabled={!position.previousKey}
+          title={position.previousKey ? undefined : 'At the start of this module'}
+          aria-label={`Previous structure in ${position.module.title}`}
+          data-testid="session-prev"
+          onClick={() => go(position.previousKey)}
+          className={buttonClass}
+        >
+          ← Prev
+        </button>
+        <button
+          type="button"
+          disabled={!position.nextKey}
+          title={position.nextKey ? undefined : 'No further unstudied structures'}
+          aria-label={`Next unstudied structure in ${position.module.title}`}
+          data-testid="session-next"
+          onClick={() => go(position.nextKey)}
+          className={buttonClass}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // STEP 8.40: "have I covered this?" signal from verified studied state —
 // local recent history (immediate) plus the persisted snapshot (same
@@ -324,6 +388,7 @@ export default function AnatomySystemPanel({
               Quiz isn&apos;t available for this structure yet.
             </p>
           )}
+          <SessionNavigator structureKey={selectedStructure.structureKey} />
         </motion.section>
       )}
     </div>
