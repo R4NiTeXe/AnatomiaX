@@ -114,6 +114,25 @@ describe('AnatomyQuizReview', () => {
     expect(screen.getByTestId('dbg-answers-count')).toHaveTextContent('1');
   });
 
+  it('answer feedback and result summary are announced (8.51)', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('start'));
+    fireEvent.click(screen.getByTestId('answer-correct'));
+    expect(screen.getByTestId('anatomy-quiz-feedback')).toHaveAttribute('role', 'status');
+    completeQuiz(['correct', 'correct', 'correct', 'correct', 'correct']);
+    expect(screen.getByTestId('anatomy-quiz-review-summary')).toHaveAttribute('role', 'status');
+  });
+
+  it('quiz action buttons keep visible focus rings (8.51)', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('start'));
+    fireEvent.click(screen.getByTestId('answer-correct'));
+    expect(screen.getByTestId('anatomy-quiz-next').className).toMatch(/focus-visible:ring-2/);
+    completeQuiz(['correct', 'correct', 'correct', 'correct', 'correct']);
+    expect(screen.getByTestId('anatomy-quiz-retry').className).toMatch(/focus-visible:ring-2/);
+    expect(screen.getByTestId('anatomy-quiz-reset').className).toMatch(/focus-visible:ring-2/);
+  });
+
   it('one record per question', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('start'));

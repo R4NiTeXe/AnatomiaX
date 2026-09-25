@@ -194,6 +194,7 @@ export default function AnatomyQuiz(): JSX.Element {
 
             {quizAnswered && current && (
               <p
+                role="status"
                 className={`text-sm ${quizSelectedChoice === current.correctIndex ? 'text-teal-300' : 'text-red-300'}`}
                 data-testid="anatomy-quiz-feedback"
               >
@@ -216,7 +217,7 @@ export default function AnatomyQuiz(): JSX.Element {
                   onClick={nextQuizQuestion}
                   disabled={!quizAnswered}
                   data-testid="anatomy-quiz-next"
-                  className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                 >
                   Next
                 </button>
@@ -246,7 +247,7 @@ export default function AnatomyQuiz(): JSX.Element {
                   type="button"
                   onClick={retryQuiz}
                   data-testid="anatomy-quiz-retry"
-                  className="flex-1 rounded-lg bg-teal-500/20 px-3 py-1.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30"
+                  className="flex-1 rounded-lg bg-teal-500/20 px-3 py-1.5 text-sm font-medium text-teal-300 hover:bg-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                 >
                   Retry Quiz
                 </button>
@@ -254,7 +255,7 @@ export default function AnatomyQuiz(): JSX.Element {
                   type="button"
                   onClick={resetQuiz}
                   data-testid="anatomy-quiz-reset"
-                  className="flex-1 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800"
+                  className="flex-1 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                 >
                   New Quiz
                 </button>
@@ -267,6 +268,7 @@ export default function AnatomyQuiz(): JSX.Element {
                 data-testid="anatomy-quiz-review"
               >
                 <p
+                  role="status"
                   className="text-sm font-medium text-slate-200"
                   data-testid="anatomy-quiz-review-summary"
                 >
