@@ -517,11 +517,14 @@ type AnatomySystemSlotProps = {
  * the rest of the viewer.
  */
 export default function AnatomySystemSlot({ asset }: AnatomySystemSlotProps): JSX.Element {
-  const { setSystemStatus, setSystemError } = useAnatomyState();
+  const { setSystemStatus, setSystemError, attempts } = useAnatomyState();
 
   return (
+    // STEP 8.46: the boundary resets with attempts so Retry remounts into a
+    // fresh boundary — a latched error boundary would otherwise render null
+    // forever while status idles back into a stuck 'loading'.
     <AnatomySystemErrorBoundary
-      key={asset.key}
+      key={`${asset.key}:${attempts[asset.key] ?? 0}`}
       onError={message => {
         setSystemError(asset.key, message);
         setSystemStatus(asset.key, 'error');

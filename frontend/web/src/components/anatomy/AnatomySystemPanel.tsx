@@ -4,7 +4,11 @@ import { useGLTF } from '@react-three/drei';
 import { DURATIONS, EASE } from '@/components/motion';
 import { useProgressSnapshot } from '@/hooks/useProgress';
 import { useAnatomyState } from './AnatomyStateContext';
-import { getAnatomySystem, maleAnatomyAssets } from './anatomyAssetConfig';
+import {
+  getAnatomySystem,
+  getAnatomySystemAssetForBody,
+  maleAnatomyAssets,
+} from './anatomyAssetConfig';
 import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 
 type AnatomySystemPanelProps = {
@@ -72,12 +76,15 @@ export default function AnatomySystemPanel({
     retrySystem,
     setSystemStatus,
     startQuiz,
+    selectedBodyModel,
   } = useAnatomyState();
 
   const [openOpacityKey, setOpenOpacityKey] = useState<string | null>(null);
 
   const handleRetry = (key: (typeof maleAnatomyAssets)[number]['key']) => {
-    useGLTF.clear(getAnatomySystem(key).path);
+    // STEP 8.46: clear the CURRENT model's asset path — the male catalog
+    // path left female failures cached, so retries re-threw instantly.
+    useGLTF.clear(getAnatomySystemAssetForBody(selectedBodyModel, key).path);
     retrySystem(key);
   };
 
