@@ -156,10 +156,21 @@ export class AuthService {
       throw new UnauthorizedException(GENERIC_CREDENTIALS_ERROR);
     }
     const rotated = await this.prisma.$transaction(async tx => {
-      await tx.refreshToken.update({
-        where: { id: record.id },
+      // 8.57 atomic claim: exactly one concurrent rotation of this token can
+      // proceed. The pre-check above is read-then-act, so two simultaneous
+      // refreshes with the same valid token would otherwise both pass it and
+      // mint two live sessions (defeating reuse detection for that window).
+      // A zero count means the token was rotated (or removed) concurrently —
+      // fail closed WITHOUT burning the family: a benign double-submit is
+      // indistinguishable from theft here, and genuine reuse of a revoked
+      // token is still caught above and revokes the family there.
+      const claimed = await tx.refreshToken.updateMany({
+        where: { id: record.id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
+      if (claimed.count !== 1) {
+        throw new UnauthorizedException(GENERIC_CREDENTIALS_ERROR);
+      }
       return this.createRefreshToken(tx, record.userId, deviceLabel);
     });
     const accessToken = await this.signAccessToken(record.user);

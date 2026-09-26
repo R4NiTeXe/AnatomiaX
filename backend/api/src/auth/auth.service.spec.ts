@@ -181,17 +181,31 @@ describe('AuthService', () => {
       ...overrides,
     });
 
-    it('rotates: revokes old token and issues a new one', async () => {
+    it('rotates: atomically claims the token and issues a new one', async () => {
       (prisma.refreshToken as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue(
         liveRecord()
       );
       const session = await service.refresh('presented');
-      expect(tx.refreshToken.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'rt-1' } })
+      expect(tx.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'rt-1', revokedAt: null } })
       );
       expect(tx.refreshToken.create).toHaveBeenCalled();
       expect(session.accessToken).toBeTruthy();
       expect(session.refreshToken).not.toBe('presented');
+    });
+
+    it('loses a concurrent race closed: zero claim fails without nuking the family (8.57)', async () => {
+      (prisma.refreshToken as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue(
+        liveRecord()
+      );
+      (tx.refreshToken.updateMany as jest.Mock).mockResolvedValueOnce({ count: 0 });
+      await expect(service.refresh('presented')).rejects.toBeInstanceOf(UnauthorizedException);
+      // No family-wide revocation on an ambiguous race — only the atomic
+      // claim was attempted, and no replacement token was minted.
+      expect(tx.refreshToken.create).not.toHaveBeenCalled();
+      expect(
+        (prisma.refreshToken as unknown as { updateMany: jest.Mock }).updateMany
+      ).not.toHaveBeenCalled();
     });
 
     it('rejects missing token', async () => {

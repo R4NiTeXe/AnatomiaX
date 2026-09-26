@@ -110,9 +110,12 @@ class FakeDb {
       where: Record<string, any>;
       data: Record<string, any>;
     }) => {
+      // Faithful to Prisma: only rows matching the full where clause count.
+      // Supports both the family revocation ({ userId, revokedAt: null }) and
+      // the atomic rotation claim ({ id, revokedAt: null }).
       let count = 0;
       for (const row of this.tokens.values()) {
-        if (this.match(row, { userId: where.userId, revokedAt: null })) {
+        if (this.match(row, where)) {
           Object.assign(row, data);
           count += 1;
         }
@@ -338,6 +341,23 @@ describe('Auth (e2e, no database)', () => {
     expect(reuse.status).toBe(401);
   });
 
+  it('concurrent refresh of one token never mints two live sessions (8.57)', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'student@example.com', password: 'password123' });
+    const cookie = refreshCookie(login);
+    // Race two rotations of the same token. Interleaving is scheduler-driven:
+    // either both pre-checks pass (atomic claim decides exactly one winner)
+    // or the second arrives after rotation (reuse path burns the family).
+    // Both end-states are safe; two live sessions never is.
+    const [a, b] = await Promise.all([
+      request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', cookie),
+      request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', cookie),
+    ]);
+    const winners = [a, b].filter(r => r.status === 200);
+    expect(winners.length).toBeLessThanOrEqual(1);
+  });
+
   it('supports non-cookie (mobile) refresh via JSON body', async () => {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
@@ -387,6 +407,47 @@ describe('Auth (e2e, no database)', () => {
     // provider step, but route registration itself must not break boot.
     const res = await request(app.getHttpServer()).get('/api/v1/auth/google').redirects(0);
     expect([302, 500]).toContain(res.status);
+  });
+
+  it('Google OAuth binds a one-time state cookie echoed as the state param (8.58)', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/auth/google').redirects(0);
+    expect(res.status).toBe(302);
+    const setCookie = ((res.headers as Record<string, any>)['set-cookie'] ?? []) as string[];
+    const stateCookie = setCookie.find(c => c.startsWith('oauth_state='));
+    expect(stateCookie).toBeDefined();
+    expect(stateCookie).toContain('HttpOnly');
+    const nonce = (stateCookie as string).split(';')[0].split('=')[1];
+    expect(nonce.length).toBeGreaterThan(10);
+    const location = res.headers.location as string;
+    expect(location).toContain(`state=${nonce}`);
+  });
+
+  it('Google callback rejects missing or mismatched state without exchanging code (8.58)', async () => {
+    const noCookie = await request(app.getHttpServer()).get(
+      '/api/v1/auth/google/callback?code=attacker-code&state=attacker-state'
+    );
+    expect(noCookie.status).toBe(401);
+    expect(noCookie.body.message).toBe('Invalid OAuth state');
+    const mismatch = await request(app.getHttpServer())
+      .get('/api/v1/auth/google/callback?code=attacker-code&state=wrong')
+      .set('Cookie', 'oauth_state=right-nonce-value-1234567890');
+    expect(mismatch.status).toBe(401);
+    expect(mismatch.body.message).toBe('Invalid OAuth state');
+  });
+
+  it('Google callback with matching state passes the guard (8.58)', async () => {
+    const start = await request(app.getHttpServer()).get('/api/v1/auth/google').redirects(0);
+    expect(start.status).toBe(302);
+    const setCookie = ((start.headers as Record<string, any>)['set-cookie'] ?? []) as string[];
+    const nonce = (setCookie.find(c => c.startsWith('oauth_state=')) as string)
+      .split(';')[0]
+      .split('=')[1];
+    // No Google network: the code exchange itself fails downstream, but the
+    // guard must NOT reject — any failure here is not a state failure.
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/auth/google/callback?code=fake&state=${nonce}`)
+      .set('Cookie', `oauth_state=${nonce}`);
+    expect(res.body.message).not.toBe('Invalid OAuth state');
   });
 
   it('stores refresh tokens hashed at rest (sha256, never plaintext)', async () => {

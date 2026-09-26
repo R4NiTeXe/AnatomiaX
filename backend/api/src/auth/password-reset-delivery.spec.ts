@@ -127,7 +127,15 @@ describe('PasswordResetDelivery (8.20.22)', () => {
     await expect(delivery.dispatch(EMAIL, TOKEN)).resolves.toBeUndefined();
 
     expect(nodemailer.createTransport).toHaveBeenCalledWith(
-      expect.objectContaining({ host: 'mail.example.com', port: 587, secure: false })
+      expect.objectContaining({
+        host: 'mail.example.com',
+        port: 587,
+        secure: false,
+        // 8.58: bounded delivery — a dead relay fails fast, never hangs the request.
+        connectionTimeout: expect.any(Number),
+        greetingTimeout: expect.any(Number),
+        socketTimeout: expect.any(Number),
+      })
     );
     expect(sendMail).toHaveBeenCalledTimes(1);
     const mail = sendMail.mock.calls[0][0] as Record<string, string>;

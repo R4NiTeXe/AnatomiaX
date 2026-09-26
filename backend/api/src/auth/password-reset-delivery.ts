@@ -114,6 +114,13 @@ export class PasswordResetDelivery {
         port: cfg.port,
         secure: cfg.secure,
         auth: cfg.user && cfg.pass ? { user: cfg.user, pass: cfg.pass } : undefined,
+        // 8.58 bounded delivery: a dead relay must fail fast instead of
+        // holding the reset request (and its worker) for nodemailer's
+        // multi-minute defaults. Values are conservative for port-587
+        // STARTTLS relays, which normally answer in well under a second.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
       });
     }
     return this.transporter;
