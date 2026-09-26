@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
 import { AuthProvider } from '@/components/auth/AuthProvider';
@@ -30,6 +30,25 @@ function Probe() {
   );
 }
 
+function ManualSwitchProbe() {
+  const { selectedBodyModel, setSelectedBodyModel } = useAnatomyState();
+  return (
+    <div>
+      <div data-testid="race-model">{selectedBodyModel}</div>
+      <button
+        type="button"
+        data-testid="race-to-female"
+        onClick={() => setSelectedBodyModel('female')}
+      >
+        switch to female
+      </button>
+      <button type="button" data-testid="race-to-male" onClick={() => setSelectedBodyModel('male')}>
+        switch to male
+      </button>
+    </div>
+  );
+}
+
 function renderDeepLink(initialEntries: string[]) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -41,6 +60,7 @@ function renderDeepLink(initialEntries: string[]) {
           <AnatomyStateProvider>
             <HumanDeepLink />
             <Probe />
+            <ManualSwitchProbe />
           </AnatomyStateProvider>
         </MemoryRouter>
       </AuthProvider>
@@ -92,5 +112,30 @@ describe('HumanDeepLink (/human regression guard)', () => {
       await screen.findByText('male:cardiovascular:UBERON:0002084', {}, { timeout: 4000 })
     ).toBeInTheDocument();
     expect(screen.getByTestId('deep-visible').textContent).toContain('"cardiovascular":true');
+  });
+
+  it('never yanks back a manual model switch after the focus was applied (8.55)', async () => {
+    // Reproduces the deep-link + switch race: with ?focus=male:… applied, a
+    // user switch to female must win. Without the applied-guard the effect
+    // reverts the model to male on its next run.
+    renderDeepLink(['/human?focus=male%3Askin%3AUBERON%3A0002097']);
+    expect(
+      await screen.findByText('male:skin:UBERON:0002097', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('race-to-female'));
+    await waitFor(() => expect(screen.getByTestId('race-model')).toHaveTextContent('female'), {
+      timeout: 4000,
+    });
+    // Settle: the deep-link effect runs again on model change — it must not
+    // revert the manual switch.
+    await new Promise(resolve => setTimeout(resolve, 300));
+    expect(screen.getByTestId('race-model')).toHaveTextContent('female');
+    // And back again — ordering is deterministic both ways.
+    fireEvent.click(screen.getByTestId('race-to-male'));
+    await waitFor(() => expect(screen.getByTestId('race-model')).toHaveTextContent('male'), {
+      timeout: 4000,
+    });
+    await new Promise(resolve => setTimeout(resolve, 300));
+    expect(screen.getByTestId('race-model')).toHaveTextContent('male');
   });
 });

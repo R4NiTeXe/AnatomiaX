@@ -48,6 +48,12 @@ export default function HumanDeepLink(): null {
       return;
     }
     if (parsed.bodyModel !== selectedBodyModel) {
+      // STEP 8.55: after the focus was applied once, the user owns model
+      // selection — never yank them back to the focus model. Without this
+      // guard, any manual switch away from the focus model is reverted on the
+      // next effect run (deep-link + switch race: focus=male + switch female
+      // snaps back to male). A *new* focus param still takes control.
+      if (appliedRef.current === focusRaw) return;
       setSelectedBodyModel(parsed.bodyModel);
       if (!awaitingModel) setAwaitingModel(true);
       return;

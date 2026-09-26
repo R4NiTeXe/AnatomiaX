@@ -217,7 +217,11 @@ export default function AnatomySystemPanel({
                       </p>
                       {rowStatus === 'loading' && <p className="text-xs text-teal-400">Loading…</p>}
                       {rowStatus === 'error' && (
-                        <p className="text-xs text-red-400" data-testid={`error-${asset.key}`}>
+                        <p
+                          className="text-xs text-red-400"
+                          data-testid={`error-${asset.key}`}
+                          role="status"
+                        >
                           {errorMessage || 'Failed to load.'}{' '}
                           <button
                             type="button"

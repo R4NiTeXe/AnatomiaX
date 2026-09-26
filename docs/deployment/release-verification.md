@@ -149,7 +149,7 @@ Order enforced in `.github/workflows/ci.yml` (sequential, fail-fast):
 (--check-builds) → asset contract (/models-dev/) → playwright (chromium) →
 artifacts (coverage always, playwright-report on failure)`
 
-`npm ci` + Node 20 + npm cache pinned. No deployment automation, no secrets
+`npm ci` + Node 24 + npm cache pinned. No deployment automation, no secrets
 in CI. Generated outputs excluded via `.gitignore` (dist, `.next`, `_site`,
 coverage, playwright-report, `*.tsbuildinfo`, GLBs).
 

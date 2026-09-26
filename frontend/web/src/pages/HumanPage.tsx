@@ -48,7 +48,10 @@ function HumanViewer({
   vertical: number;
   onVerticalChange: (value: number) => void;
 }): JSX.Element {
-  const { status } = useAnatomyState();
+  const { status, selectedBodyModel } = useAnatomyState();
+  // STEP 8.55: honest loading copy — the model identity is known, so name it.
+  // No percentages (never measured), no server claims.
+  const loadingCopy = `Preparing ${selectedBodyModel} anatomy…`;
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
       <div
@@ -68,11 +71,11 @@ function HumanViewer({
             <div
               className="flex flex-col items-center gap-3"
               role="status"
-              aria-label="Loading anatomy"
+              aria-label={loadingCopy}
             >
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-teal-400" />
+              <div className="h-8 w-8 motion-safe:animate-spin rounded-full border-2 border-slate-700 border-t-teal-400" />
               <p className="text-sm tracking-wide text-slate-300" data-testid="loading-anatomy">
-                Loading anatomy…
+                {loadingCopy}
               </p>
             </div>
           </div>

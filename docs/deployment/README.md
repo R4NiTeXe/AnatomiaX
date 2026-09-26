@@ -41,7 +41,7 @@ Related contracts:
 
 ## 2. Required runtimes/tools
 
-- Node.js `>=18.0.0`, npm `>=9.0.0` (see root `package.json` engines).
+- Node.js `>=24.0.0 <25.0.0`, npm `>=9.0.0` (see root `package.json` engines).
 - PostgreSQL (any recent 14/15/16) for backend/api beyond health liveness.
 - No Docker required by this repo (do not add Docker solely for this milestone).
 - Playwright chromium for E2E (`npx playwright install --with-deps chromium`).
