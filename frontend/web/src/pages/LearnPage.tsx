@@ -8,6 +8,7 @@ import StudiedStructures, {
 import {
   buildLearningModules,
   findContinueTarget,
+  getLearningModule,
   moduleProgress,
 } from '@/components/learning/modules';
 import SectionHeader from '@/components/learning/SectionHeader';
@@ -17,7 +18,92 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProgressSnapshot } from '@/hooks/useProgress';
+import { useMyAssignments } from '@/hooks/useCohorts';
 import { buildHumanFocusUrl } from '@/lib/humanLink';
+
+function AssignedModulesSection(): JSX.Element | null {
+  const { status } = useAuth();
+  const assignmentsQuery = useMyAssignments();
+  const snapshotQuery = useProgressSnapshot();
+  if (status !== 'authenticated') return null;
+
+  if (assignmentsQuery.isLoading && !assignmentsQuery.data) {
+    return <Skeleton className="h-20 w-full" data-testid="learn-assigned-loading" />;
+  }
+  if (assignmentsQuery.isError) {
+    return (
+      <section
+        aria-label="Assigned modules"
+        className="flex flex-col gap-2 rounded-xl border border-slate-800/70 bg-slate-900/40 p-4 shadow-soft sm:p-5"
+      >
+        <p className="text-sm text-slate-500" data-testid="learn-assigned-error">
+          Couldn&apos;t load assigned modules.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => assignmentsQuery.refetch()}
+          data-testid="learn-assigned-retry"
+          className="w-fit"
+        >
+          Retry
+        </Button>
+      </section>
+    );
+  }
+
+  const assignments = (assignmentsQuery.data ?? []).filter(a => getLearningModule(a.moduleKey));
+  if (assignments.length === 0) return null;
+  const studiedKeys = snapshotQuery.data?.studiedKeys ?? [];
+
+  return (
+    <section
+      aria-label="Assigned modules"
+      className="flex flex-col gap-3 rounded-xl border border-teal-900/40 bg-teal-950/10 p-4 shadow-soft sm:p-5"
+      data-testid="learn-assigned"
+    >
+      <SectionHeader
+        kicker="Assigned"
+        title="From your cohorts"
+        description="Modules your teachers assigned — the self-directed curriculum below stays available."
+      />
+      <ul className="grid gap-2 sm:grid-cols-2" data-testid="learn-assigned-list">
+        {assignments.map(a => {
+          const module = getLearningModule(a.moduleKey) as NonNullable<
+            ReturnType<typeof getLearningModule>
+          >;
+          const progress = moduleProgress(module, studiedKeys);
+          return (
+            <li key={`${a.cohortId}:${a.moduleKey}`} data-testid="learn-assigned-item">
+              <Link
+                to={`/learn/${a.moduleKey}`}
+                data-testid="learn-assigned-open"
+                aria-label={`${module.title} module from ${a.cohortName}, ${progress.studied} of ${progress.total} studied`}
+                className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-3 shadow-soft transition-colors hover:border-slate-700 hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 sm:px-4"
+              >
+                <ProgressRing
+                  value={progress.studied}
+                  max={progress.total}
+                  size={44}
+                  strokeWidth={5}
+                  testId={`learn-assigned-ring-${a.moduleKey}`}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-slate-100">
+                    {module.title}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-slate-500">
+                    {a.cohortName} · {progress.studied} / {progress.total} studied
+                    {progress.status === 'complete' ? ' · Complete' : ''}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
 
 function ModulesSection(): JSX.Element | null {
   const { status } = useAuth();
@@ -181,6 +267,9 @@ export default function LearnPage(): JSX.Element {
           </Reveal>
           <Reveal delay={0.05}>
             <ContinueSection />
+          </Reveal>
+          <Reveal delay={0.05}>
+            <AssignedModulesSection />
           </Reveal>
           <Reveal delay={0.05}>
             <ModulesSection />

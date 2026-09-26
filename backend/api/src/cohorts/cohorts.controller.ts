@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { CohortsService } from './cohorts.service';
+import { AssignModuleDto } from './dto/assign-module.dto';
 import { CreateCohortDto } from './dto/create-cohort.dto';
 import { JoinCohortDto } from './dto/join-cohort.dto';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
@@ -29,6 +30,13 @@ export class CohortsController {
   @Post('join')
   join(@CurrentUser() user: SafeUser, @Body() dto: JoinCohortDto) {
     return this.cohorts.join(user, dto.inviteCode);
+  }
+
+  // NOTE: declared before ':id' — Express matches in registration order and
+  // 'assignments/mine' would otherwise be captured as an :id value.
+  @Get('assignments/mine')
+  listMyAssignments(@CurrentUser() user: SafeUser) {
+    return this.cohorts.listMyAssignments(user);
   }
 
   @Get(':id')
@@ -73,5 +81,28 @@ export class CohortsController {
     @Param('userId') userId: string
   ) {
     return this.cohorts.removeMember(user, id, userId);
+  }
+
+  @Post(':id/assignments')
+  assignModule(
+    @CurrentUser() user: SafeUser,
+    @Param('id') id: string,
+    @Body() dto: AssignModuleDto
+  ) {
+    return this.cohorts.assignModule(user, id, dto.moduleKey);
+  }
+
+  @Get(':id/assignments')
+  listAssignments(@CurrentUser() user: SafeUser, @Param('id') id: string) {
+    return this.cohorts.listAssignments(user, id);
+  }
+
+  @Delete(':id/assignments/:moduleKey')
+  unassignModule(
+    @CurrentUser() user: SafeUser,
+    @Param('id') id: string,
+    @Param('moduleKey') moduleKey: string
+  ) {
+    return this.cohorts.unassignModule(user, id, moduleKey);
   }
 }

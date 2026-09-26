@@ -4,13 +4,9 @@ import { useGLTF } from '@react-three/drei';
 import { DURATIONS, EASE } from '@/components/motion';
 import { useProgressSnapshot } from '@/hooks/useProgress';
 import { useAnatomyState } from './AnatomyStateContext';
-import {
-  getAnatomySystem,
-  getAnatomySystemAssetForBody,
-  maleAnatomyAssets,
-} from './anatomyAssetConfig';
+import { getAnatomySystem, maleAnatomyAssets } from './anatomyAssetConfig';
 import { getAnatomyInformationByStructureKey } from './anatomyInformation';
-import { parseStudiedKey } from '@anatomiax/anatomy-core';
+import { parseStudiedKey, resolveAnatomyAssetUrl } from '@anatomiax/anatomy-core';
 import { buildLearningModules, sessionPositionFor } from '@/components/learning/modules';
 
 type AnatomySystemPanelProps = {
@@ -148,7 +144,8 @@ export default function AnatomySystemPanel({
   const handleRetry = (key: (typeof maleAnatomyAssets)[number]['key']) => {
     // STEP 8.46: clear the CURRENT model's asset path — the male catalog
     // path left female failures cached, so retries re-threw instantly.
-    useGLTF.clear(getAnatomySystemAssetForBody(selectedBodyModel, key).path);
+    // STEP 8.54: same key the loader uses, via the central resolver.
+    useGLTF.clear(resolveAnatomyAssetUrl(selectedBodyModel, key));
     retrySystem(key);
   };
 

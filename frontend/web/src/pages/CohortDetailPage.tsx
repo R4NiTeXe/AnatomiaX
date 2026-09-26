@@ -15,13 +15,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   canManageCohort,
   useArchiveCohort,
+  useAssignModule,
   useCohort,
+  useCohortAssignments,
   useCohortMembers,
   useLeaveCohort,
   useRegenerateInvite,
   useRemoveMember,
+  useUnassignModule,
   useUpdateCohort,
 } from '@/hooks/useCohorts';
+import { buildLearningModules } from '@/components/learning/modules';
 import type { CohortView } from '@/lib/cohorts';
 
 type EditCohortFormValues = {
@@ -337,6 +341,183 @@ function LeaveOnly({ id }: { id: string }): JSX.Element {
   );
 }
 
+function AssignmentsSection({
+  id,
+  canManage,
+  canViewDashboard,
+  isArchived,
+}: {
+  id: string;
+  canManage: boolean;
+  canViewDashboard: boolean;
+  isArchived: boolean;
+}): JSX.Element {
+  const assignmentsQuery = useCohortAssignments(id);
+  const assignMutation = useAssignModule(id);
+  const unassignMutation = useUnassignModule(id);
+  const [moduleKey, setModuleKey] = useState('');
+  const [error, setError] = useState<FriendlyAuthError | null>(null);
+  const [armedKey, setArmedKey] = useState<string | null>(null);
+
+  const modules = buildLearningModules();
+  const assigned = assignmentsQuery.data ?? [];
+  const assignedKeys = new Set(assigned.map(a => a.moduleKey));
+  const titleFor = (key: string): string => modules.find(m => m.key === key)?.title ?? key;
+
+  const handleAssign = async () => {
+    if (!moduleKey || assignMutation.isPending) return;
+    setError(null);
+    try {
+      await assignMutation.mutateAsync(moduleKey);
+      setModuleKey('');
+    } catch (err) {
+      setError(friendlyCohortError(err));
+    }
+  };
+
+  const handleUnassign = async (targetKey: string) => {
+    if (armedKey !== targetKey) {
+      setArmedKey(targetKey);
+      return;
+    }
+    setError(null);
+    try {
+      await unassignMutation.mutateAsync(targetKey);
+      setArmedKey(null);
+    } catch (err) {
+      setError(friendlyCohortError(err));
+      setArmedKey(null);
+    }
+  };
+
+  if (assignmentsQuery.isLoading && !assignmentsQuery.data) {
+    return <Skeleton className="h-10 w-full" data-testid="assignments-loading" />;
+  }
+  if (assignmentsQuery.isError) {
+    return (
+      <div className="flex flex-col gap-2">
+        <AuthErrorNotice
+          error={friendlyCohortError(assignmentsQuery.error)}
+          testId="assignments-error"
+        />
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => assignmentsQuery.refetch()}
+          data-testid="assignments-retry"
+          className="w-fit"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const options = modules.filter(m => !assignedKeys.has(m.key));
+
+  return (
+    <div className="flex flex-col gap-3">
+      {canManage && !isArchived ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Label htmlFor="assign-module">Study module</Label>
+            <select
+              id="assign-module"
+              value={moduleKey}
+              onChange={e => setModuleKey(e.target.value)}
+              data-testid="assign-module-select"
+              aria-label="Study module to assign"
+              className="h-10 rounded-lg border border-slate-700 bg-slate-800/50 px-3 text-sm text-slate-100 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            >
+              <option value="">Choose a module…</option>
+              {options.map(m => (
+                <option key={m.key} value={m.key}>
+                  {m.title} ({m.totalStructures} structures)
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={handleAssign}
+            disabled={!moduleKey || assignMutation.isPending}
+            data-testid="assign-module-submit"
+            className="shrink-0"
+          >
+            {assignMutation.isPending ? 'Assigning…' : 'Assign module'}
+          </Button>
+        </div>
+      ) : null}
+      <AuthErrorNotice error={error} testId="assignment-error" />
+      {assigned.length === 0 ? (
+        <p className="text-sm text-slate-500" data-testid="assignments-empty">
+          {canManage && !isArchived
+            ? 'No modules assigned yet. Choose a module above to assign it.'
+            : 'No modules assigned to this cohort yet.'}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2" data-testid="assignments-list">
+          {assigned.map(a => (
+            <li key={a.id} data-testid="assignment-item">
+              <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={`/learn/${a.moduleKey}`}
+                    data-testid="assignment-open"
+                    className="block truncate text-sm font-medium text-slate-100 hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                  >
+                    {titleFor(a.moduleKey)}
+                  </Link>
+                  <p className="text-xs text-slate-500">
+                    Assigned{' '}
+                    {new Date(a.createdAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                    {canViewDashboard ? (
+                      <>
+                        {' · '}
+                        <Link
+                          to={`/cohorts/${id}/dashboard`}
+                          data-testid="assignment-progress"
+                          aria-label={`View progress for ${titleFor(a.moduleKey)}`}
+                          className="rounded text-teal-300 hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                        >
+                          View progress
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                {canManage && !isArchived ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => handleUnassign(a.moduleKey)}
+                    disabled={unassignMutation.isPending}
+                    data-testid="assignment-unassign"
+                    aria-label={
+                      armedKey === a.moduleKey
+                        ? `Confirm unassign ${titleFor(a.moduleKey)}`
+                        : `Unassign ${titleFor(a.moduleKey)}`
+                    }
+                    className="shrink-0 text-red-300 hover:bg-red-950/40 hover:text-red-200"
+                  >
+                    {armedKey === a.moduleKey ? 'Confirm?' : 'Unassign'}
+                  </Button>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function MembersSection({
   id,
   canManage,
@@ -464,6 +645,8 @@ export default function CohortDetailPage(): JSX.Element {
   const cohort = cohortQuery.data ?? null;
   const isArchived = !!cohort?.archivedAt;
   const canManage = cohort ? canManageCohort(cohort.myRole, user?.role) : false;
+  const canViewDashboard =
+    (canManage || user?.role === 'TEACHER' || user?.role === 'ADMIN') && user?.role !== 'STUDENT';
 
   const handleRetry = () => {
     cohortQuery.refetch();
@@ -537,8 +720,7 @@ export default function CohortDetailPage(): JSX.Element {
                     )}
                   </p>
                 </div>
-                {(canManage || user?.role === 'TEACHER' || user?.role === 'ADMIN') &&
-                user?.role !== 'STUDENT' ? (
+                {canViewDashboard ? (
                   <Button variant="outline" size="sm" asChild className="shrink-0">
                     <Link
                       to={`/cohorts/${cohort.id}/dashboard`}
@@ -598,6 +780,25 @@ export default function CohortDetailPage(): JSX.Element {
                   canManage={canManage}
                   isArchived={isArchived}
                   ownUserId={user?.id}
+                />
+              </CardContent>
+            </Card>
+          </Reveal>
+
+          <Reveal delay={0.09}>
+            <Card>
+              <CardHeader className="pb-3">
+                <p className="ax-kicker">Curriculum</p>
+                <CardTitle className="text-sm font-bold tracking-tight text-slate-100">
+                  Assigned modules
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AssignmentsSection
+                  id={cohort.id}
+                  canManage={canManage}
+                  canViewDashboard={canViewDashboard}
+                  isArchived={isArchived}
                 />
               </CardContent>
             </Card>

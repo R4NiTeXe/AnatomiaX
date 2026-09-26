@@ -1,7 +1,8 @@
-import { Component, Suspense, useEffect, useRef, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
+import { resolveAnatomyAssetUrl } from '@anatomiax/anatomy-core';
 import { useAnatomyState } from './AnatomyStateContext';
 import type { AnatomySystemAsset } from './anatomyTypes';
 import { createStructureKey, extractOntologyId } from './anatomyRegistry';
@@ -159,7 +160,6 @@ type AnatomyGltfProps = {
 };
 
 function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
-  const { scene } = useGLTF(asset.path, false, true);
   const {
     systemOpacity,
     selectedStructure,
@@ -176,6 +176,14 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     selectedBodyModel,
     skinTone,
   } = useAnatomyState();
+  // STEP 8.54: single resolver contract for the loader cache key. Memoized so
+  // rerenders (tone, sidebar, resize) reuse the identical string and never
+  // refetch; model switches change the key exactly once.
+  const modelUrl = useMemo(
+    () => resolveAnatomyAssetUrl(selectedBodyModel, asset.key),
+    [selectedBodyModel, asset.key]
+  );
+  const { scene } = useGLTF(modelUrl, false, true);
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
   const entryMapRef = useRef<Map<THREE.Mesh, MeshMaterialEntry>>(new Map());
   const keyCacheRef = useRef<Map<THREE.Mesh, CachedMeshKey>>(new Map());

@@ -232,4 +232,119 @@ describe('CohortsService', () => {
       );
     });
   });
+
+  describe('assignments', () => {
+    const assignmentRow = (overrides: Record<string, unknown> = {}) => ({
+      id: 'a-1',
+      cohortId: 'cohort-1',
+      moduleKey: 'nervous',
+      assignedById: 'teacher-1',
+      createdAt: new Date(),
+      ...overrides,
+    });
+
+    beforeEach(() => {
+      (prisma as Record<string, unknown>).cohortAssignment = {
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        delete: jest.fn(),
+      };
+    });
+
+    const mockAssignment = () => prisma as unknown as Record<string, Record<string, jest.Mock>>;
+
+    it('manager can assign a module; duplicate returns existing row', async () => {
+      ownerCtx();
+      const mocks = mockAssignment();
+      mocks.cohortAssignment.findFirst.mockResolvedValue(null);
+      mocks.cohortAssignment.create.mockResolvedValue(assignmentRow());
+      const created = await service.assignModule(TEACHER as never, 'cohort-1', 'nervous');
+      expect(created).toMatchObject({ cohortId: 'cohort-1', moduleKey: 'nervous' });
+      expect(mocks.cohortAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            cohortId: 'cohort-1',
+            moduleKey: 'nervous',
+            assignedById: 'teacher-1',
+          }),
+        })
+      );
+      mocks.cohortAssignment.findFirst.mockResolvedValue(assignmentRow());
+      const again = await service.assignModule(TEACHER as never, 'cohort-1', 'nervous');
+      expect(again.id).toBe('a-1');
+      expect(mocks.cohortAssignment.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('non-manager cannot assign (403)', async () => {
+      prisma.cohort.findUnique.mockResolvedValue(cohortRow());
+      prisma.cohortMember.findFirst.mockResolvedValue({ role: 'STUDENT' });
+      await expect(
+        service.assignModule(STUDENT as never, 'cohort-1', 'nervous')
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('outsider cannot assign (404, no oracle)', async () => {
+      prisma.cohort.findUnique.mockResolvedValue(cohortRow());
+      prisma.cohortMember.findFirst.mockResolvedValue(null);
+      await expect(
+        service.assignModule(STUDENT as never, 'cohort-1', 'nervous')
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('archived cohorts reject assignment', async () => {
+      prisma.cohort.findUnique.mockResolvedValue(cohortRow({ archivedAt: new Date() }));
+      prisma.cohortMember.findFirst.mockResolvedValue(null);
+      await expect(
+        service.assignModule(TEACHER as never, 'cohort-1', 'nervous')
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('members can list assignments; outsiders cannot', async () => {
+      prisma.cohort.findUnique.mockResolvedValue(cohortRow());
+      prisma.cohortMember.findFirst.mockResolvedValue({ role: 'STUDENT' });
+      mockAssignment().cohortAssignment.findMany.mockResolvedValue([assignmentRow()]);
+      const list = await service.listAssignments(STUDENT as never, 'cohort-1');
+      expect(list).toHaveLength(1);
+      expect(list[0]).toMatchObject({ moduleKey: 'nervous' });
+      prisma.cohortMember.findFirst.mockResolvedValue(null);
+      await expect(service.listAssignments(STUDENT as never, 'cohort-1')).rejects.toBeInstanceOf(
+        NotFoundException
+      );
+    });
+
+    it('manager can unassign; missing assignment 404s', async () => {
+      ownerCtx();
+      const mocks = mockAssignment();
+      mocks.cohortAssignment.findFirst.mockResolvedValue(assignmentRow());
+      await service.unassignModule(TEACHER as never, 'cohort-1', 'nervous');
+      expect(mocks.cohortAssignment.delete).toHaveBeenCalledWith({ where: { id: 'a-1' } });
+      mocks.cohortAssignment.findFirst.mockResolvedValue(null);
+      await expect(
+        service.unassignModule(TEACHER as never, 'cohort-1', 'nervous')
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('listMyAssignments aggregates only own cohorts', async () => {
+      prisma.cohortMember.findMany.mockResolvedValue([
+        { cohortId: 'c-1', cohort: cohortRow({ id: 'c-1', name: 'Bio 101' }) },
+      ]);
+      // The DB `in` clause already scopes rows to member cohorts.
+      mockAssignment().cohortAssignment.findMany.mockResolvedValue([
+        assignmentRow({ cohortId: 'c-1' }),
+      ]);
+      const list = await service.listMyAssignments(STUDENT as never);
+      expect(list).toHaveLength(1);
+      expect(list[0]).toMatchObject({ cohortId: 'c-1', cohortName: 'Bio 101' });
+      expect(mockAssignment().cohortAssignment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { cohortId: { in: ['c-1'] } } })
+      );
+    });
+
+    it('listMyAssignments is empty with no memberships', async () => {
+      prisma.cohortMember.findMany.mockResolvedValue([]);
+      const list = await service.listMyAssignments(STUDENT as never);
+      expect(list).toEqual([]);
+    });
+  });
 });

@@ -11,7 +11,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { canManageCohort, useCohort, useCohortProgress } from '@/hooks/useCohorts';
+import {
+  canManageCohort,
+  useCohort,
+  useCohortAssignments,
+  useCohortProgress,
+} from '@/hooks/useCohorts';
+import {
+  ASSIGNMENT_STATUS_LABEL,
+  assignmentStudentRows,
+  summarizeAssignment,
+  type AssignmentSort,
+  type AssignmentSummary,
+} from '@/lib/cohortAnalytics';
 import { buildHumanFocusUrl } from '@/lib/humanLink';
 
 function formatDate(value: string | Date | null): string {
@@ -53,6 +65,7 @@ export default function CohortDashboardPage(): JSX.Element {
   const { user } = useAuth();
   const cohortQuery = useCohort(id);
   const progressQuery = useCohortProgress(id);
+  const assignmentsQuery = useCohortAssignments(id);
   const [memberQuery, setMemberQuery] = useState('');
 
   const filteredProgress = useMemo(() => {
@@ -71,6 +84,33 @@ export default function CohortDashboardPage(): JSX.Element {
   const isArchived = !!cohort?.archivedAt;
   const isStudent = user?.role === 'STUDENT';
   const canManage = cohort ? canManageCohort(cohort.myRole, user?.role) : false;
+
+  // Assignment analytics (STEP 8.53) — summaries + per-student rows derived
+  // from the same two authorized queries via the centralized
+  // `lib/cohortAnalytics` model (canonical moduleProgress rule).
+  // NOTE: must stay above the early returns (hooks order).
+  const [selectedModuleKey, setSelectedModuleKey] = useState<string | null>(null);
+  const [assignmentSort, setAssignmentSort] = useState<AssignmentSort>('completion');
+  const assignmentSummaries = useMemo(() => {
+    const raw = assignmentsQuery.data;
+    const list = Array.isArray(raw) ? raw : [];
+    const members = progressQuery.data ?? null;
+    if (!canManage || !members || list.length === 0) return [];
+    return list.map(a => ({
+      moduleKey: a.moduleKey,
+      summary: summarizeAssignment(a.moduleKey, members),
+    }));
+  }, [assignmentsQuery.data, progressQuery.data, canManage]);
+  const effectiveSelectedKey = assignmentSummaries.some(s => s.moduleKey === selectedModuleKey)
+    ? selectedModuleKey
+    : (assignmentSummaries[0]?.moduleKey ?? null);
+  const selectedSummary: AssignmentSummary | null =
+    assignmentSummaries.find(s => s.moduleKey === effectiveSelectedKey)?.summary ?? null;
+  const selectedRows = useMemo(() => {
+    if (!effectiveSelectedKey || !progressQuery.data) return [];
+    return assignmentStudentRows(effectiveSelectedKey, progressQuery.data, assignmentSort);
+  }, [effectiveSelectedKey, progressQuery.data, assignmentSort]);
+  const isAssignmentsLoading = assignmentsQuery.isLoading && !assignmentsQuery.data;
 
   if (cohortQuery.isLoading && !cohort) {
     return (
@@ -375,6 +415,247 @@ export default function CohortDashboardPage(): JSX.Element {
         </section>
       </Reveal>
 
+      {/* Assignment analytics — per-module summaries + per-student progress */}
+      {showProgress ? (
+        <Reveal delay={0.06}>
+          <section aria-labelledby="assignment-analytics-heading">
+            <Card>
+              <CardHeader>
+                <p className="ax-kicker">Assignments</p>
+                <CardTitle
+                  id="assignment-analytics-heading"
+                  className="mt-1 text-sm font-bold tracking-tight text-slate-100"
+                >
+                  Assignment progress
+                </CardTitle>
+                <CardDescription>
+                  Completion counts derive from member studied structures (complete means every
+                  module structure studied). Select an assignment to see per-student progress.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isAssignmentsLoading || isProgressLoading ? (
+                  <div className="flex flex-col gap-3" data-testid="dashboard-assignments-loading">
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                  </div>
+                ) : assignmentsQuery.isError ? (
+                  <div className="flex flex-col gap-3">
+                    <AuthErrorNotice
+                      error={friendlyCohortError(assignmentsQuery.error)}
+                      testId="dashboard-assignments-error"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => assignmentsQuery.refetch()}
+                      data-testid="dashboard-assignments-retry"
+                      className="w-fit"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : progressQuery.isError ? (
+                  <div className="flex flex-col gap-3">
+                    <AuthErrorNotice
+                      error={friendlyCohortError(progressQuery.error)}
+                      testId="dashboard-assignments-progress-error"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => progressQuery.refetch()}
+                      data-testid="dashboard-assignments-progress-retry"
+                      className="w-fit"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : assignmentSummaries.length === 0 ? (
+                  <div
+                    className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-8 text-center"
+                    data-testid="dashboard-assignments-empty"
+                  >
+                    <p className="text-sm font-medium text-slate-200">No modules assigned yet</p>
+                    <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
+                      Assign a study module from the cohort page. Progress per assignment will
+                      appear here.
+                    </p>
+                    <Button variant="outline" size="sm" asChild className="mt-4">
+                      <Link to={`/cohorts/${cohort.id}`}>Go to cohort</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <ul className="flex flex-col gap-2" data-testid="dashboard-assignments">
+                      {assignmentSummaries.map(({ moduleKey, summary }) => {
+                        const isSelected = moduleKey === effectiveSelectedKey;
+                        return (
+                          <li key={moduleKey} data-testid="dashboard-assignment-row">
+                            <div
+                              className={`flex flex-col gap-2 rounded-xl border px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between ${
+                                isSelected
+                                  ? 'border-teal-800/60 bg-teal-950/10'
+                                  : 'border-slate-800 bg-slate-950/60'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  to={`/learn/${moduleKey}`}
+                                  className="rounded font-medium text-teal-300 hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                                >
+                                  {summary?.title ?? moduleKey}
+                                </Link>
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  {summary ? (
+                                    <>
+                                      {summary.totalStructures} structures · {summary.totalMembers}{' '}
+                                      member{summary.totalMembers === 1 ? '' : 's'}
+                                    </>
+                                  ) : (
+                                    'Module data unavailable'
+                                  )}
+                                </p>
+                                {summary ? (
+                                  <p
+                                    className="mt-0.5 text-xs text-slate-400"
+                                    data-testid="dashboard-assignment-progress"
+                                  >
+                                    {summary.completed} complete · {summary.inProgress} in progress
+                                    · {summary.notStarted} not started
+                                  </p>
+                                ) : null}
+                              </div>
+                              <Button
+                                variant={isSelected ? 'default' : 'outline'}
+                                size="sm"
+                                type="button"
+                                onClick={() => setSelectedModuleKey(moduleKey)}
+                                aria-pressed={isSelected}
+                                data-testid="dashboard-assignment-select"
+                                className="w-fit shrink-0"
+                              >
+                                {isSelected ? 'Selected' : 'View students'}
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {effectiveSelectedKey ? (
+                      <div
+                        className="rounded-xl border border-slate-800 bg-slate-950/40 p-4"
+                        data-testid="dashboard-assignment-detail"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <h3 className="text-sm font-semibold text-slate-100">
+                            Student progress — {selectedSummary?.title ?? effectiveSelectedKey}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Label
+                              htmlFor="dashboard-assignment-sort"
+                              className="text-xs text-slate-400"
+                            >
+                              Sort
+                            </Label>
+                            <select
+                              id="dashboard-assignment-sort"
+                              value={assignmentSort}
+                              onChange={e => setAssignmentSort(e.target.value as AssignmentSort)}
+                              data-testid="dashboard-assignment-sort"
+                              aria-label="Sort students by completion or name"
+                              className="h-9 rounded-lg border border-slate-700 bg-slate-800/50 px-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            >
+                              <option value="completion">Completion</option>
+                              <option value="name">Name</option>
+                            </select>
+                          </div>
+                        </div>
+                        {selectedSummary === null ? (
+                          <p
+                            className="mt-3 text-sm text-slate-500"
+                            data-testid="dashboard-student-empty"
+                          >
+                            Module data unavailable for this assignment.
+                          </p>
+                        ) : selectedRows.length === 0 ? (
+                          <p
+                            className="mt-3 text-sm text-slate-500"
+                            data-testid="dashboard-student-empty"
+                          >
+                            No members in this cohort yet.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="mt-2 text-xs text-slate-500" role="status">
+                              {selectedSummary.completed} of {selectedSummary.totalMembers} members
+                              completed {selectedSummary.title}.
+                            </p>
+                            <ul
+                              className="mt-2 flex flex-col gap-2"
+                              data-testid="dashboard-student-list"
+                            >
+                              {selectedRows.map(row => (
+                                <li
+                                  key={row.userId}
+                                  data-testid="dashboard-student-row"
+                                  className="flex flex-col gap-1.5 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="truncate text-sm font-medium text-slate-100">
+                                        {row.name ?? 'Unnamed member'}
+                                      </span>
+                                      <Badge
+                                        variant="outline"
+                                        className="shrink-0 text-[11px] capitalize"
+                                      >
+                                        {row.role.toLowerCase()}
+                                      </Badge>
+                                      <Badge
+                                        variant={
+                                          row.status === 'complete'
+                                            ? 'teal'
+                                            : row.status === 'in-progress'
+                                              ? 'secondary'
+                                              : 'outline'
+                                        }
+                                        className="shrink-0 text-[11px]"
+                                        data-testid="dashboard-student-status"
+                                      >
+                                        {ASSIGNMENT_STATUS_LABEL[row.status]}
+                                      </Badge>
+                                    </div>
+                                    <p className="mt-1 font-mono text-xs text-slate-400">
+                                      studied {row.studied} of {row.total} ({row.percent}%)
+                                    </p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    asChild
+                                    className="w-fit shrink-0 text-teal-300 hover:text-teal-200"
+                                  >
+                                    <Link
+                                      to={`/learn/${effectiveSelectedKey}`}
+                                      aria-label={`Open ${selectedSummary.title} module for ${row.name ?? 'member'}`}
+                                    >
+                                      Open module →
+                                    </Link>
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        </Reveal>
+      ) : null}
+
       {/* Member progress — searchable, operational density */}
       <Reveal delay={0.08}>
         <section aria-labelledby="members-heading">
@@ -483,204 +764,208 @@ export default function CohortDashboardPage(): JSX.Element {
                   </Button>
                 </div>
               ) : (
-                <Stagger>
-                  <div className="flex flex-col gap-4" data-testid="dashboard-progress-list">
-                    {filteredProgress!.map(member => {
-                      const studiedCount = member.studiedKeys.length;
-                      const totalQuizzes = member.quizAttempts.length;
-                      const sortedAttempts = [...member.quizAttempts].sort(
-                        (a, b) =>
-                          new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
-                      );
-                      const latest = sortedAttempts[0] ?? null;
-                      const best = bestScoreText(member.quizAttempts);
-                      const lastActivity = latest ? formatDateTime(latest.completedAt) : '—';
-                      const recentKey = member.studiedKeys[0] ?? null;
-                      const isTopPerformer =
-                        member.quizAttempts.length > 0 &&
-                        bestScoreText(member.quizAttempts) === bestOverall &&
-                        bestOverall !== '—';
-                      return (
-                        <StaggerItem key={member.userId} data-testid="dashboard-member-progress">
-                          <Card
-                            className={`overflow-hidden border-slate-800 bg-slate-950/60 transition-colors hover:border-slate-700 ${isArchived ? 'opacity-90' : ''}`}
-                          >
-                            <CardContent className="p-0">
-                              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <h3
-                                      className="truncate text-sm font-semibold text-slate-100"
-                                      data-testid="dashboard-member-name"
-                                    >
-                                      {member.name ?? 'Unnamed member'}
-                                    </h3>
-                                    <Badge
-                                      variant={member.role === 'TEACHER' ? 'secondary' : 'outline'}
-                                      className="capitalize"
-                                    >
-                                      {member.role.toLowerCase()}
-                                    </Badge>
-                                    {isTopPerformer ? (
-                                      <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
-                                        Top
+                <>
+                  <Stagger>
+                    <div className="flex flex-col gap-4" data-testid="dashboard-progress-list">
+                      {filteredProgress!.map(member => {
+                        const studiedCount = member.studiedKeys.length;
+                        const totalQuizzes = member.quizAttempts.length;
+                        const sortedAttempts = [...member.quizAttempts].sort(
+                          (a, b) =>
+                            new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+                        );
+                        const latest = sortedAttempts[0] ?? null;
+                        const best = bestScoreText(member.quizAttempts);
+                        const lastActivity = latest ? formatDateTime(latest.completedAt) : '—';
+                        const recentKey = member.studiedKeys[0] ?? null;
+                        const isTopPerformer =
+                          member.quizAttempts.length > 0 &&
+                          bestScoreText(member.quizAttempts) === bestOverall &&
+                          bestOverall !== '—';
+                        return (
+                          <StaggerItem key={member.userId} data-testid="dashboard-member-progress">
+                            <Card
+                              className={`overflow-hidden border-slate-800 bg-slate-950/60 transition-colors hover:border-slate-700 ${isArchived ? 'opacity-90' : ''}`}
+                            >
+                              <CardContent className="p-0">
+                                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <h3
+                                        className="truncate text-sm font-semibold text-slate-100"
+                                        data-testid="dashboard-member-name"
+                                      >
+                                        {member.name ?? 'Unnamed member'}
+                                      </h3>
+                                      <Badge
+                                        variant={
+                                          member.role === 'TEACHER' ? 'secondary' : 'outline'
+                                        }
+                                        className="capitalize"
+                                      >
+                                        {member.role.toLowerCase()}
                                       </Badge>
-                                    ) : null}
-                                  </div>
-                                  <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:flex sm:flex-wrap sm:gap-3">
-                                    <div className="flex items-center gap-1">
-                                      <dt className="text-slate-500">Studied</dt>
-                                      <dd
-                                        className="font-medium text-slate-200"
-                                        data-testid="dashboard-member-studied"
-                                      >
-                                        {studiedCount}
-                                      </dd>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <dt className="text-slate-500">Quizzes</dt>
-                                      <dd
-                                        className="font-medium text-slate-200"
-                                        data-testid="dashboard-member-quizzes"
-                                      >
-                                        {totalQuizzes}
-                                      </dd>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <dt className="text-slate-500">Best</dt>
-                                      <dd
-                                        className="font-mono text-slate-300"
-                                        data-testid="dashboard-member-best"
-                                      >
-                                        {best}
-                                      </dd>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <dt className="text-slate-500">Latest</dt>
-                                      <dd
-                                        className="font-mono"
-                                        data-testid="dashboard-member-latest"
-                                      >
-                                        <Badge
-                                          variant={
-                                            latest && latest.score === latest.total
-                                              ? 'teal'
-                                              : 'secondary'
-                                          }
-                                          className="font-mono text-xs"
-                                        >
-                                          {latest ? `${latest.score}/${latest.total}` : '—'}
+                                      {isTopPerformer ? (
+                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
+                                          Top
                                         </Badge>
-                                      </dd>
+                                      ) : null}
                                     </div>
-                                  </dl>
-                                  <p className="mt-2 text-xs text-slate-500">
-                                    Joined {formatDate(member.joinedAt)} · Last activity{' '}
-                                    <span className="text-slate-400">{lastActivity}</span>
-                                  </p>
-                                </div>
-
-                                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                  {recentKey ? (
-                                    <Button
-                                      variant="default"
-                                      size="sm"
-                                      asChild
-                                      className="h-8 bg-teal-600 text-white hover:bg-teal-700"
-                                    >
-                                      <Link
-                                        to={buildHumanFocusUrl(recentKey)}
-                                        data-testid="dashboard-member-focus"
-                                        aria-label={`Open ${member.name ?? 'member'} recent structure in 3D`}
-                                      >
-                                        Open recent in 3D →
-                                      </Link>
-                                    </Button>
-                                  ) : null}
-                                </div>
-                              </div>
-
-                              {member.studiedKeys.length > 0 ? (
-                                <div className="border-t border-slate-800 bg-slate-900/30 px-4 py-3">
-                                  <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                                    Recent structures
-                                  </p>
-                                  <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {member.studiedKeys.slice(0, 3).map(k => {
-                                      const short = k.split(':').pop() ?? k;
-                                      const label =
-                                        short.length > 28 ? `${short.slice(0, 28)}…` : short;
-                                      return (
-                                        <Button
-                                          key={k}
-                                          variant="outline"
-                                          size="sm"
-                                          asChild
-                                          className="h-7 border-slate-700 bg-slate-800/40 px-2.5 text-xs hover:bg-slate-700"
+                                    <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:flex sm:flex-wrap sm:gap-3">
+                                      <div className="flex items-center gap-1">
+                                        <dt className="text-slate-500">Studied</dt>
+                                        <dd
+                                          className="font-medium text-slate-200"
+                                          data-testid="dashboard-member-studied"
                                         >
-                                          <Link
-                                            to={buildHumanFocusUrl(k)}
-                                            data-testid="dashboard-member-open"
-                                            aria-label={`Open ${short} in 3D viewer`}
-                                            title={k}
+                                          {studiedCount}
+                                        </dd>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <dt className="text-slate-500">Quizzes</dt>
+                                        <dd
+                                          className="font-medium text-slate-200"
+                                          data-testid="dashboard-member-quizzes"
+                                        >
+                                          {totalQuizzes}
+                                        </dd>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <dt className="text-slate-500">Best</dt>
+                                        <dd
+                                          className="font-mono text-slate-300"
+                                          data-testid="dashboard-member-best"
+                                        >
+                                          {best}
+                                        </dd>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <dt className="text-slate-500">Latest</dt>
+                                        <dd
+                                          className="font-mono"
+                                          data-testid="dashboard-member-latest"
+                                        >
+                                          <Badge
+                                            variant={
+                                              latest && latest.score === latest.total
+                                                ? 'teal'
+                                                : 'secondary'
+                                            }
+                                            className="font-mono text-xs"
                                           >
-                                            Open {label}
-                                          </Link>
-                                        </Button>
-                                      );
-                                    })}
-                                    {member.studiedKeys.length > 3 ? (
-                                      <span className="inline-flex items-center px-2 py-1 text-xs text-slate-500">
-                                        +{member.studiedKeys.length - 3} more
-                                      </span>
+                                            {latest ? `${latest.score}/${latest.total}` : '—'}
+                                          </Badge>
+                                        </dd>
+                                      </div>
+                                    </dl>
+                                    <p className="mt-2 text-xs text-slate-500">
+                                      Joined {formatDate(member.joinedAt)} · Last activity{' '}
+                                      <span className="text-slate-400">{lastActivity}</span>
+                                    </p>
+                                  </div>
+
+                                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                    {recentKey ? (
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        asChild
+                                        className="h-8 bg-teal-600 text-white hover:bg-teal-700"
+                                      >
+                                        <Link
+                                          to={buildHumanFocusUrl(recentKey)}
+                                          data-testid="dashboard-member-focus"
+                                          aria-label={`Open ${member.name ?? 'member'} recent structure in 3D`}
+                                        >
+                                          Open recent in 3D →
+                                        </Link>
+                                      </Button>
                                     ) : null}
                                   </div>
                                 </div>
-                              ) : null}
 
-                              {member.quizAttempts.length > 0 ? (
-                                <div className="border-t border-slate-800 px-4 py-3">
-                                  <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                                    Quiz attempts
-                                  </p>
-                                  <ul
-                                    className="mt-2 flex flex-col gap-1.5"
-                                    data-testid="dashboard-member-attempts"
-                                  >
-                                    {sortedAttempts.slice(0, 3).map(a => (
-                                      <li
-                                        key={a.id}
-                                        data-testid="dashboard-member-attempt"
-                                        className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs"
-                                      >
-                                        <span className="flex items-center gap-2">
-                                          <Badge
-                                            variant={a.score === a.total ? 'teal' : 'secondary'}
-                                            className="font-mono"
+                                {member.studiedKeys.length > 0 ? (
+                                  <div className="border-t border-slate-800 bg-slate-900/30 px-4 py-3">
+                                    <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+                                      Recent structures
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                      {member.studiedKeys.slice(0, 3).map(k => {
+                                        const short = k.split(':').pop() ?? k;
+                                        const label =
+                                          short.length > 28 ? `${short.slice(0, 28)}…` : short;
+                                        return (
+                                          <Button
+                                            key={k}
+                                            variant="outline"
+                                            size="sm"
+                                            asChild
+                                            className="h-7 border-slate-700 bg-slate-800/40 px-2.5 text-xs hover:bg-slate-700"
                                           >
-                                            {a.score}/{a.total}
-                                          </Badge>
-                                          <span className="text-slate-400">{a.bodyModel}</span>
+                                            <Link
+                                              to={buildHumanFocusUrl(k)}
+                                              data-testid="dashboard-member-open"
+                                              aria-label={`Open ${short} in 3D viewer`}
+                                              title={k}
+                                            >
+                                              Open {label}
+                                            </Link>
+                                          </Button>
+                                        );
+                                      })}
+                                      {member.studiedKeys.length > 3 ? (
+                                        <span className="inline-flex items-center px-2 py-1 text-xs text-slate-500">
+                                          +{member.studiedKeys.length - 3} more
                                         </span>
-                                        <span className="text-slate-500">
-                                          {formatDate(a.completedAt)}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ) : (
-                                <div className="border-t border-slate-800 px-4 py-3">
-                                  <p className="text-xs italic text-slate-500">No quizzes yet</p>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        </StaggerItem>
-                      );
-                    })}
-                  </div>
-                </Stagger>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                ) : null}
+
+                                {member.quizAttempts.length > 0 ? (
+                                  <div className="border-t border-slate-800 px-4 py-3">
+                                    <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+                                      Quiz attempts
+                                    </p>
+                                    <ul
+                                      className="mt-2 flex flex-col gap-1.5"
+                                      data-testid="dashboard-member-attempts"
+                                    >
+                                      {sortedAttempts.slice(0, 3).map(a => (
+                                        <li
+                                          key={a.id}
+                                          data-testid="dashboard-member-attempt"
+                                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs"
+                                        >
+                                          <span className="flex items-center gap-2">
+                                            <Badge
+                                              variant={a.score === a.total ? 'teal' : 'secondary'}
+                                              className="font-mono"
+                                            >
+                                              {a.score}/{a.total}
+                                            </Badge>
+                                            <span className="text-slate-400">{a.bodyModel}</span>
+                                          </span>
+                                          <span className="text-slate-500">
+                                            {formatDate(a.completedAt)}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ) : (
+                                  <div className="border-t border-slate-800 px-4 py-3">
+                                    <p className="text-xs italic text-slate-500">No quizzes yet</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </StaggerItem>
+                        );
+                      })}
+                    </div>
+                  </Stagger>
+                </>
               )}
               {progressDenied ? (
                 <p

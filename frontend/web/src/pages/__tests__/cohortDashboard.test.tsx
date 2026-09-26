@@ -87,6 +87,16 @@ interface FakeProgress {
 
 let cohortStore: Map<string, FakeCohort>;
 let progressStore: Map<string, FakeProgress[]>;
+let assignmentsStore: Map<
+  string,
+  Array<{
+    id: string;
+    cohortId: string;
+    moduleKey: string;
+    assignedById: string | null;
+    createdAt: string;
+  }>
+>;
 
 function seed() {
   cohortStore = new Map([
@@ -160,6 +170,28 @@ function seed() {
     ],
     ['c-B', []],
   ]);
+  assignmentsStore = new Map([
+    [
+      'c-A',
+      [
+        {
+          id: 'a-1',
+          cohortId: 'c-A',
+          moduleKey: 'skin',
+          assignedById: 't-a',
+          createdAt: '2026-09-20T00:00:00.000Z',
+        },
+        {
+          id: 'a-2',
+          cohortId: 'c-A',
+          moduleKey: 'nervous',
+          assignedById: 't-a',
+          createdAt: '2026-09-21T00:00:00.000Z',
+        },
+      ],
+    ],
+    ['c-B', []],
+  ]);
 }
 
 function mockBackend(me: typeof TEACHER_A) {
@@ -203,6 +235,14 @@ function mockBackend(me: typeof TEACHER_A) {
           contractError(403, { code: 'FORBIDDEN', message: 'Insufficient permissions' })
         );
       const data = progressStore.get(id) ?? [];
+      return Promise.resolve(jsonResponse(data));
+    }
+    if (rest === '/assignments' && (init?.method ?? 'GET') === 'GET') {
+      if (!isOwner && !isAdmin)
+        return Promise.resolve(
+          contractError(403, { code: 'FORBIDDEN', message: 'Insufficient permissions' })
+        );
+      const data = assignmentsStore.get(id) ?? [];
       return Promise.resolve(jsonResponse(data));
     }
     return Promise.resolve(jsonResponse({}, 404));
@@ -442,6 +482,68 @@ describe('cohort dashboard (8.20.7)', () => {
     await new Promise(r => setTimeout(r, 150));
     expect(client.getQueryData(['cohorts', 'progress', 't-a', 'c-A'])).toBeUndefined();
     expect(client.getQueryData(['cohorts', 'mine', 't-a'])).toBeUndefined();
+  });
+
+  it('teacher sees assignment summaries with complete/in-progress/not-started counts (8.53)', async () => {
+    mockBackend(TEACHER_A);
+    renderDashboard(TEACHER_A);
+    expect(
+      await screen.findByTestId('dashboard-assignments', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    // seeded: Ada studied 1 of 2 skin keys (in progress), Sam studied 0 (not started)
+    const rows = screen.getAllByTestId('dashboard-assignment-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('Skin');
+    expect(rows[0]).toHaveTextContent('2 structures');
+    expect(rows[0]).toHaveTextContent('0 complete');
+    expect(rows[0]).toHaveTextContent('1 in progress');
+    expect(rows[0]).toHaveTextContent('1 not started');
+    expect(rows[1]).toHaveTextContent('Nervous');
+    expect(rows[0].querySelector('a')).toHaveAttribute('href', '/learn/skin');
+  });
+
+  it('teacher selects an assignment and sees sorted per-student progress (8.53)', async () => {
+    mockBackend(TEACHER_A);
+    renderDashboard(TEACHER_A);
+    await screen.findByTestId('dashboard-assignments', {}, { timeout: 4000 });
+    // first assignment auto-selected: Ada in progress, Sam not started
+    const detail = await screen.findByTestId('dashboard-assignment-detail', {}, { timeout: 4000 });
+    expect(detail).toHaveTextContent('Student progress — Skin');
+    const list = screen.getByTestId('dashboard-student-list');
+    expect(list).toBeInTheDocument();
+    let studentRows = screen.getAllByTestId('dashboard-student-row');
+    expect(studentRows).toHaveLength(2);
+    expect(studentRows[0]).toHaveTextContent('Ada');
+    expect(studentRows[0]).toHaveTextContent('In progress');
+    expect(studentRows[0]).toHaveTextContent('studied 1 of 2 (50%)');
+    expect(studentRows[1]).toHaveTextContent('Sam');
+    expect(studentRows[1]).toHaveTextContent('Not started');
+    // switch to the nervous assignment: Sam in progress, Ada not started
+    const selects = screen.getAllByTestId('dashboard-assignment-select');
+    fireEvent.click(selects[1]);
+    expect(
+      await screen.findByText('Student progress — Nervous', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    studentRows = screen.getAllByTestId('dashboard-student-row');
+    expect(studentRows[0]).toHaveTextContent('Sam');
+    expect(studentRows[0]).toHaveTextContent('In progress');
+    expect(studentRows[1]).toHaveTextContent('Ada');
+    // sort by name keeps deterministic order
+    fireEvent.change(screen.getByTestId('dashboard-assignment-sort'), {
+      target: { value: 'name' },
+    });
+    studentRows = await screen.findAllByTestId('dashboard-student-row');
+    expect(studentRows[0]).toHaveTextContent('Ada');
+    expect(studentRows[1]).toHaveTextContent('Sam');
+  });
+
+  it('non-owner teacher sees no assignment completion readout', async () => {
+    mockBackend(TEACHER_B);
+    renderDashboard(TEACHER_B);
+    expect(
+      await screen.findByTestId('dashboard-progress-denied', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-assignments')).not.toBeInTheDocument();
   });
 
   it('exposes semantic nav, headings, and keyboard focusable controls', async () => {

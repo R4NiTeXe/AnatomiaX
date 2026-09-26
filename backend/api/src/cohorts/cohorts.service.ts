@@ -29,6 +29,18 @@ export interface CohortMemberView {
   joinedAt: Date;
 }
 
+export interface CohortAssignmentView {
+  id: string;
+  cohortId: string;
+  moduleKey: string;
+  assignedById: string | null;
+  createdAt: Date;
+}
+
+export interface MyAssignmentView extends CohortAssignmentView {
+  cohortName: string;
+}
+
 interface AccessContext {
   cohort: Cohort;
   membership: CohortMember | null;
@@ -169,6 +181,70 @@ export class CohortsService {
     await this.prisma.cohortMember.delete({ where: { id: membership.id } });
   }
 
+  /**
+   * Assigns an existing curriculum module to a cohort (STEP 8.52).
+   * Idempotent: re-assigning returns the existing row (no duplicates —
+   * enforced by @@unique plus this read-first check).
+   */
+  async assignModule(
+    actor: SafeUser,
+    cohortId: string,
+    moduleKey: string
+  ): Promise<CohortAssignmentView> {
+    const ctx = await this.requireManager(actor, cohortId);
+    this.requireActive(ctx.cohort);
+    const existing = await this.prisma.cohortAssignment.findFirst({
+      where: { cohortId, moduleKey },
+    });
+    if (existing) return this.toAssignmentView(existing);
+    const created = await this.prisma.cohortAssignment.create({
+      data: { cohortId, moduleKey, assignedById: actor.id },
+    });
+    return this.toAssignmentView(created);
+  }
+
+  /** Cohort assignments visible to any member (students included). */
+  async listAssignments(viewer: SafeUser, cohortId: string): Promise<CohortAssignmentView[]> {
+    await this.requireViewer(viewer, cohortId);
+    const rows = await this.prisma.cohortAssignment.findMany({
+      where: { cohortId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map(r => this.toAssignmentView(r));
+  }
+
+  /** Removes an assignment link (learning data itself is untouched). */
+  async unassignModule(actor: SafeUser, cohortId: string, moduleKey: string): Promise<void> {
+    const ctx = await this.requireManager(actor, cohortId);
+    this.requireActive(ctx.cohort);
+    const existing = await this.prisma.cohortAssignment.findFirst({
+      where: { cohortId, moduleKey },
+    });
+    if (!existing) {
+      throw new NotFoundException('Assignment not found');
+    }
+    await this.prisma.cohortAssignment.delete({ where: { id: existing.id } });
+  }
+
+  /** Every assignment across the caller's own cohorts, newest first. */
+  async listMyAssignments(user: SafeUser): Promise<MyAssignmentView[]> {
+    const memberships = await this.prisma.cohortMember.findMany({
+      where: { userId: user.id },
+      include: { cohort: true },
+      orderBy: { joinedAt: 'desc' },
+    });
+    if (memberships.length === 0) return [];
+    const rows = await this.prisma.cohortAssignment.findMany({
+      where: { cohortId: { in: memberships.map(m => m.cohortId) } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const names = new Map(memberships.map(m => [m.cohortId, m.cohort.name]));
+    return rows.map(r => ({
+      ...this.toAssignmentView(r),
+      cohortName: names.get(r.cohortId) ?? '',
+    }));
+  }
+
   async listMembers(viewer: SafeUser, cohortId: string): Promise<CohortMemberView[]> {
     await this.requireViewer(viewer, cohortId);
     const members = await this.prisma.cohortMember.findMany({
@@ -282,6 +358,21 @@ export class CohortsService {
     };
   }
 
+  private toAssignmentView(row: {
+    id: string;
+    cohortId: string;
+    moduleKey: string;
+    assignedById: string | null;
+    createdAt: Date;
+  }): CohortAssignmentView {
+    return {
+      id: row.id,
+      cohortId: row.cohortId,
+      moduleKey: row.moduleKey,
+      assignedById: row.assignedById,
+      createdAt: row.createdAt,
+    };
+  }
   private async requireViewer(user: SafeUser, cohortId: string): Promise<AccessContext> {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } });
     if (!cohort) {

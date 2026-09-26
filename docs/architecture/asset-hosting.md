@@ -180,6 +180,59 @@ Strategy uses the existing `manifest.sha256` without renaming:
 
 Do not add `js-sha256`, `spark-md5`, or any new dep — Web Crypto + Node `crypto` are sufficient.
 
+## URL Resolver (single contract)
+
+`frontend/packages/anatomy-core/src/assetResolver.ts` is the ONLY place that
+turns `(bodyModel, system)` into a fetchable URL:
+
+- `resolveAnatomyAssetUrl(bodyModel, system)` — canonical fetch URL, stable
+  string, safe as the `useGLTF` cache key.
+- `resolveAnatomyAsset(...)` — same plus `versionedUrl` (`?v=<shortHash>`),
+  `bytes`, `sha256`.
+- `resolveAssetBase(base?)` — typed, normalized (trailing slash, no double
+  slashes); empty/undefined → local `/models-dev/`; malformed remote bases
+  (wrong scheme, insecure non-localhost `http`) throw clearly instead of
+  building a bad URL.
+- `resolveAllAnatomyAssetUrls(base?)` — all 18 manifest URLs (validation).
+
+Consumers: `AnatomyGltf` resolves per render via `useMemo` (identical string
+across rerenders → no refetch on tone/sidebar/resize); `AnatomySystemPanel`
+retry-clear uses the same resolver (cache key consistency);
+`HumanTestPage` test assets resolve through it. No component hand-builds GLB
+URLs. Model keys/identities are unchanged — only the resolved URL varies.
+
+## Versioning via base prefix
+
+Prefer a version segment in the base URL for immutable deployments:
+
+```
+https://assets.example/anatomy/v1/   → …/v1/male/skin-meshopt.glb
+https://assets.example/anatomy/v2/   → …/v2/male/skin-meshopt.glb
+```
+
+Old clients keep loading old bytes under the old prefix; a new deploy points
+`VITE_ANATOMY_ASSET_BASE_URL` at the new prefix — no file renames, no manifest
+churn, no per-render query strings. The `?v=<shortHash>` variant
+(`getVersionedAssetUrl`) remains available for hosts that need query-based
+cache-busting under one prefix.
+
+## Public vs private asset boundary
+
+PUBLIC (this architecture): the 18 educational anatomy GLBs from the static
+manifest — safe for CDN delivery, no credentials, no per-user authorization.
+
+PRIVATE (out of scope): future private user uploads must NEVER be served
+through public anatomy URLs or the asset base. They require authenticated,
+per-object delivery designed separately. Do not place private files under the
+public asset prefix.
+
+## Prefetch decision (audited, not implemented)
+
+No automatic GLB prefetching. Rationale: models are 0.6–14 MB; speculative
+prefetch wastes bandwidth on metered/save-data connections; model switches are
+explicit user intent and `useGLTF` already caches fetched models. Revisit only
+with measured switch-latency data and connection-aware gating.
+
 ## Production Readiness Check
 
 ```bash

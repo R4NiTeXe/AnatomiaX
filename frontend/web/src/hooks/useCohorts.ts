@@ -2,15 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
   archiveCohort,
+  assignCohortModule,
   createCohort,
   getCohort,
   getCohortProgress,
   joinCohort,
   leaveCohort,
+  listCohortAssignments,
   listCohortMembers,
+  listMyAssignments,
   listMyCohorts,
   regenerateInvite,
   removeCohortMember,
+  unassignCohortModule,
   updateCohort,
 } from '@/lib/cohorts';
 
@@ -170,6 +174,60 @@ export function useRemoveMember(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cohortMembersKey(user?.id, id) });
       queryClient.invalidateQueries({ queryKey: cohortKey(user?.id, id) });
+    },
+  });
+}
+
+export function assignmentsKey(userId: string | undefined, cohortId: string) {
+  return ['cohorts', 'assignments', userId ?? 'anonymous', cohortId] as const;
+}
+
+export function myAssignmentsKey(userId: string | undefined) {
+  return ['cohorts', 'assignments-mine', userId ?? 'anonymous'] as const;
+}
+
+export function useCohortAssignments(cohortId: string | undefined) {
+  const { user, status } = useAuth();
+  return useQuery({
+    queryKey: assignmentsKey(user?.id, cohortId ?? ''),
+    queryFn: () => listCohortAssignments(cohortId as string),
+    enabled: status === 'authenticated' && !!cohortId,
+    retry: false,
+    staleTime: 30_000,
+  });
+}
+
+export function useMyAssignments() {
+  const { user, status } = useAuth();
+  return useQuery({
+    queryKey: myAssignmentsKey(user?.id),
+    queryFn: listMyAssignments,
+    enabled: status === 'authenticated',
+    retry: false,
+    staleTime: 30_000,
+  });
+}
+
+export function useAssignModule(cohortId: string) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (moduleKey: string) => assignCohortModule(cohortId, moduleKey),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assignmentsKey(user?.id, cohortId) });
+      queryClient.invalidateQueries({ queryKey: myAssignmentsKey(user?.id) });
+    },
+  });
+}
+
+export function useUnassignModule(cohortId: string) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (moduleKey: string) => unassignCohortModule(cohortId, moduleKey),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assignmentsKey(user?.id, cohortId) });
+      queryClient.invalidateQueries({ queryKey: myAssignmentsKey(user?.id) });
     },
   });
 }

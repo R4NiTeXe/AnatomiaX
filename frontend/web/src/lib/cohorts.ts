@@ -108,3 +108,36 @@ export interface CohortMemberProgress {
 export function getCohortProgress(id: string): Promise<CohortMemberProgress[]> {
   return authedRequest<CohortMemberProgress[]>(`/api/v1/cohorts/${id}/progress`);
 }
+
+export interface CohortAssignmentView {
+  id: string;
+  cohortId: string;
+  moduleKey: string;
+  assignedById: string | null;
+  createdAt: string;
+}
+
+export interface MyAssignmentView extends CohortAssignmentView {
+  cohortName: string;
+}
+
+export function listCohortAssignments(id: string): Promise<CohortAssignmentView[]> {
+  return authedRequest<CohortAssignmentView[]>(`/api/v1/cohorts/${id}/assignments`);
+}
+
+export function assignCohortModule(id: string, moduleKey: string): Promise<CohortAssignmentView> {
+  return authedRequest<CohortAssignmentView>(`/api/v1/cohorts/${id}/assignments`, {
+    method: 'POST',
+    body: JSON.stringify({ moduleKey }),
+  });
+}
+
+export function unassignCohortModule(id: string, moduleKey: string): Promise<void> {
+  return authedRequest<void>(`/api/v1/cohorts/${id}/assignments/${moduleKey}`, {
+    method: 'DELETE',
+  });
+}
+
+export function listMyAssignments(): Promise<MyAssignmentView[]> {
+  return authedRequest<MyAssignmentView[]>('/api/v1/cohorts/assignments/mine');
+}

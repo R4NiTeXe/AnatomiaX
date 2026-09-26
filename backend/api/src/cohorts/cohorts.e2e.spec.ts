@@ -15,6 +15,7 @@ class FakeDb {
   tokens = new Map<string, Record<string, any>>();
   cohorts = new Map<string, Record<string, any>>();
   members = new Map<string, Record<string, any>>();
+  assignments = new Map<string, Record<string, any>>();
 
   private match(record: Record<string, any>, where: Record<string, any>): boolean {
     return Object.entries(where).every(([key, value]) => {
@@ -200,6 +201,54 @@ class FakeDb {
   // 8.20.22: learning-record stores for batched getProgress (no database).
   snapshots = new Map<string, Record<string, any>>();
   attempts: Record<string, any>[] = [];
+
+  cohortAssignment = {
+    findFirst: async ({ where }: { where: Record<string, any> }) => {
+      for (const a of this.assignments.values()) if (this.match(a, where)) return { ...a };
+      return null;
+    },
+    findMany: async ({
+      where,
+      orderBy,
+    }: {
+      where?: Record<string, any>;
+      orderBy?: Record<string, string>;
+    }) => {
+      let rows = [...this.assignments.values()];
+      if (where) {
+        rows = rows.filter(a => {
+          const entries = Object.entries(where) as Array<[string, unknown]>;
+          return entries.every(([key, value]) => {
+            if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+              const nested = value as Record<string, any>;
+              if ('in' in nested && Array.isArray(nested.in))
+                return (nested.in as unknown[]).includes(a[key]);
+              return false;
+            }
+            return a[key] === value;
+          });
+        });
+      }
+      if (orderBy) rows = this.order(rows, orderBy);
+      return rows.map(a => ({ ...a }));
+    },
+    create: async ({ data }: { data: Record<string, any> }) => {
+      for (const a of this.assignments.values()) {
+        if (a.cohortId === data.cohortId && a.moduleKey === data.moduleKey) {
+          throw new Error('Unique constraint failed');
+        }
+      }
+      const row: Record<string, any> = { id: randomUUID(), createdAt: new Date(), ...data };
+      this.assignments.set(row.id, row);
+      return { ...row };
+    },
+    delete: async ({ where }: { where: Record<string, any> }) => {
+      const row = this.assignments.get(where.id);
+      if (!row) throw new Error('Record not found');
+      this.assignments.delete(where.id);
+      return { ...row };
+    },
+  };
 
   progressSnapshot = {
     findMany: async ({ where }: { where?: Record<string, any> }) => {
@@ -602,6 +651,132 @@ describe('Cohorts (e2e, no database)', () => {
         .get(`/api/v1/cohorts/${ids.cohort}/progress`)
         .set(auth('teacher-b@example.com'));
       expect(outsider.status).toBe(404);
+    });
+  });
+
+  describe('curriculum assignments (8.52, no database)', () => {
+    let cohortId = '';
+    let cohortInvite = '';
+
+    it('sets up an isolated cohort with a student member', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/cohorts')
+        .set(auth('teacher-a@example.com'))
+        .send({ name: 'Assignment Lab' });
+      expect(created.status).toBe(201);
+      cohortId = created.body.id as string;
+      cohortInvite = created.body.inviteCode as string;
+      const join = await request(app.getHttpServer())
+        .post('/api/v1/cohorts/join')
+        .set(auth('student-a@example.com'))
+        .send({ inviteCode: cohortInvite });
+      expect(join.status).toBe(201);
+    });
+
+    it('manager assigns; duplicate returns the same row; invalid module rejected', async () => {
+      const first = await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'))
+        .send({ moduleKey: 'nervous' });
+      expect(first.status).toBe(201);
+      expect(first.body).toMatchObject({ cohortId, moduleKey: 'nervous' });
+
+      const again = await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'))
+        .send({ moduleKey: 'nervous' });
+      expect(again.status).toBe(201);
+      expect(again.body.id).toBe(first.body.id);
+
+      const bogus = await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'))
+        .send({ moduleKey: 'not-a-system' });
+      expect(bogus.status).toBe(400);
+    });
+
+    it('student member cannot assign; outsider cannot list', async () => {
+      const denied = await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('student-a@example.com'))
+        .send({ moduleKey: 'skin' });
+      expect(denied.status).toBe(403);
+      const listed = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('student-a@example.com'));
+      expect(listed.status).toBe(200);
+      expect(listed.body.map((a: { moduleKey: string }) => a.moduleKey)).toContain('nervous');
+      const outsider = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-b@example.com'));
+      expect(outsider.status).toBe(404);
+    });
+
+    it('manager unassigns; missing assignment 404s', async () => {
+      const removed = await request(app.getHttpServer())
+        .delete(`/api/v1/cohorts/${cohortId}/assignments/nervous`)
+        .set(auth('teacher-a@example.com'));
+      expect(removed.status).toBe(200);
+      const again = await request(app.getHttpServer())
+        .delete(`/api/v1/cohorts/${cohortId}/assignments/nervous`)
+        .set(auth('teacher-a@example.com'));
+      expect(again.status).toBe(404);
+      const listed = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'));
+      expect(listed.body).toEqual([]);
+    });
+
+    it('mine aggregates only the caller cohorts', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'))
+        .send({ moduleKey: 'skin' });
+      const mine = await request(app.getHttpServer())
+        .get('/api/v1/cohorts/assignments/mine')
+        .set(auth('student-a@example.com'));
+      expect(mine.status).toBe(200);
+      const mineForCohort = (
+        mine.body as Array<{ cohortId: string; moduleKey: string; cohortName: string }>
+      ).filter(a => a.cohortId === cohortId);
+      expect(mineForCohort.map(a => a.moduleKey)).toEqual(['skin']);
+      expect(mineForCohort[0]).toMatchObject({ cohortId });
+      expect(typeof mineForCohort[0].cohortName).toBe('string');
+    });
+
+    it('archived cohort keeps assignment/progress reads but rejects writes (8.53)', async () => {
+      const archived = await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/archive`)
+        .set(auth('teacher-a@example.com'));
+      expect(archived.status).toBe(201);
+      // Reads stay available to viewers (analytics inputs).
+      const managerList = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'));
+      expect(managerList.status).toBe(200);
+      expect(managerList.body.map((a: { moduleKey: string }) => a.moduleKey)).toContain('skin');
+      const memberList = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('student-a@example.com'));
+      expect(memberList.status).toBe(200);
+      const ownerProgress = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/progress`)
+        .set(auth('teacher-a@example.com'));
+      expect(ownerProgress.status).toBe(200);
+      // Writes are frozen; teacher analytics stay owner-gated.
+      const assign = await request(app.getHttpServer())
+        .post(`/api/v1/cohorts/${cohortId}/assignments`)
+        .set(auth('teacher-a@example.com'))
+        .send({ moduleKey: 'nervous' });
+      expect(assign.status).toBe(403);
+      const unassign = await request(app.getHttpServer())
+        .delete(`/api/v1/cohorts/${cohortId}/assignments/skin`)
+        .set(auth('teacher-a@example.com'));
+      expect(unassign.status).toBe(403);
+      const memberProgress = await request(app.getHttpServer())
+        .get(`/api/v1/cohorts/${cohortId}/progress`)
+        .set(auth('student-a@example.com'));
+      expect(memberProgress.status).toBe(403);
     });
   });
 });

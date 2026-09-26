@@ -4,6 +4,7 @@
  */
 export * from './anatomyInformation';
 export * from './assetManifest';
+export * from './assetResolver';
 export * from './anatomySystems';
 export * from './anatomyAssets';
 export * from './anatomyAssetConfig';

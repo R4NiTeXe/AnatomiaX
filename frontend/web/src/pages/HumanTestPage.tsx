@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import OptimizedModelStage, {
   type OptimizedModelInfo,
 } from '@/components/anatomy/OptimizedModelStage';
+import { resolveAnatomyAssetUrl } from '@anatomiax/anatomy-core';
 
 interface TestAsset {
   key: 'skin' | 'nervous';
@@ -12,9 +13,11 @@ interface TestAsset {
   url: string;
 }
 
+// STEP 8.54: test assets resolve through the central resolver (local
+// /models-dev/ by default) — no hand-built GLB URLs.
 const TEST_ASSETS: TestAsset[] = [
-  { key: 'skin', label: 'Skin', url: '/models-dev/skin-meshopt.glb' },
-  { key: 'nervous', label: 'Nervous System', url: '/models-dev/nervous-meshopt.glb' },
+  { key: 'skin', label: 'Skin', url: resolveAnatomyAssetUrl('male', 'skin') },
+  { key: 'nervous', label: 'Nervous System', url: resolveAnatomyAssetUrl('male', 'nervous') },
 ];
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';

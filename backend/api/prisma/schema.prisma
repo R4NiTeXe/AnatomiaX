@@ -35,14 +35,15 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  oauthAccounts     OAuthAccount[]
-  refreshTokens     RefreshToken[]
+  oauthAccounts       OAuthAccount[]
+  refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
-  cohortsCreated    Cohort[]            @relation("CohortCreator")
-  memberships       CohortMember[]
-  quizAttempts      QuizAttempt[]
-  progressSnapshot  ProgressSnapshot?
-  pushSubscriptions PushSubscription[]
+  cohortsCreated      Cohort[]             @relation("CohortCreator")
+  assignmentsCreated  CohortAssignment[]   @relation("AssignmentCreator")
+  memberships         CohortMember[]
+  quizAttempts        QuizAttempt[]
+  progressSnapshot    ProgressSnapshot?
+  pushSubscriptions   PushSubscription[]
 
   @@index([role])
   @@index([deletedAt])
@@ -108,17 +109,19 @@ model Cohort {
 
   members CohortMember[]
 
+  assignments CohortAssignment[]
+
   @@index([createdById])
   @@map("cohorts")
 }
 
 model CohortMember {
-  id       String            @id @default(uuid())
-  role     CohortMemberRole  @default(STUDENT)
-  joinedAt DateTime          @default(now())
+  id       String           @id @default(uuid())
+  role     CohortMemberRole @default(STUDENT)
+  joinedAt DateTime         @default(now())
 
   cohortId String
-  cohort   Cohort  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  cohort   Cohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -127,6 +130,26 @@ model CohortMember {
   @@index([userId])
   @@index([cohortId])
   @@map("cohort_members")
+}
+
+// Curriculum module assigned to a cohort (STEP 8.52).
+// moduleKey references the frontend static module registry by anatomy
+// system key (skin, musculoskeletal, …) — static content stays out of this
+// schema per the header rule; only the assignment link is persisted.
+model CohortAssignment {
+  id        String   @id @default(uuid())
+  moduleKey String
+  createdAt DateTime @default(now())
+
+  cohortId String
+  cohort   Cohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  assignedById String?
+  assignedBy   User?   @relation("AssignmentCreator", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([cohortId, moduleKey])
+  @@index([cohortId])
+  @@map("cohort_assignments")
 }
 
 model QuizAttempt {
@@ -146,11 +169,11 @@ model QuizAttempt {
 }
 
 model ProgressSnapshot {
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  studiedKeys  String[]
-  bodyModel    String?
-  updatedAt    DateTime @updatedAt
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studiedKeys String[]
+  bodyModel   String?
+  updatedAt   DateTime @updatedAt
 
   @@map("progress_snapshots")
 }
