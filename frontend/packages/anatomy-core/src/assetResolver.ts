@@ -32,14 +32,21 @@ export const LOCAL_ASSET_BASE = '/models-dev/';
 
 /**
  * Reads the frontend-safe asset base without static `import.meta` syntax
- * (Jest CJS cannot parse it). Returns undefined when unavailable.
- * Public build-time value — never a secret.
+ * (ts-jest CJS cannot parse it; the previous `Function()` indirection never
+ * executed in any browser — functions built by the Function constructor have
+ * no `import.meta` binding, so CDN mode could never activate).
+ *
+ * Uses the repository's `process.env.VITE_*` convention instead: Vite's
+ * `define` replaces the literal chain at bundle time (proven by the API base
+ * URL), while Jest/Node simply see an unset variable and fall back to local
+ * mode. Public build-time value — never a secret.
  */
+declare const process: { env?: Record<string, string | undefined> } | undefined;
+
 export function readConfiguredAssetBase(): string | undefined {
   try {
-    const metaEnv = Function('try{return import.meta?.env}catch(e){return undefined}')() as
-      Record<string, string | undefined> | undefined;
-    return metaEnv?.VITE_ANATOMY_ASSET_BASE_URL;
+    if (typeof process === 'undefined') return undefined;
+    return process.env?.VITE_ANATOMY_ASSET_BASE_URL ?? undefined;
   } catch {
     return undefined;
   }

@@ -201,6 +201,13 @@ retry-clear uses the same resolver (cache key consistency);
 `HumanTestPage` test assets resolve through it. No component hand-builds GLB
 URLs. Model keys/identities are unchanged — only the resolved URL varies.
 
+Configuration source: `VITE_ANATOMY_ASSET_BASE_URL` is read via the
+repository's `process.env.VITE_*` convention — Vite's `define` replaces the
+literal chain at bundle time (see `frontend/web/vite.config.ts`), while
+Jest/Node see an unset variable and fall back to local mode. (8.61 fix: the
+previous `Function(import.meta…)` indirection could never execute in any
+browser, so CDN mode silently stayed local; verified end-to-end since.)
+
 ## Versioning via base prefix
 
 Prefer a version segment in the base URL for immutable deployments:

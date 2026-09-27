@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => ({
     'process.env.VITE_API_BASE_URL': JSON.stringify(
       process.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
     ),
+    // 8.61: the anatomy asset base must be defined for the client — the
+    // resolver reads this literal chain (Vite replaces it at bundle time).
+    // Unset/empty falls back to local /models-dev/ at runtime.
+    'process.env.VITE_ANATOMY_ASSET_BASE_URL': JSON.stringify(
+      process.env.VITE_ANATOMY_ASSET_BASE_URL ?? ''
+    ),
     'process.env.NODE_ENV': JSON.stringify(
       mode === 'production' ? 'production' : (process.env.NODE_ENV ?? 'development')
     ),

@@ -21,7 +21,9 @@ Unchanged. A `RequestIdInterceptor` (`APP_INTERCEPTOR`) adds an
 - `code`: `VALIDATION_ERROR` (400, with `details: string[]`) |
   `BAD_REQUEST` (400) | `UNAUTHORIZED` (401) | `FORBIDDEN` (403) |
   `NOT_FOUND` (404, incl. hidden resources and unknown routes) |
-  `CONFLICT` (409) | `RATE_LIMITED` (429, throttler prefix stripped) |
+  `CONFLICT` (409) | `PAYLOAD_TOO_LARGE` (413, oversized/malformed JSON
+  bodies — Express body-parser errors mapped instead of 500) |
+  `RATE_LIMITED` (429, throttler prefix stripped) |
   `INTERNAL_ERROR` (5xx, always the generic message).
 - HTTP statuses are preserved; only the body shape is standardized.
 - Never emitted: stacks, Prisma/SQL internals, tokens, hashes, secrets.

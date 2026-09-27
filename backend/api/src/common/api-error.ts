@@ -23,6 +23,7 @@ export type ApiErrorCode =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'RATE_LIMITED'
+  | 'PAYLOAD_TOO_LARGE'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
@@ -43,6 +44,7 @@ const CODE_BY_STATUS: Record<number, ApiErrorCode> = {
   403: 'FORBIDDEN',
   404: 'NOT_FOUND',
   409: 'CONFLICT',
+  413: 'PAYLOAD_TOO_LARGE',
   429: 'RATE_LIMITED',
 };
 

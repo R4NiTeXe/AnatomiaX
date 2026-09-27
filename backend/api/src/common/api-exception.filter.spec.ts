@@ -63,6 +63,33 @@ describe('ApiExceptionFilter (8.19.25)', () => {
     }
   });
 
+  it('maps body-parser oversize/malformed bodies instead of 500 (8.59)', async () => {
+    const big = mockHost('/api/v1/auth/login', 'req-big');
+    const tooLargeErr = Object.assign(new Error('request entity too large'), {
+      status: 413,
+      statusCode: 413,
+      type: 'entity.too.large',
+    });
+    filter.catch(tooLargeErr, big.host);
+    expect(big.res.status).toHaveBeenCalledWith(413);
+    expect(big.res._json).toHaveBeenCalledWith({
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'Payload too large',
+      requestId: 'req-big',
+    });
+
+    const malformed = mockHost('/api/v1/auth/login', 'req-mal');
+    const parseErr = Object.assign(new Error('Unexpected token'), {
+      status: 400,
+      type: 'entity.parse.failed',
+    });
+    filter.catch(parseErr, malformed.host);
+    expect(malformed.res.status).toHaveBeenCalledWith(400);
+    expect(malformed.res._json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'BAD_REQUEST', requestId: 'req-mal' })
+    );
+  });
+
   it('shapes validation failures with details and no statusCode leakage', async () => {
     const { host, res } = mockHost('/api/v1/auth/register', 'req-v');
     filter.catch(
@@ -153,5 +180,31 @@ describe('ApiExceptionFilter (8.19.25)', () => {
       expect(() => filter.catch(new Error('health boom'), host)).toThrow('health boom');
       expect(res.status).not.toHaveBeenCalled();
     }
+  });
+
+  it('sanitizes Nest-wrapped JSON syntax errors instead of echoing parser output (8.61)', async () => {
+    // Nest's RoutesResolver converts body-parser SyntaxErrors to
+    // BadRequestException(err.message) before filters run — the raw
+    // entity.parse.failed shape never arrives. The V8 message (including
+    // request-body snippets) must not reach clients.
+    const { host, res } = mockHost('/api/v1/auth/login', 'req-json');
+    filter.catch(
+      new BadRequestException(`Unexpected token 'b', ..."assword": broken!!!" is not valid JSON`),
+      host
+    );
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res._json).toHaveBeenCalledWith({
+      code: 'BAD_REQUEST',
+      message: 'Validation failed',
+      requestId: 'req-json',
+    });
+    // Genuine domain 400 messages pass through untouched.
+    const domain = mockHost('/api/v1/progress/quiz-attempts', 'req-dom');
+    filter.catch(new BadRequestException('Score cannot exceed total'), domain.host);
+    expect(domain.res._json).toHaveBeenCalledWith({
+      code: 'BAD_REQUEST',
+      message: 'Score cannot exceed total',
+      requestId: 'req-dom',
+    });
   });
 });

@@ -44,6 +44,33 @@ function cleanThrottlerMessage(message: string): string {
 }
 
 /**
+ * Nest's RoutesResolver converts body-parser SyntaxErrors into
+ * `BadRequestException(err.message)` before filters run, so the raw
+ * `entity.parse.failed` shape never arrives (unlike entity.too.large).
+ * Sanitize the known V8/JSON engine syntax messages to the generic
+ * validation message instead of echoing parser internals (and request body
+ * snippets) to clients. Domain 400 messages never match these patterns.
+ */
+const ENGINE_JSON_SYNTAX =
+  /^(Unexpected token|Unexpected end of JSON|Expected property name|Unterminated string|.*is not valid JSON)/;
+
+function sanitizeEngineMessage(message: string): string {
+  return ENGINE_JSON_SYNTAX.test(message) ? GENERIC_VALIDATION_MESSAGE : message;
+}
+
+function bodyParserStatus(exception: unknown): { status: number; message: string } | null {
+  if (typeof exception !== 'object' || exception === null) return null;
+  const err = exception as { type?: unknown; status?: unknown; statusCode?: unknown };
+  if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
+    return { status: 413, message: 'Payload too large' };
+  }
+  if (err.type === 'entity.parse.failed') {
+    return { status: 400, message: GENERIC_VALIDATION_MESSAGE };
+  }
+  return null;
+}
+
+/**
  * 8.19.25 global API exception layer (non-health routes only).
  *
  * Normalizes every thrown value into the canonical `{ code, message,
@@ -86,6 +113,20 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    // Express/body-parser errors (oversized or malformed JSON bodies) carry a
+    // numeric status but are not HttpExceptions. Without this branch they
+    // fall through to a misleading 500 (client abuse counted as server
+    // failure, false 5xx alarms). Only the two known-safe body shapes map;
+    // everything else stays a generic 500. Messages are ours, never echoed.
+    const bodyError = bodyParserStatus(exception);
+    if (bodyError) {
+      this.respond(req, res, url, bodyError.status, undefined, {
+        code: codeForStatus(bodyError.status),
+        message: bodyError.message,
+      });
+      return;
+    }
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       if (status >= 500) {
@@ -98,7 +139,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
       const response = exception.getResponse();
       if (typeof response === 'string') {
         const message =
-          status === HttpStatus.TOO_MANY_REQUESTS ? cleanThrottlerMessage(response) : response;
+          status === HttpStatus.TOO_MANY_REQUESTS
+            ? cleanThrottlerMessage(response)
+            : status === HttpStatus.BAD_REQUEST
+              ? sanitizeEngineMessage(response)
+              : response;
         this.respond(req, res, url, status, undefined, {
           code: codeForStatus(status),
           message,
@@ -117,7 +162,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
           });
           return;
         }
-        const message = firstString(body.message) ?? firstString(body.error) ?? 'Bad request';
+        const rawMessage = firstString(body.message) ?? firstString(body.error) ?? 'Bad request';
+        const message =
+          status === HttpStatus.BAD_REQUEST ? sanitizeEngineMessage(rawMessage) : rawMessage;
         this.respond(req, res, url, status, undefined, {
           code: codeForStatus(status),
           message:

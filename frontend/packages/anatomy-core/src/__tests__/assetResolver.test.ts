@@ -21,6 +21,19 @@ const SYSTEMS = [
 ] as const;
 
 describe('asset resolver (8.54)', () => {
+  const ENV_KEY = 'VITE_ANATOMY_ASSET_BASE_URL';
+  let savedEnv: string | undefined;
+
+  beforeEach(() => {
+    savedEnv = process.env[ENV_KEY];
+    delete process.env[ENV_KEY];
+  });
+
+  afterEach(() => {
+    if (savedEnv === undefined) delete process.env[ENV_KEY];
+    else process.env[ENV_KEY] = savedEnv;
+  });
+
   it('defaults to local mode with no configuration', () => {
     expect(LOCAL_ASSET_BASE).toBe('/models-dev/');
     expect(resolveAssetBase(undefined)).toBe('/models-dev/');
@@ -30,6 +43,19 @@ describe('asset resolver (8.54)', () => {
     expect(resolveAnatomyAssetUrl('female', 'nervous')).toBe(
       '/models-dev/female-nervous-meshopt.glb'
     );
+  });
+
+  it('reads the configured base from process.env when no explicit base is given (8.61)', () => {
+    // This is the runtime CDN path: Vite's define replaces the literal chain
+    // at bundle time; Jest sees the real process.env instead.
+    process.env[ENV_KEY] = 'https://cdn.example/a/';
+    expect(resolveAnatomyAssetUrl('male', 'skin')).toBe(
+      'https://cdn.example/a/male/skin-meshopt.glb'
+    );
+    expect(resolveAnatomyAssetUrl('female', 'skin')).toBe(
+      'https://cdn.example/a/female/skin-meshopt.glb'
+    );
+    expect(resolveAssetBase(undefined)).toBe('https://cdn.example/a/');
   });
 
   it('normalizes CDN bases (trailing slash, no double slashes)', () => {
