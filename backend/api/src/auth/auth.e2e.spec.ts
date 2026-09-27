@@ -8,6 +8,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PasswordResetDelivery } from './password-reset-delivery';
 
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
+// Google flow tests run with test credentials so the strategy registers;
+// the unconfigured path is covered by guards.spec.ts instead (ConfigService
+// snapshots env at module init, so per-test toggling is not possible here).
+process.env.GOOGLE_CLIENT_ID = 'e2e-test-google-client-id';
+process.env.GOOGLE_CLIENT_SECRET = 'e2e-test-google-client-secret';
 
 // In-memory Prisma stand-in: no database, no network.
 // Extended for 8.19.23 (password resets, account export/delete).

@@ -1,4 +1,9 @@
-import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { randomBytes, timingSafeEqual } from 'crypto';
@@ -63,6 +68,14 @@ export class GoogleAuthGuard extends AuthGuard('google') {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Google login is optional: without both credentials the strategy is not
+    // registered (see AuthModule), so fail closed here with a clean 404
+    // instead of letting passport throw an unknown-strategy 500.
+    const clientID = this.config.get<string>('GOOGLE_CLIENT_ID');
+    const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
+    if (!clientID || !clientSecret) {
+      throw new NotFoundException('Google login is not configured');
+    }
     const http = context.switchToHttp();
     const req = http.getRequest<OAuthHttpRequest>();
     const res = http.getResponse<OAuthHttpResponse>();

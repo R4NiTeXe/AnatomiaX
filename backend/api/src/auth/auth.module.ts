@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -10,6 +10,26 @@ import { GoogleStrategy } from './google.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { PasswordResetDelivery } from './password-reset-delivery';
 import { RolesGuard } from './roles.guard';
+
+/**
+ * Google login is optional: the strategy is registered only when both
+ * GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are present, so the API still
+ * boots normally without Google credentials. Nothing injects GoogleStrategy
+ * directly (routes go through AuthGuard('google')), so an unregistered
+ * strategy only affects the Google routes themselves.
+ */
+function googleStrategyProvider(): Provider {
+  return {
+    provide: GoogleStrategy,
+    inject: [ConfigService, AuthService],
+    useFactory: (config: ConfigService, authService: AuthService) => {
+      const clientID = config.get<string>('GOOGLE_CLIENT_ID');
+      const clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET');
+      if (!clientID || !clientSecret) return null;
+      return new GoogleStrategy(config, authService);
+    },
+  };
+}
 
 @Module({
   imports: [
@@ -28,7 +48,7 @@ import { RolesGuard } from './roles.guard';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PasswordResetDelivery, GoogleStrategy, JwtAuthGuard, RolesGuard],
+  providers: [AuthService, PasswordResetDelivery, googleStrategyProvider(), JwtAuthGuard, RolesGuard],
   // JwtModule re-exported so feature modules using JwtAuthGuard resolve JwtService.
   exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
 })

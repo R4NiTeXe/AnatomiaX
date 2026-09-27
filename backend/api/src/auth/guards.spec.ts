@@ -1,7 +1,8 @@
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { CurrentUser } from './current-user.decorator';
+import { GoogleAuthGuard } from './google-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 import { ROLES_KEY } from './roles.decorator';
@@ -97,5 +98,28 @@ describe('RolesGuard (RBAC foundation)', () => {
 describe('CurrentUser', () => {
   it('is a param decorator factory', () => {
     expect(typeof CurrentUser).toBe('function');
+  });
+});
+
+describe('GoogleAuthGuard (optional Google login)', () => {
+  const configWith = (values: Record<string, string | undefined>) =>
+    ({ get: jest.fn((key: string) => values[key]) }) as never;
+  const contextWith = (query: Record<string, unknown>, cookies?: Record<string, string>) =>
+    ({
+      switchToHttp: () => ({
+        getRequest: () => ({ query, cookies: cookies ?? {} }),
+        getResponse: () => ({ cookie: jest.fn(), clearCookie: jest.fn() }),
+      }),
+    }) as unknown as ExecutionContext;
+
+  it('returns 404 without touching passport when credentials are missing', async () => {
+    const guard = new GoogleAuthGuard(configWith({}));
+    await expect(
+      guard.canActivate(contextWith({}))
+    ).rejects.toBeInstanceOf(NotFoundException);
+    const partial = new GoogleAuthGuard(configWith({ GOOGLE_CLIENT_ID: 'id-only' }));
+    await expect(
+      partial.canActivate(contextWith({ code: 'x', state: 'y' }))
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
