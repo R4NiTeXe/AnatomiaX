@@ -5,9 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   define: {
-    'process.env.VITE_API_BASE_URL': JSON.stringify(
-      process.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
-    ),
+    'process.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL ?? ''),
     // 8.61: the anatomy asset base must be defined for the client — the
     // resolver reads this literal chain (Vite replaces it at bundle time).
     // Unset/empty falls back to local /models-dev/ at runtime.

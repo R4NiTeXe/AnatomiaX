@@ -32,6 +32,19 @@ describe('api client', () => {
       delete (process.env as Record<string, string | undefined>).VITE_API_BASE_URL;
       expect(getApiBaseUrl()).toBe('http://localhost:3000');
     });
+
+    it('throws a clear error in production builds when env missing', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      delete (process.env as Record<string, string | undefined>).VITE_API_BASE_URL;
+      (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+      try {
+        expect(() => getApiBaseUrl()).toThrow('VITE_API_BASE_URL is not set');
+      } finally {
+        if (originalNodeEnv === undefined)
+          delete (process.env as Record<string, string | undefined>).NODE_ENV;
+        else process.env.NODE_ENV = originalNodeEnv;
+      }
+    });
   });
 
   describe('buildApiUrl', () => {

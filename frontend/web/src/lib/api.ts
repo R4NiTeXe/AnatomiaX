@@ -16,8 +16,17 @@ function getRawBaseUrl(): string | undefined {
 }
 
 export function getApiBaseUrl(): string {
-  const raw = getRawBaseUrl() ?? 'http://localhost:3000';
-  return raw.replace(/\/+$/, '');
+  const raw = getRawBaseUrl();
+  if (raw) return raw.replace(/\/+$/, '');
+  // Empty means VITE_API_BASE_URL was missing at build time (vite.config
+  // defines it as '' when unset). A production bundle without an API origin
+  // must fail loudly instead of silently calling localhost.
+  if ((process.env as Record<string, string | undefined>).NODE_ENV === 'production') {
+    throw new Error(
+      'VITE_API_BASE_URL is not set. Set it to the API origin (e.g. https://api.example.com/api/v1) and rebuild.'
+    );
+  }
+  return 'http://localhost:3000';
 }
 
 export function buildApiUrl(path: string): string {
