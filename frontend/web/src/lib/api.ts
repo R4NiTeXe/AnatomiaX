@@ -1,26 +1,21 @@
 /**
  * Minimal frontend API client — native fetch only, no third-party HTTP library.
- * Reads VITE_API_BASE_URL, normalizes trailing slash, handles JSON + typed errors.
+ * Reads import.meta.env.VITE_API_BASE_URL (standard Vite env), normalizes
+ * trailing slash, handles JSON + typed errors.
  */
+
+import { readViteApiBaseUrl } from '@/lib/env';
 
 // ---------------------------------------------------------------------------
 // Base URL
 // ---------------------------------------------------------------------------
 
-function getRawBaseUrl(): string | undefined {
-  if (typeof process !== 'undefined') {
-    const fromProcess = (process.env as Record<string, string | undefined>).VITE_API_BASE_URL;
-    if (fromProcess) return fromProcess;
-  }
-  return undefined;
-}
-
 export function getApiBaseUrl(): string {
-  const raw = getRawBaseUrl();
+  const raw = readViteApiBaseUrl();
   if (raw) return raw.replace(/\/+$/, '');
-  // Empty means VITE_API_BASE_URL was missing at build time (vite.config
-  // defines it as '' when unset). A production bundle without an API origin
-  // must fail loudly instead of silently calling localhost.
+  // Empty means VITE_API_BASE_URL was missing at build time. vite.config.ts
+  // now fails the production build when it is absent; this runtime guard stays
+  // as defense in depth so a bad bundle fails loudly, not via localhost calls.
   if ((process.env as Record<string, string | undefined>).NODE_ENV === 'production') {
     throw new Error(
       'VITE_API_BASE_URL is not set. Set it to the API origin (e.g. https://api.example.com/api/v1) and rebuild.'

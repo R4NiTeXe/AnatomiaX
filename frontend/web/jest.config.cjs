@@ -10,6 +10,10 @@ module.exports = {
     '**/*.test.tsx',
   ],
   moduleNameMapper: {
+    // The real env module reads static `import.meta.env` (Vite replaces it at
+    // bundle time); ts-jest CJS cannot parse `import.meta`, so Jest maps the
+    // module to a process.env shim. Must come before the generic @/ alias.
+    '^@/lib/env$': '<rootDir>/src/lib/env.jest.ts',
     '^@/(.*)$': '<rootDir>/src/$1',
     // Mock animation player packages — jsdom lacks the canvas/WASM runtime
     // they need, so every test that touches a component importing these
@@ -42,6 +46,10 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/test-setup.ts',
     '!src/vite-env.d.ts',
+    // Never loadable under Jest: env.ts is always moduleNameMapper-mapped to
+    // env.jest.ts (static `import.meta` cannot parse in ts-jest CJS output).
+    '!src/lib/env.ts',
+    '!src/lib/env.jest.ts',
   ],
   coverageReporters: ['text', 'lcov'],
 };
