@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import RequireAuth from '@/components/auth/RequireAuth';
 import AppShell from '@/components/layout/AppShell';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -93,6 +93,12 @@ export default function App(): JSX.Element {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          {/* Canonical aliases: the anatomy viewer lives at /human and
+              learning progress at /learn (matching nav labels). These
+              redirects keep bookmarked/guessed URLs working without
+              duplicating pages. */}
+          <Route path="/anatomy" element={<Navigate to="/human" replace />} />
+          <Route path="/progress" element={<Navigate to="/learn" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

@@ -48,7 +48,13 @@ function googleStrategyProvider(): Provider {
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PasswordResetDelivery, googleStrategyProvider(), JwtAuthGuard, RolesGuard],
+  providers: [
+    AuthService,
+    PasswordResetDelivery,
+    googleStrategyProvider(),
+    JwtAuthGuard,
+    RolesGuard,
+  ],
   // JwtModule re-exported so feature modules using JwtAuthGuard resolve JwtService.
   exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
 })

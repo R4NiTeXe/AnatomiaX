@@ -1,4 +1,9 @@
-import { ExecutionContext, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { CurrentUser } from './current-user.decorator';
@@ -114,9 +119,7 @@ describe('GoogleAuthGuard (optional Google login)', () => {
 
   it('returns 404 without touching passport when credentials are missing', async () => {
     const guard = new GoogleAuthGuard(configWith({}));
-    await expect(
-      guard.canActivate(contextWith({}))
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(guard.canActivate(contextWith({}))).rejects.toBeInstanceOf(NotFoundException);
     const partial = new GoogleAuthGuard(configWith({ GOOGLE_CLIENT_ID: 'id-only' }));
     await expect(
       partial.canActivate(contextWith({ code: 'x', state: 'y' }))
