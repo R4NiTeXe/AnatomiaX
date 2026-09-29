@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
@@ -9,6 +10,9 @@ describe('HealthController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      // Mirrors HealthModule wiring: the controller's ThrottlerGuard needs
+      // the throttler storage/options providers.
+      imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])],
       controllers: [HealthController],
       providers: [HealthService, { provide: PrismaService, useValue: prisma }],
     }).compile();

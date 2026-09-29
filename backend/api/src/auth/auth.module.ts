@@ -56,6 +56,8 @@ function googleStrategyProvider(): Provider {
     RolesGuard,
   ],
   // JwtModule re-exported so feature modules using JwtAuthGuard resolve JwtService.
-  exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
+  // ThrottlerModule re-exported so feature modules can guard their
+  // controllers with ThrottlerGuard against the shared storage/options.
+  exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule, ThrottlerModule],
 })
 export class AuthModule {}

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { SafeUser } from '../users/users.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -8,7 +9,9 @@ import { ProgressService } from './progress.service';
 import { SubmitQuizAttemptDto } from './dto/submit-quiz-attempt.dto';
 
 @Controller('v1/progress')
-@UseGuards(JwtAuthGuard)
+// Shared throttler storage (100/min default) — quiz-attempt and snapshot
+// writes stay bounded per client.
+@UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class ProgressController {
   constructor(private readonly progress: ProgressService) {}
 

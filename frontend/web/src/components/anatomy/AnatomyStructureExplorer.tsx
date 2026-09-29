@@ -207,9 +207,12 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        // Guard: x % 0 is NaN and would poison activeIndex on an empty list.
+        if (flatFiltered.length === 0) return;
         setActiveIndex(prev => (prev + 1) % flatFiltered.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        if (flatFiltered.length === 0) return;
         setActiveIndex(prev => (prev - 1 + flatFiltered.length) % flatFiltered.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();

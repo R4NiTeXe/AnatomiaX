@@ -83,10 +83,13 @@ export default function AnatomySearchBox(): JSX.Element {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (!isOpen && results.length > 0) setIsOpen(true);
+        // Guard: x % 0 is NaN and would poison activeIndex on an empty list.
+        if (results.length === 0) return;
         setActiveIndex(prev => (prev + 1) % results.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (!isOpen && results.length > 0) setIsOpen(true);
+        if (results.length === 0) return;
         setActiveIndex(prev => (prev - 1 + results.length) % results.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();

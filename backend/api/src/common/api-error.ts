@@ -49,7 +49,8 @@ const CODE_BY_STATUS: Record<number, ApiErrorCode> = {
 };
 
 export function codeForStatus(status: number): ApiErrorCode {
-  if (status === 400) return 'BAD_REQUEST';
+  // NOTE: no 400 special-case here — CODE_BY_STATUS[400] is BAD_REQUEST and
+  // validation failures are mapped to VALIDATION_ERROR by ApiExceptionFilter.
   return CODE_BY_STATUS[status] ?? 'INTERNAL_ERROR';
 }
 

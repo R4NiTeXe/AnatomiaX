@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { SafeUser } from '../users/users.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,7 +12,9 @@ import { JoinCohortDto } from './dto/join-cohort.dto';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
 
 @Controller('v1/cohorts')
-@UseGuards(JwtAuthGuard)
+// ThrottlerGuard shares AuthModule's storage/options (100/min default):
+// invite-code brute force and write endpoints stay bounded.
+@UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class CohortsController {
   constructor(private readonly cohorts: CohortsService) {}
 

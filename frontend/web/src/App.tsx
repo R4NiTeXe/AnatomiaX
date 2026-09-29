@@ -83,7 +83,12 @@ export default function App(): JSX.Element {
 
           {/* Standalone — preserve viewer header, no shell duplication */}
           <Route path="/human" element={<HumanPage />} />
-          <Route path="/human-test" element={<HumanTestPage />} />
+          {/* Dev-only asset browser: excluded from production bundles
+              (process.env.NODE_ENV is statically replaced, so the dead
+              branch — and its three.js chunk — is eliminated in prod). */}
+          {process.env.NODE_ENV !== 'production' && (
+            <Route path="/human-test" element={<HumanTestPage />} />
+          )}
           <Route path="/ai-health" element={<AiHealthPage />} />
           <Route path="/medical-lab" element={<MedicalLabPage />} />
           <Route path="/simulation" element={<SimulationPage />} />

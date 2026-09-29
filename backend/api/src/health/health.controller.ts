@@ -1,4 +1,5 @@
-import { Controller, Get, HttpCode, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Res, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { DatabaseHealthResponse, HealthService } from './health.service';
 
@@ -7,6 +8,9 @@ interface StatusSetter {
 }
 
 @Controller('health')
+// Liveness stays cheap, but /db pings PostgreSQL — bound it with the shared
+// throttler storage (100/min default). Probes typically poll far below that.
+@UseGuards(ThrottlerGuard)
 export class HealthController {
   constructor(
     private readonly healthService: HealthService,

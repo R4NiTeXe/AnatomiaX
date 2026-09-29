@@ -59,12 +59,20 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       if (hadUser) setSessionExpired(true);
       clearUserCache(queryClient);
     });
-    fetchMe().then(found => {
-      if (!alive) return;
-      setUser(found);
-      setStatus(found ? 'authenticated' : 'anonymous');
-      if (found) setSessionExpired(false);
-    });
+    fetchMe()
+      .then(found => {
+        if (!alive) return;
+        setUser(found);
+        setStatus(found ? 'authenticated' : 'anonymous');
+        if (found) setSessionExpired(false);
+      })
+      .catch(() => {
+        // Defensive: fetchMe is documented never to reject, but a future
+        // change must not crash every app boot with an unhandled rejection.
+        if (!alive) return;
+        setUser(null);
+        setStatus('anonymous');
+      });
     return () => {
       alive = false;
       unsubscribe();

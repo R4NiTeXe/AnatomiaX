@@ -62,6 +62,21 @@ describe('api client', () => {
       process.env.VITE_API_BASE_URL = 'http://localhost:3000/';
       expect(buildApiUrl('/api/health')).toBe('http://localhost:3000/api/health');
     });
+
+    it('strips a versioned base prefix instead of doubling /api/v1', () => {
+      process.env.VITE_API_BASE_URL = 'https://api.example.com/api/v1';
+      expect(buildApiUrl('/api/v1/auth/login')).toBe('https://api.example.com/api/v1/auth/login');
+    });
+
+    it('strips an /api base prefix for unversioned paths', () => {
+      process.env.VITE_API_BASE_URL = 'https://api.example.com/api';
+      expect(buildApiUrl('/api/health')).toBe('https://api.example.com/api/health');
+    });
+
+    it('keeps origin bases untouched', () => {
+      process.env.VITE_API_BASE_URL = 'https://api.example.com';
+      expect(buildApiUrl('/api/v1/auth/login')).toBe('https://api.example.com/api/v1/auth/login');
+    });
   });
 
   describe('getHealth', () => {

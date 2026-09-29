@@ -306,8 +306,10 @@ function checkBuildOutputs({ production }) {
   for (const [rel, label] of outputs) {
     const exists = fs.existsSync(path.join(ROOT, rel));
     console.log(`[readiness] build: ${rel} ${exists ? 'present' : 'absent'} (${label})`);
-    if (!exists && production) {
-      warnings.push(`Missing ${rel} — run ${label} before release`);
+    if (!exists) {
+      // Warn-only by default; a missing build blocks release under
+      // --production (documented "warn-only unless --production" contract).
+      (production ? failures : warnings).push(`Missing ${rel} — run ${label} before release`);
     }
   }
   return { failures, warnings };

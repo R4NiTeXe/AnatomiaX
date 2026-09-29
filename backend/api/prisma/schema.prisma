@@ -47,6 +47,8 @@ model User {
 
   @@index([role])
   @@index([deletedAt])
+  @@index([role, deletedAt])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -112,6 +114,8 @@ model Cohort {
   assignments CohortAssignment[]
 
   @@index([createdById])
+  @@index([createdAt])
+  @@index([archivedAt])
   @@map("cohorts")
 }
 
@@ -129,6 +133,7 @@ model CohortMember {
   @@unique([cohortId, userId])
   @@index([userId])
   @@index([cohortId])
+  @@index([cohortId, joinedAt])
   @@map("cohort_members")
 }
 
@@ -149,6 +154,7 @@ model CohortAssignment {
 
   @@unique([cohortId, moduleKey])
   @@index([cohortId])
+  @@index([cohortId, createdAt])
   @@map("cohort_assignments")
 }
 
@@ -188,5 +194,6 @@ model PushSubscription {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, createdAt])
   @@map("push_subscriptions")
 }

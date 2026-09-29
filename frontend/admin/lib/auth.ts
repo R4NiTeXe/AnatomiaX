@@ -23,6 +23,9 @@ export interface SessionBody {
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let refreshInflight: Promise<boolean> | null = null;
+// Set when a shared refresh cycle starts: concurrent 401 waiters must notify
+// listeners exactly once when that cycle fails (not once per waiter).
+let refreshCycleNotified = false;
 
 type UnauthListener = () => void;
 const unauthListeners = new Set<UnauthListener>();
@@ -55,6 +58,7 @@ export function __resetAuthForTests(): void {
   accessToken = null;
   refreshToken = null;
   refreshInflight = null;
+  refreshCycleNotified = false;
 }
 
 async function doRefresh(): Promise<boolean> {
@@ -67,7 +71,13 @@ async function doRefresh(): Promise<boolean> {
     accessToken = body.accessToken;
     refreshToken = body.refreshToken;
     return true;
-  } catch {
+  } catch (error) {
+    // Only 401/403 means the session is dead. Network failures, timeouts,
+    // and 5xx are transient — rethrow so the caller surfaces a retry instead
+    // of clearing tokens and logging the user out on a blip.
+    if (error instanceof ApiError && error.status !== 401 && error.status !== 403) {
+      throw error;
+    }
     return false;
   }
 }
@@ -76,13 +86,26 @@ async function doRefresh(): Promise<boolean> {
  * Authenticated request. Attaches the Bearer token when present and retries
  * once after a refresh on 401. Emits unauthenticated when the session dies.
  */
+/** Copies caller headers without losing Headers instances or entry arrays. */
+function mergeAuthHeaders(headers: HeadersInit | undefined): Record<string, string> {
+  if (headers instanceof Headers) {
+    const out: Record<string, string> = {};
+    headers.forEach((value, key) => {
+      out[key] = value;
+    });
+    return out;
+  }
+  if (Array.isArray(headers)) return Object.fromEntries(headers);
+  return { ...(headers as Record<string, string> | undefined) };
+}
+
 export async function authedRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const attempt = (token: string | null): Promise<T> => {
-    const headers: Record<string, string> = {
-      ...(init?.headers as Record<string, string> | undefined),
-    };
+    const headers = mergeAuthHeaders(init?.headers);
     if (token) headers.Authorization = `Bearer ${token}`;
-    return apiRequest<T>(path, { credentials: 'include', ...init, headers });
+    // credentials: include must win — callers must not downgrade the cookie
+    // flow by overriding it through init.
+    return apiRequest<T>(path, { ...init, credentials: 'include', headers });
   };
 
   try {
@@ -90,13 +113,17 @@ export async function authedRequest<T>(path: string, init?: RequestInit): Promis
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error;
     if (!refreshInflight) {
+      refreshCycleNotified = false;
       refreshInflight = doRefresh().finally(() => {
         refreshInflight = null;
       });
     }
     const refreshed = await refreshInflight;
     if (!refreshed) {
-      emitUnauthenticated();
+      if (!refreshCycleNotified) {
+        refreshCycleNotified = true;
+        emitUnauthenticated();
+      }
       throw error;
     }
     // A 401 after a successful refresh is a domain rejection (e.g. wrong

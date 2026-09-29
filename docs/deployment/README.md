@@ -35,7 +35,9 @@ Related contracts:
   the contract). GLBs are served by a static HTTPS host, never PostgreSQL/API.
 - `backend/api/prisma/` — schema + migrations (`migration_lock.toml`,
   `20260911000000_init/`, `20260911000001_quiz_attempt_started_at/`,
-  `20260911133233_password_reset_tokens/`).
+  `20260911133233_password_reset_tokens/`,
+  `20260925000000_cohort_assignments/`,
+  `20260929000000_perf_indexes/`).
 
 ---
 
@@ -154,10 +156,10 @@ npx playwright install --with-deps chromium
 npx playwright test --reporter=list
 ```
 
-Current baselines (8.20.15, preserved by 8.20.16):
+Current baselines (verified by full audit run):
 
-- web Jest 346/346, admin Jest 6/6, anatomy-core 26/26, API 174/174 (+ new
-  deployment-readiness tests), Playwright 11/11.
+- web Jest 443/443 (53 suites), admin Jest 10/10, anatomy-core 37/37
+  (8 suites), API 226/226 (21 suites), Playwright 17/17.
 
 Backend tests use isolated fake-DB modules; no real PostgreSQL is required
 for unit tests. `PrismaService` is intentionally lazy (`onModuleInit` does
@@ -249,11 +251,23 @@ npm run build -w @anatomiax/web      # tsc && vite build → frontend/web/dist/
 npm run preview -w @anatomiax/web    # local preview of dist/
 ```
 
-- `VITE_API_BASE_URL` and `VITE_ANATOMY_ASSET_BASE_URL` are read at build
-  time (Vite `import.meta.env` + `vite.config.ts` define fallback).
+- `VITE_API_BASE_URL` is read at build time via standard Vite
+  `import.meta.env` (from `VITE_`-prefixed process env vars and `.env`
+  files — no manual define); `VITE_ANATOMY_ASSET_BASE_URL` is injected via
+  a `vite.config.ts` define as an exact `process.env.*` literal. A
+  production web build without `VITE_API_BASE_URL` fails fast with
+  `[build] VITE_API_BASE_URL present: false` instead of shipping a bundle
+  that calls `localhost:3000`.
+- `VITE_API_BASE_URL` must be the API **origin only** (no path — the client
+  appends `/api/v1/...` and `/api/health` itself). `.../api/v1` as the value
+  doubles every request path (`/api/v1/api/v1/...`).
 - Localhost fallback (`http://localhost:3000`, `/models-dev/`) is dev-only.
   Production builds must set explicit HTTPS values; the readiness script
   fails closed on localhost production bases:
+- Vercel: set the project **Root Directory to `frontend/web`** so
+  `frontend/web/vercel.json` SPA rewrites (`/(.*)` → `/index.html`) apply;
+  otherwise deep links (`/human?focus=`, `/login`) 404 on refresh. Set
+  `VITE_API_BASE_URL` on the Production (and Preview, if used) scope.
 
 ```bash
 node scripts/check-production-readiness.js --api-base https://<api> --asset-base https://<assets>/anatomy/
@@ -340,12 +354,13 @@ Production lifecycle (`src/main.ts`):
 ## 12. Prisma production migration procedure
 
 Schema: `backend/api/prisma/schema.prisma`. Migrations:
-`backend/api/prisma/migrations/` (`migration_lock.toml` + three migrations).
+`backend/api/prisma/migrations/` (`migration_lock.toml` + five migrations —
+see the inventory in §1).
 
 ### Local development
 
 ```bash
-npx prisma generate -w @anatomiax/api 2>/dev/null || npx prisma generate --schema backend/api/prisma/schema.prisma
+npx prisma generate --schema backend/api/prisma/schema.prisma
 npx prisma migrate dev --schema backend/api/prisma/schema.prisma
 ```
 

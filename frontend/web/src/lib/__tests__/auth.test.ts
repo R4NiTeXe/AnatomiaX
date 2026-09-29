@@ -107,6 +107,27 @@ describe('auth client', () => {
     await expect(fetchMe()).resolves.toBeNull();
   });
 
+  it('retains the session on transient refresh failures (network/5xx)', async () => {
+    mockFetch(() => jsonResponse(SESSION));
+    await login('a@b.c', 'password123');
+    const listener = jest.fn();
+    const unsubscribe = onUnauthenticated(listener);
+    mockFetch(url => {
+      if (url.endsWith('/api/v1/auth/refresh')) return Promise.reject(new Error('offline'));
+      return jsonResponse({ message: 'Unauthorized' }, 401);
+    });
+    await expect(fetchMe()).resolves.toBeNull();
+    expect(listener).not.toHaveBeenCalled();
+    // Session retained: the next attempt still carries the old Bearer token.
+    mockFetch((_url, init) => {
+      expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer access-1');
+      return jsonResponse(USER);
+    });
+    await expect(fetchMe()).resolves.toEqual(USER);
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
   it('logout revokes server-side and always clears local tokens', async () => {
     mockFetch(() => jsonResponse(SESSION));
     await login('a@b.c', 'password123');

@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { SafeUser } from '../users/users.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,7 +12,9 @@ import { NotificationsService } from './notifications.service';
  * stays behind the NotificationSender abstraction for future use.
  */
 @Controller('v1/notifications')
-@UseGuards(JwtAuthGuard)
+// Shared throttler storage (100/min default) — subscription registration
+// stays bounded per client.
+@UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
 

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import type { Cohort, CohortMember, CohortMemberRole } from '@prisma/client';
+import { prismaCodeFrom } from '../common/api-error';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SafeUser } from '../users/users.service';
 
@@ -152,10 +153,20 @@ export class CohortsService {
     if (existing) {
       throw new ConflictException('Already a member of this cohort');
     }
-    const membership = await this.prisma.cohortMember.create({
-      data: { cohortId: cohort.id, userId: user.id, role: 'STUDENT' },
-    });
-    return this.toView(cohort, membership.role, this.isOwner(cohort, user));
+    try {
+      const membership = await this.prisma.cohortMember.create({
+        data: { cohortId: cohort.id, userId: user.id, role: 'STUDENT' },
+      });
+      return this.toView(cohort, membership.role, this.isOwner(cohort, user));
+    } catch (error) {
+      // Concurrent double-join: both requests miss findFirst, one loses the
+      // @@unique([cohortId, userId]) race. Report the same idempotent
+      // conflict instead of a generic 409.
+      if (prismaCodeFrom(error) === 'P2002') {
+        throw new ConflictException('Already a member of this cohort');
+      }
+      throw error;
+    }
   }
 
   async leave(user: SafeUser, cohortId: string): Promise<void> {
@@ -197,10 +208,23 @@ export class CohortsService {
       where: { cohortId, moduleKey },
     });
     if (existing) return this.toAssignmentView(existing);
-    const created = await this.prisma.cohortAssignment.create({
-      data: { cohortId, moduleKey, assignedById: actor.id },
-    });
-    return this.toAssignmentView(created);
+    try {
+      const created = await this.prisma.cohortAssignment.create({
+        data: { cohortId, moduleKey, assignedById: actor.id },
+      });
+      return this.toAssignmentView(created);
+    } catch (error) {
+      // Concurrent double-assign: both requests miss findFirst, one loses
+      // the @@unique([cohortId, moduleKey]) race. Re-read and return the
+      // winner to preserve the documented idempotent contract.
+      if (prismaCodeFrom(error) === 'P2002') {
+        const raced = await this.prisma.cohortAssignment.findFirst({
+          where: { cohortId, moduleKey },
+        });
+        if (raced) return this.toAssignmentView(raced);
+      }
+      throw error;
+    }
   }
 
   /** Cohort assignments visible to any member (students included). */
@@ -255,7 +279,7 @@ export class CohortsService {
     // Email intentionally excluded: members see names/roles only.
     return members.map(m => ({
       userId: m.userId,
-      name: (m.user as { name: string | null }).name,
+      name: m.user.name,
       role: m.role,
       joinedAt: m.joinedAt,
     }));
@@ -329,7 +353,7 @@ export class CohortsService {
     }
     return members.map(m => ({
       userId: m.userId,
-      name: (m.user as { name: string | null }).name,
+      name: m.user.name,
       role: m.role,
       joinedAt: m.joinedAt,
       studiedKeys: keysByUser.get(m.userId) ?? [],

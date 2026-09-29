@@ -110,6 +110,10 @@ function main() {
     );
     process.exit(1);
   }
+  if (files.length === 0) {
+    console.log(`[perf-budget] FAIL: no .js assets in ${WEB_DIST} — rebuild the web app.`);
+    process.exit(1);
+  }
   const totalBytes = files.reduce((s, f) => s + f.bytes, 0);
   const largest = files[0];
   const threeCore = files.find(f => /^three-core-.*\.js$/.test(f.file));

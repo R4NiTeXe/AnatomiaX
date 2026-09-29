@@ -90,6 +90,13 @@ export class AuthService {
       this.logger.warn('JWT_SECRET is not set — using an insecure development secret');
     }
     this.accessTtl = this.config.get<string>('JWT_ACCESS_TTL') ?? '15m';
+    // Fail fast on boot: an invalid TTL would otherwise pass the type-cast
+    // at signAsync and surface as a 500 on every register/login/refresh.
+    if (!/^\d+[smhd]$/.test(this.accessTtl)) {
+      throw new Error(
+        `JWT_ACCESS_TTL has an invalid format: ${JSON.stringify(this.accessTtl)} (expected e.g. 15m, 1h, 7d)`
+      );
+    }
     this.refreshTtlDays = Number(this.config.get<string>('REFRESH_TTL_DAYS') ?? '30') || 30;
     this.resetTtlMinutes =
       Number(this.config.get<string>('PASSWORD_RESET_TTL_MINUTES') ?? '60') || 60;
@@ -184,7 +191,12 @@ export class AuthService {
         where: { tokenHash: hashToken(presentedToken) },
         data: { revokedAt: new Date() },
       })
-      .catch(() => undefined);
+      .catch(error => {
+        // Revocation stays best-effort (logout must not oracle DB state),
+        // but a failure means the token may still be live — log it
+        // server-side instead of silently resolving success.
+        this.logger.warn(`logout: refresh-token revocation failed: ${String(error)}`);
+      });
   }
 
   async me(userId: string): Promise<SafeUser> {
@@ -338,9 +350,9 @@ export class AuthService {
         joinedAt: m.joinedAt,
         cohort: m.cohort
           ? {
-              id: (m.cohort as { id: string }).id,
-              name: (m.cohort as { name: string }).name,
-              institutionLabel: (m.cohort as { institutionLabel: string | null }).institutionLabel,
+              id: m.cohort.id,
+              name: m.cohort.name,
+              institutionLabel: m.cohort.institutionLabel,
             }
           : null,
       })),

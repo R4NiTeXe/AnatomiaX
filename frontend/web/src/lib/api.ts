@@ -16,9 +16,11 @@ export function getApiBaseUrl(): string {
   // Empty means VITE_API_BASE_URL was missing at build time. vite.config.ts
   // now fails the production build when it is absent; this runtime guard stays
   // as defense in depth so a bad bundle fails loudly, not via localhost calls.
-  if ((process.env as Record<string, string | undefined>).NODE_ENV === 'production') {
+  // NOTE: keep `process.env.NODE_ENV` a plain literal — Vite statically
+  // replaces it at bundle time, and any cast or optional chain breaks that.
+  if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      'VITE_API_BASE_URL is not set. Set it to the API origin (e.g. https://api.example.com/api/v1) and rebuild.'
+      'VITE_API_BASE_URL is not set. Set it to the API origin (e.g. https://api.example.com) and rebuild.'
     );
   }
   return 'http://localhost:3000';
@@ -27,7 +29,17 @@ export function getApiBaseUrl(): string {
 export function buildApiUrl(path: string): string {
   const base = getApiBaseUrl();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
+  // Tolerate a base that already ends with the API prefix (e.g. an operator
+  // sets .../api/v1): strip it so versioned paths never double to
+  // /api/v1/api/v1/... The documented contract is still origin-only.
+  let dedupedBase = base;
+  for (const prefix of ['/api/v1', '/api']) {
+    if (normalizedPath.startsWith(`${prefix}/`) && dedupedBase.endsWith(prefix)) {
+      dedupedBase = dedupedBase.slice(0, -prefix.length);
+      break;
+    }
+  }
+  return `${dedupedBase}${normalizedPath}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +120,9 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     response = await fetch(url, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        // JSON content type only when a body is actually sent: a non-simple
+        // Content-Type on bodyless GETs forces a CORS preflight on every read.
+        ...(init?.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(init?.headers ?? {}),
       },
     });

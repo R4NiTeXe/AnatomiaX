@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser, toSafeUser } from '../users/safe-user';
 import type { CohortView } from '../cohorts/cohorts.service';
@@ -72,7 +73,7 @@ export class AdminService {
         name: c.name,
         archivedAt: c.archivedAt,
         createdAt: c.createdAt,
-        memberCount: (c as unknown as { _count: { members: number } })._count.members,
+        memberCount: c._count.members,
         createdById: c.createdById,
       })),
     };
@@ -88,14 +89,20 @@ export class AdminService {
     const limit = Math.min(50, Math.max(1, query.limit ?? 20));
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = { deletedAt: null };
+    // Typed where-input (no `as never`): the compiler now rejects unknown
+    // fields/operators. AdminUsersQueryDto already constrains role at the
+    // HTTP boundary; re-check here so direct service callers cannot smuggle
+    // an invalid enum value into Prisma (which would surface as a 500).
+    const where: Prisma.UserWhereInput = { deletedAt: null };
     if (query.role && query.role !== 'ALL') {
-      (where as Record<string, unknown>).role = query.role;
+      if (query.role === 'STUDENT' || query.role === 'TEACHER' || query.role === 'ADMIN') {
+        where.role = query.role;
+      }
     }
     if (query.search) {
       const s = query.search.trim();
       if (s) {
-        (where as Record<string, unknown>).OR = [
+        where.OR = [
           { email: { contains: s, mode: 'insensitive' } },
           { name: { contains: s, mode: 'insensitive' } },
         ];
@@ -103,9 +110,9 @@ export class AdminService {
     }
 
     const [total, users] = await Promise.all([
-      this.prisma.user.count({ where: where as never }),
+      this.prisma.user.count({ where }),
       this.prisma.user.findMany({
-        where: where as never,
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -130,26 +137,28 @@ export class AdminService {
     const limit = Math.min(50, Math.max(1, query.limit ?? 20));
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    // Typed where-input (no `as never`): AdminCohortsQueryDto constrains
+    // archived to 'true'|'false'|'all' at the HTTP boundary.
+    const where: Prisma.CohortWhereInput = {};
     if (query.search) {
       const s = query.search.trim();
       if (s) {
-        (where as Record<string, unknown>).OR = [
+        where.OR = [
           { name: { contains: s, mode: 'insensitive' } },
           { institutionLabel: { contains: s, mode: 'insensitive' } },
         ];
       }
     }
     if (query.archived === 'true') {
-      (where as Record<string, unknown>).archivedAt = { not: null };
+      where.archivedAt = { not: null };
     } else if (query.archived === 'false') {
-      (where as Record<string, unknown>).archivedAt = null;
+      where.archivedAt = null;
     }
 
     const [total, cohorts] = await Promise.all([
-      this.prisma.cohort.count({ where: where as never }),
+      this.prisma.cohort.count({ where }),
       this.prisma.cohort.findMany({
-        where: where as never,
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -158,8 +167,7 @@ export class AdminService {
     ]);
 
     const items = cohorts.map(c => {
-      const count = (c as unknown as { _count: { members: number } })._count.members;
-      const isOwner = false;
+      const count = c._count.members;
       return {
         id: c.id,
         name: c.name,
@@ -180,7 +188,7 @@ export class AdminService {
       include: { _count: { select: { members: true } } },
     });
     if (!cohort) return null;
-    const count = (cohort as unknown as { _count: { members: number } })._count.members;
+    const count = cohort._count.members;
     return {
       id: cohort.id,
       name: cohort.name,

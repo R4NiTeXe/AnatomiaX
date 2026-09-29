@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -6,7 +7,9 @@ import { AdminService } from './admin.service';
 import { AdminCohortsQueryDto, AdminUsersQueryDto } from './dto/admin-query.dto';
 
 @Controller('v1/admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// Shared throttler storage (100/min default) — admin list/count endpoints
+// stay bounded per client.
+@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @Roles('ADMIN')
 export class AdminController {
   constructor(private readonly admin: AdminService) {}

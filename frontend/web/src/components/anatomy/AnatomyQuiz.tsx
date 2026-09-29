@@ -174,6 +174,9 @@ export default function AnatomyQuiz(): JSX.Element {
                     }`}
                     data-testid={`anatomy-quiz-choice-${idx}`}
                   >
+                    {/* No aria-label: the wrapping <label> names this input
+                        from the choice text beside it. An explicit label
+                        would mask the answer text from screen readers. */}
                     <input
                       type="radio"
                       name="quiz-choice"
@@ -182,7 +185,6 @@ export default function AnatomyQuiz(): JSX.Element {
                       onChange={() => !quizAnswered && answerQuiz(idx)}
                       disabled={quizAnswered}
                       className="mt-1"
-                      aria-label={`Choice ${idx + 1}`}
                     />
                     <span className="flex-1">{choice}</span>
                     {showCorrect && <span className="text-teal-300">✓</span>}

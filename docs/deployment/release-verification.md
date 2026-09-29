@@ -5,13 +5,13 @@ deploy, does not connect to production, and adds no paid or
 cloud-provider-specific infrastructure. It supplements (never duplicates)
 `docs/deployment/README.md` with the 8.20.17 findings.
 
-## 1. Current test baseline (8.20.17, post `npm audit fix`)
+## 1. Current test baseline (verified by full audit run)
 
-- Web Jest: 346/346 (35 suites)
-- Admin Jest: 6/6
-- Anatomy-core Jest: 26/26 (7 suites)
-- API Jest: 182/182 (18 suites, incl. 8.20.16 readiness tests)
-- Playwright: 11/11 (chromium + mobile-chrome, incl. `/human?focus=` deep-link)
+- Web Jest: 443/443 (53 suites, incl. URL-dedup + transient-refresh tests)
+- Admin Jest: 10/10
+- Anatomy-core Jest: 37/37 (8 suites)
+- API Jest: 226/226 (21 suites, incl. 8.20.16 readiness tests)
+- Playwright: 17/17 (chromium + mobile-chrome, incl. `/human?focus=` deep-link)
 - Workspace typecheck: PASS (web, admin, anatomy-core, shared-types, api, backend-shared)
 - Builds: web (`tsc && vite build → dist/`) PASS, admin (`next build`) PASS,
   api (`nest build → dist/`) PASS, marketing (`eleventy + css + js → _site/`) PASS
@@ -114,23 +114,19 @@ milestone with full retest, never bundled with a release.
 
 Existing 8.20.9 `manualChunks` kept (react/query/ui vendors + lazy
 three-core/three-r3f/HumanPage). No frameloop/loader/manifest changes.
-Measured 8.20.17 from `vite build` output + `scripts/check-performance-budget.js`:
+Measured from `vite build` output + `scripts/check-performance-budget.js`
+(audit run; per-chunk gzip in the build log, budgets enforced by the script):
 
-| Chunk (web `dist/assets`) | Raw      | Gzip (vite) | Budget (raw warn) | Lazy                |
-| ------------------------- | -------- | ----------- | ----------------- | ------------------- |
-| three-core                | 819.5 kB | 214.5 kB    | 950 kB            | yes (`/human` only) |
-| react-vendor              | 169.7 kB | 55.4 kB     | 200 kB            | no (shared)         |
-| three-r3f                 | 140.3 kB | 46.3 kB     | 170 kB            | yes (`/human` only) |
-| HumanPage route           | 78.6 kB  | 20.3 kB     | 100 kB            | yes (route)         |
-| ui-vendor                 | 73.5 kB  | 24.0 kB     | info              | no                  |
-| query-vendor              | 40.7 kB  | 12.1 kB     | info              | no                  |
-| index entry               | 20.7 kB  | 6.6 kB      | 30 kB             | no                  |
-| Total JS (35 files)       | ~1463 kB | ~420 kB     | 1700 kB           | —                   |
+| Chunk (web `dist/assets`) | Raw        | Budget (raw warn) | Lazy                |
+| ------------------------- | ---------- | ----------------- | ------------------- |
+| three-core                | 800.3 kB   | 950 kB            | yes (`/human` only) |
+| lazy runtime chunks       | 213/167 kB | 250 kB            | yes (routes)        |
+| index entry               | 29.3 kB    | 30 kB             | no                  |
+| Total JS (48 files)       | ~2039 kB   | 2200 kB           | —                   |
 
-Initial (non-3D) entry ≈ index + react + query + ui ≈ 300 kB raw
-(~100 kB gzip) — acceptable. Largest chunk is the lazy 3D core, never on the
-critical path. Admin `next build` (6 routes, shared ~103 kB First Load) and
-marketing `_site` (12 pages + minified CSS/JS) verified green.
+Largest chunk is the lazy 3D core, never on the critical path. `/human-test`
+is dev-gated out of production bundles. Admin `next build` and marketing
+`_site` verified green.
 
 ```bash
 node scripts/check-performance-budget.js          # informational PASS

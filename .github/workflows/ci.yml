@@ -35,8 +35,10 @@ jobs:
         env:
           # Public API origin (no secret, no path — frontend appends /api/v1/...
           # and /api/health itself) — the web build fails fast when
-          # VITE_API_BASE_URL is absent from a production build.
+          # VITE_API_BASE_URL is absent from a production build, and the
+          # admin build fails fast when NEXT_PUBLIC_API_BASE_URL is absent.
           VITE_API_BASE_URL: https://anatomiax-api.onrender.com
+          NEXT_PUBLIC_API_BASE_URL: https://anatomiax-api.onrender.com
 
       - name: Prisma migration safety gate (DB-less, no mutation)
         run: node scripts/check-prisma-migrations.js

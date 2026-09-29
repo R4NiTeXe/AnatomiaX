@@ -46,6 +46,36 @@ AI-assisted learning (knowledge retrieval with a medical safety layer) is planne
 
 Responsive web platform with working anatomy viewer (male/female, 9 systems, Meshopt-optimized GLBs), learning/quiz/progress, auth, RBAC, cohorts, notifications (web push), and admin. Native mobile has been permanently dropped — no Expo/React Native workspace remains.
 
+## Getting Started
+
+Requires Node.js >=24 <25 (see `engines` in `package.json`).
+
+```bash
+npm ci
+cp backend/api/.env.example backend/api/.env        # DATABASE_URL, JWT_SECRET, ...
+cp frontend/web/.env.example frontend/web/.env      # VITE_API_BASE_URL=http://localhost:3000
+npx prisma migrate deploy --schema backend/api/prisma/schema.prisma
+```
+
+Run the API (`backend/api`, port 3000) and the web app (`frontend/web`, port 5173)
+in separate terminals, or by workspace script (`npm run dev -w @anatomiax/web`).
+
+Quality gates (same as CI in `.github/workflows/ci.yml`):
+
+```bash
+npm run format:check
+npm run typecheck --workspaces --if-present
+npm run test --workspaces --if-present
+npm run build --workspaces --if-present
+npx playwright test
+```
+
+Production builds bake in `VITE_API_BASE_URL` (origin only, e.g.
+`https://anatomiax-api.onrender.com` — the frontend appends `/api/v1/...`
+itself). A production web build without it fails fast instead of shipping a
+bundle that calls `localhost:3000`. Full deploy contract:
+`docs/deployment/README.md`.
+
 ## Roadmap
 
 No native iOS/Android/Expo work is planned. Future work targets responsive web only (PWA/offline not in this step).

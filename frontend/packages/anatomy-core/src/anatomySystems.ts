@@ -30,15 +30,15 @@ export interface AnatomyBodyModelDefinition {
   available: boolean;
 }
 
-declare const process: { env?: Record<string, string | undefined> } | undefined;
+declare const process: { env: Record<string, string | undefined> };
 
 export const ASSET_BASE_URL: string = (() => {
   try {
-    // Same convention as assetResolver.readConfiguredAssetBase: Vite's
-    // `define` replaces the literal chain at bundle time; Jest/Node see an
-    // unset variable and fall back to local mode.
-    if (typeof process === 'undefined') return '/models-dev/';
-    return process.env?.VITE_ANATOMY_ASSET_BASE_URL ?? '/models-dev/';
+    // Plain `process.env.X` literal for Vite static replacement (see
+    // readConfiguredAssetBase) — no `?.`, no cast, no typeof guard.
+    // Empty counts as unset and falls back to local mode.
+    const configured = process.env.VITE_ANATOMY_ASSET_BASE_URL;
+    return configured && configured.trim() !== '' ? configured : '/models-dev/';
   } catch {
     return '/models-dev/';
   }

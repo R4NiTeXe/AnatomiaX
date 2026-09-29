@@ -98,3 +98,15 @@ frontend/web/public/models-dev/*.glb
 *.pid
 *.seed
 *.pid.lock
+
+# Vercel CLI local state (project/org ids, tokens) — never commit.
+.vercel
+
+# Private keys and certificates — never commit.
+*.pem
+*.key
+*.p12
+*.pfx
+*.cert
+credentials.json
+serviceAccountKey.json

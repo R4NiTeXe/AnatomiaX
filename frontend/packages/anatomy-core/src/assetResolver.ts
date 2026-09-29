@@ -37,16 +37,21 @@ export const LOCAL_ASSET_BASE = '/models-dev/';
  * no `import.meta` binding, so CDN mode could never activate).
  *
  * Uses the repository's `process.env.VITE_*` convention instead: Vite's
- * `define` replaces the literal chain at bundle time (proven by the API base
- * URL), while Jest/Node simply see an unset variable and fall back to local
- * mode. Public build-time value — never a secret.
+ * `define` statically replaces the literal `process.env.VITE_...` chain at
+ * bundle time, while Jest/Node read the real process.env and fall back to
+ * local mode when unset. The literal must stay exact — optional chaining
+ * (`process.env?.X`) or a cast breaks Vite's match and CDN mode silently
+ * never activates. Public build-time value — never a secret.
  */
-declare const process: { env?: Record<string, string | undefined> } | undefined;
+declare const process: { env: Record<string, string | undefined> };
 
 export function readConfiguredAssetBase(): string | undefined {
   try {
-    if (typeof process === 'undefined') return undefined;
-    return process.env?.VITE_ANATOMY_ASSET_BASE_URL ?? undefined;
+    // No `typeof process` early-return: in the browser bundle Vite has
+    // already replaced the literal below with the build-time string, and a
+    // guard would prevent ever reaching it. Runtimes without `process` (or
+    // any define mishap) throw here and fall back to local mode via catch.
+    return process.env.VITE_ANATOMY_ASSET_BASE_URL ?? undefined;
   } catch {
     return undefined;
   }
