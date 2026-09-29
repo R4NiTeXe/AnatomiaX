@@ -374,6 +374,38 @@ describe('Auth (e2e, no database)', () => {
     expect(typeof res.body.accessToken).toBe('string');
   });
 
+  it('prefers the fresh cookie over a stale body token (multi-tab safety)', async () => {
+    // Self-contained user: other tests' fixtures may be skipped under -t.
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email: 'multitab@example.com', password: 'password123' });
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'multitab@example.com', password: 'password123' });
+    const staleBody = login.body.refreshToken as string;
+    // Tab A rotates: the cookie jar now holds the fresh token.
+    const rotated = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', refreshCookie(login));
+    expect(rotated.status).toBe(200);
+    const freshCookie = refreshCookie(rotated);
+    // Tab B presents a stale body token alongside the fresh cookie: the
+    // cookie must win, so reuse detection must NOT fire and the family
+    // stays alive.
+    const tabB = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', freshCookie)
+      .send({ refreshToken: staleBody });
+    expect(tabB.status).toBe(200);
+    expect(tabB.body.refreshToken).toBeDefined();
+    expect(tabB.body.refreshToken).not.toBe(staleBody);
+    // Family intact: the newest token still refreshes afterwards.
+    const again = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', refreshCookie(tabB));
+    expect(again.status).toBe(200);
+  });
+
   it('logs out, clears the cookie, and kills the token', async () => {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')

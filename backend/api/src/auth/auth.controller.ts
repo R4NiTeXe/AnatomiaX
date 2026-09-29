@@ -72,7 +72,12 @@ export class AuthController {
   }
 
   private presentedToken(req: AuthRequest, body?: RefreshDto): string | undefined {
-    return body?.refreshToken ?? req.cookies?.[REFRESH_COOKIE];
+    // Prefer the cookie: the browser jar always holds the latest rotated
+    // value, while a JSON body token can be stale (e.g. a second tab that
+    // has not refreshed since another tab rotated). A stale body token
+    // would trip reuse detection and revoke the whole family — killing live
+    // sessions. Body-only callers (mobile, tests) fall through unchanged.
+    return req.cookies?.[REFRESH_COOKIE] ?? body?.refreshToken;
   }
 
   @Post('register')
