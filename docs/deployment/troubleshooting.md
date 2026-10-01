@@ -61,6 +61,28 @@ never went on the wire. Distinguish in order:
    changes, no token-in-URL fallback — the cookie must travel cross-site
    for refresh to function, and CSRF is covered by `OriginCheckGuard`.
 
+## 2c. Browser reports missing `Access-Control-Allow-Origin` (CORS)
+
+Distinguish four causes before touching code — all four look identical in
+the console:
+
+1. **Stale evidence:** the console text persists across redeploys. Hard-refresh
+   and re-check Network → the preflight `OPTIONS` → Response Headers. A
+   present `Access-Control-Allow-Origin: https://anatomiax.vercel.app` means
+   CORS is healthy _now_ and the error is old.
+2. **Variable-name mismatch:** the code reads `CORS_ORIGIN` with a
+   `CORS_ORIGINS` (plural) alias — any _third_ spelling is silently ignored
+   and the allow-list falls back to localhost. Boot logs the normalized
+   list (`CORS allow-list (N): …`); compare it against the browser's
+   `Origin` request header, character for character (quotes, case, and
+   trailing slashes are normalized away, subdomains are not).
+3. **Cold-start proxy errors masquerading as CORS:** while Render's free
+   instance wakes, the proxy answers 502s with no CORS headers — the
+   browser blames CORS. Signature: `GET /api/health` also fails, then
+   works after retry. Not a CORS bug; wait out the wake window.
+4. **Wrong deployment tested:** preview deployments (`*-*.vercel.app`)
+   are not the exact allow-listed origin and correctly get no headers.
+
 ## 3. Refresh/logout returns 403 (not 401)
 
 That is the `OriginCheckGuard` (ADR-001), not CORS. A 403 on

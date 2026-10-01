@@ -1,4 +1,5 @@
 import type { ConfigService } from '@nestjs/config';
+import { resolveAllowedOrigins } from './cors-origins';
 
 /**
  * 8.19.23 production configuration validation (extended 8.20.16).
@@ -30,24 +31,19 @@ export function validateProductionEnv(config: ConfigService): void {
     failures.push('DATABASE_URL must be a postgresql:// connection string in production');
   }
 
-  const corsOrigin = config.get<string>('CORS_ORIGIN');
-  if (!corsOrigin) {
-    failures.push('CORS_ORIGIN is required in production');
+  // Same shared resolver as runtime CORS setup, guard, and redirect target:
+  // CORS_ORIGIN plus the CORS_ORIGINS plural alias, quote-stripped and
+  // normalized, so validation judges the values actually enforced.
+  const origins = resolveAllowedOrigins(config);
+  if (origins.length === 0) {
+    failures.push('CORS_ORIGIN (or CORS_ORIGINS) is required in production');
   } else {
-    const origins = corsOrigin
-      .split(',')
-      .map(o => o.trim())
-      .filter(Boolean);
-    if (origins.length === 0) {
-      failures.push('CORS_ORIGIN is required in production');
-    } else {
-      if (origins.some(o => o === '*' || o.includes('*'))) {
-        failures.push('CORS_ORIGIN must not contain a wildcard in production');
-      }
-      const localhostPattern = /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/.*)?$/i;
-      if (origins.some(o => localhostPattern.test(o))) {
-        failures.push('CORS_ORIGIN must not target localhost in production');
-      }
+    if (origins.some(o => o === '*' || o.includes('*'))) {
+      failures.push('CORS_ORIGIN must not contain a wildcard in production');
+    }
+    const localhostPattern = /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/.*)?$/i;
+    if (origins.some(o => localhostPattern.test(o))) {
+      failures.push('CORS_ORIGIN must not target localhost in production');
     }
   }
 

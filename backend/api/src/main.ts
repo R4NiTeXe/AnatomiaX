@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { parseAllowedOrigins } from './config/cors-origins';
+import { applyCors } from './config/cors-origins';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
@@ -37,16 +37,12 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const corsRaw = configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
   // 8.20.16: allow a comma-separated allow-list (e.g. web + admin origins)
   // while preserving the single-origin default. No wildcard; validated in
-  // production by validateProductionEnv. Shared parser with OriginCheckGuard
-  // so CORS and the CSRF guard normalize entries identically.
-  const corsOrigins = parseAllowedOrigins(corsRaw);
-  app.enableCors({
-    origin: corsOrigins.length <= 1 ? (corsOrigins[0] ?? corsRaw) : corsOrigins,
-    credentials: true,
-  });
+  // production by validateProductionEnv. Shared applyCors (same normalization
+  // as OriginCheckGuard + webAppOrigin) runs before pipes/middleware/routes
+  // so preflight OPTIONS and guard/error responses carry CORS headers.
+  applyCors(app, configService, logger);
 
   app.useGlobalPipes(
     new ValidationPipe({

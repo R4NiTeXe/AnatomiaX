@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { parseAllowedOrigins } from '../config/cors-origins';
+import { resolveAllowedOrigins } from '../config/cors-origins';
 
 /**
  * Normalizes an Origin/Referer header value to `scheme://host[:port]`.
@@ -45,7 +45,7 @@ export class OriginCheckGuard implements CanActivate {
     const origin = originOf(headers.origin);
     const referer = originOf(headers.referer);
     if (!origin && !referer) return true;
-    const allowed = parseAllowedOrigins(this.config.get<string>('CORS_ORIGIN'));
+    const allowed = resolveAllowedOrigins(this.config);
     if (allowed.length === 0) {
       throw new ForbiddenException('Forbidden');
     }
