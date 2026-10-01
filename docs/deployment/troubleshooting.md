@@ -61,12 +61,15 @@ setImmediate(r))`) after the HTTP response before asserting.
 
 The scan fails closed on secret-shaped literals (`AKIA…`, `sk-ant-…`,
 `ghu_…`, `npm_…`, `xox[baprsdoe]-…`, `GOCSPX-…`,
-`-----BEGIN … PRIVATE KEY-----`, DB URLs with real credentials). There are
-no file exclusions — not even for `*.spec.*`, mocks, or docs. A line is
-skipped only for structural placeholders (`...`, `xxx`,
-`<PLACEHOLDER>`, `YOUR_*`, `change-me`); generic words like "example" or
-"test" on the same line do NOT suppress a finding. So write fixtures with
-structural markers (e.g. `sk-proj-...`, `postgres://USER:PASSWORD@HOST/db`),
-never realistic-looking secrets — and run `node scripts/security-grep.js`
+`-----BEGIN … PRIVATE KEY-----`, DB URLs with real credentials). There is
+exactly one documented file exclusion: DB-URL fixtures inside vendored
+`skills/**` playbooks (third-party docs we never edit; recorded in
+`skills/README.md`) — key-shape patterns still scan them, and nothing else
+is excluded, not even `*.spec.*`, mocks, or docs. A line is skipped only
+for structural placeholders (`...`, `xxx`, `<PLACEHOLDER>`, `YOUR_*`,
+`change-me`); generic words like "example" or "test" on the same line do
+NOT suppress a finding. So write fixtures with structural markers (e.g.
+`sk-proj-...`, `postgres://USER:PASSWORD@HOST/db`), never
+realistic-looking secrets — and run `node scripts/security-grep.js`
 locally first. Fix a finding by removing the literal, never by weakening
 the pattern.

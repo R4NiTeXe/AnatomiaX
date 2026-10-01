@@ -79,3 +79,12 @@ repo, translate to:
   above with the AnatomiaX-specific reason. Never silently edit vendored files;
   project deviations go in this index or root `AGENTS.md`.
 - Review this set quarterly; drop skills that stop matching the stack.
+
+## Recorded deviations
+
+- `scripts/security-grep.js` exempts `skills/**` from the
+  database-credentials check only: vendored playbooks (e.g.
+  `prisma-patterns/SKILL.md`) contain third-party DB-URL documentation
+  fixtures (`postgresql://user:pass@host/...`) that we must not rewrite.
+  Key-shape patterns and tracked-file rules still scan `skills/**`, so a
+  real key pasted into a playbook still fails the gate.

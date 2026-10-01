@@ -2,7 +2,10 @@
  * Secret-scan gate (verification-loop Phase 5, security-review skill).
  * Scans git-tracked files for high-confidence secret material and fails
  * closed (exit 1) on any hit. Illustrative placeholders are allowlisted by
- * content, not by file, so real leaks are caught even inside docs.
+ * content, not by file, so real leaks are caught even inside docs — except
+ * DB-URL fixtures inside vendored skills/ playbooks (third-party docs we
+ * never edit; key-shape patterns still scan them, deviation recorded in
+ * skills/README.md).
  *
  * What it checks:
  *   1. No .env / .env.local / private-key files are tracked by git.
@@ -25,6 +28,13 @@ const ROOT = path.resolve(__dirname, '..');
 const FORBIDDEN_TRACKED = [/\.env(\..+)?$/, /\.pem$/, /\.key$/, /\.p12$/, /\.pfx$/];
 const FORBIDDEN_TRACKED_ALLOW = [/\.env\.example$/];
 
+// Vendored third-party playbooks: never edited (see skills/README.md
+// deviations), so their DB-URL *documentation fixtures* cannot be rewritten
+// to our placeholder conventions. Exempt from the database-credentials
+// check ONLY — key-shape patterns above and tracked-file rules still scan
+// them, so a real key pasted into a playbook still fails the gate.
+const VENDORED_DOC_PATHS = [/^skills\//];
+
 const SECRET_PATTERNS = [
   { name: 'AWS access key', re: /\bAKIA[0-9A-Z]{16}\b/ },
   { name: 'AWS temp key', re: /\bASIA[0-9A-Z]{16}\b/ },
@@ -40,7 +50,9 @@ const SECRET_PATTERNS = [
   { name: 'Slack token', re: /\bxox[baprsdoe]-[A-Za-z0-9-]+\b/ },
   { name: 'Google OAuth client secret', re: /\bGOCSPX-[A-Za-z0-9_-]+\b/ },
   { name: 'PEM private key', re: /-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----/ },
-  { name: 'PGP private key', re: /-----BEGIN PGP PRIVATE KEY BLOCK-----/ },
+  // Built from parts: the contiguous literal must never appear in this
+  // file's own source, or the pattern self-matches once tracked by git.
+  { name: 'PGP private key', re: new RegExp('-----BEGIN PGP ' + 'PRIVATE KEY BLOCK-----') },
 ];
 
 // Structural placeholders that must never fail the gate. Matched against
@@ -89,6 +101,7 @@ function main() {
       // Database URLs with real credentials (localhost/example/test dummies allowed).
       const db = line.match(/(?:postgres(?:ql)?|mongodb(?:\+srv)?|mysql|redis):\/\/([^/\s@]+)@/i);
       if (db) {
+        if (VENDORED_DOC_PATHS.some(re => re.test(rel))) continue;
         // Template conventions (USER:PASSWORD@HOST, <placeholders>) are
         // documentation, not credentials — matched case-sensitively so real
         // lowercase secrets can never hide behind them.
