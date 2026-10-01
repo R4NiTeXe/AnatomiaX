@@ -313,6 +313,16 @@ describe('Auth (e2e, no database)', () => {
     expect(cookiesOf(res).join(';')).toContain('refresh_token=');
   });
 
+  it('keeps the non-production SameSite=Lax default (production defaults to None)', async () => {
+    // Locks the split default: test env is same-site-capable, production
+    // cross-site requires None (see AuthController prod-default spec).
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'student@example.com', password: 'password123' });
+    expect(res.status).toBe(200);
+    expect(cookiesOf(res).join(';')).toContain('SameSite=Lax');
+  });
+
   it('rejects bad credentials without distinguishing cases', async () => {
     const wrongPassword = await request(app.getHttpServer())
       .post('/api/v1/auth/login')

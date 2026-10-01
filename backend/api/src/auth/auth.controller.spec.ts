@@ -96,6 +96,25 @@ describe('AuthController session cookie flags', () => {
     );
   });
 
+  it('defaults to SameSite=None in production so cross-site refresh works', async () => {
+    // RED: production Google-callback 302 stores the cookie, but a Lax
+    // default is never sent on cross-site fetch — /refresh 401s forever.
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const controller = new AuthController(authFor() as never, configFor({}) as never);
+      const res = mockRes();
+      await controller.login(loginDto as never, res as never);
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        'rt-1',
+        expect.objectContaining({ sameSite: 'none', secure: true })
+      );
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  });
+
   it('forces Secure in production regardless of config', async () => {
     const previous = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
@@ -111,6 +130,27 @@ describe('AuthController session cookie flags', () => {
         'rt-1',
         expect.objectContaining({ secure: true })
       );
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  });
+
+  it('logout clears the cookie with matching path/sameSite/secure attributes', async () => {
+    // RED: clearCookie sent path-only. A clearing response that does not
+    // mirror the cookie's attributes risks leaving a live session cookie
+    // behind in edge browsers — logout must look exactly like logout.
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const auth = { logout: jest.fn().mockResolvedValue(undefined) };
+      const controller = new AuthController(auth as never, configFor({}) as never);
+      const res = mockRes();
+      await controller.logout({} as never, { cookies: {} } as never, res as never);
+      expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', {
+        path: '/api/v1/auth',
+        sameSite: 'none',
+        secure: true,
+      });
     } finally {
       process.env.NODE_ENV = previous;
     }

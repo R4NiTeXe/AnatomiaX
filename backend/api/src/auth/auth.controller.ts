@@ -57,14 +57,38 @@ export class AuthController {
     private readonly config: ConfigService
   ) {}
 
-  private cookieOptions(): Record<string, unknown> {
-    const secure =
-      process.env.NODE_ENV === 'production'
-        ? true
-        : this.config.get<string>('COOKIE_SECURE') === 'true';
-    const sameSite = this.config.get<string>('COOKIE_SAMESITE') ?? 'lax';
+  private cookieOptions(): {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'lax' | 'strict' | 'none';
+    path: string;
+    maxAge: number;
+  } {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const secure = isProduction ? true : this.config.get<string>('COOKIE_SECURE') === 'true';
+    // Production is always cross-site (Vercel frontend ↔ Render API, ports
+    // differ so even localhost dev is same-site but prod never is): a Lax
+    // default stores the cookie on the OAuth 302 yet the browser never sends
+    // it on cross-site fetch — /refresh 401s forever and the Google callback
+    // reports "No Google session found". SameSite=None (with forced Secure)
+    // is the correct attribute for this architecture; the CSRF residual is
+    // covered by OriginCheckGuard on the cookie-credentialed routes
+    // (ADR-001). Explicit COOKIE_SAMESITE still wins for operator intent;
+    // non-production default stays lax.
+    const sameSite = (this.config.get<string>('COOKIE_SAMESITE') ??
+      (isProduction ? 'none' : 'lax')) as 'lax' | 'strict' | 'none';
     const days = Number(this.config.get<string>('REFRESH_TTL_DAYS') ?? '30') || 30;
     return { httpOnly: true, secure, sameSite, path: '/api/v1/auth', maxAge: days * 86400000 };
+  }
+
+  /**
+   * Clears the session cookie with attributes mirroring issuance (minus
+   * maxAge): a clearing response must match the cookie or edge browsers
+   * keep a live session cookie behind after logout.
+   */
+  private clearSession(res: CookieResponse): void {
+    const { path, sameSite, secure } = this.cookieOptions();
+    res.clearCookie(REFRESH_COOKIE, { path, sameSite, secure });
   }
 
   private writeSession(res: CookieResponse, session: AuthSession) {
@@ -139,7 +163,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: CookieResponse
   ) {
     await this.auth.logout(this.presentedToken(req, dto));
-    res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+    this.clearSession(res);
     return { status: 'ok' as const };
   }
 
@@ -160,7 +184,7 @@ export class AuthController {
   ) {
     await this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);
     // All sessions revoked: drop the refresh cookie so the client re-authenticates.
-    res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+    this.clearSession(res);
     return { status: 'ok' as const };
   }
 

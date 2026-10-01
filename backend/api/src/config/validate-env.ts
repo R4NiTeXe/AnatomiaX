@@ -63,9 +63,18 @@ export function validateProductionEnv(config: ConfigService): void {
     failures.push('PASSWORD_RESET_TTL_MINUTES must be a number between 1 and 1440 in production');
   }
 
-  const sameSite = (config.get<string>('COOKIE_SAMESITE') ?? 'lax').toLowerCase();
+  const sameSiteRaw = config.get<string>('COOKIE_SAMESITE');
+  const sameSite = (sameSiteRaw ?? 'lax').toLowerCase();
   if (!['lax', 'strict', 'none'].includes(sameSite)) {
     failures.push('COOKIE_SAMESITE must be one of lax|strict|none in production');
+  }
+  // Production is always cross-site (Vercel frontend ↔ Render API), so an
+  // explicit lax/strict silently breaks refresh: the cookie stores on the
+  // OAuth 302 but the browser never sends it on cross-site fetch (/refresh
+  // 401s forever). Unset defaults to none in code; an explicit non-none
+  // value fails fast here instead of failing silently in browsers.
+  if (sameSiteRaw && sameSite !== 'none') {
+    failures.push('COOKIE_SAMESITE must be none in production (cross-site frontend/API)');
   }
 
   // 8.20.16: SameSite=None requires Secure cookies (browser-enforced). The API

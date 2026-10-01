@@ -42,10 +42,26 @@ describe('validateProductionEnv (8.19.23)', () => {
           CORS_ORIGIN: 'https://app.example.com',
           REFRESH_TTL_DAYS: '30',
           PASSWORD_RESET_TTL_MINUTES: '60',
-          COOKIE_SAMESITE: 'lax',
+          COOKIE_SAMESITE: 'none',
         })
       )
     ).not.toThrow();
+  });
+
+  it('rejects explicit lax/strict COOKIE_SAMESITE in production (silent refresh breakage)', () => {
+    process.env.NODE_ENV = 'production';
+    const base = {
+      JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/anatomiax',
+      CORS_ORIGIN: 'https://app.example.com',
+    };
+    for (const sameSite of ['lax', 'strict']) {
+      expect(() =>
+        validateProductionEnv(configFor({ ...base, COOKIE_SAMESITE: sameSite }))
+      ).toThrow('COOKIE_SAMESITE must be none in production');
+    }
+    // Unset is fine — code defaults to none in production.
+    expect(() => validateProductionEnv(configFor(base))).not.toThrow();
   });
 
   it('rejects partial Google config and bad TTLs', () => {

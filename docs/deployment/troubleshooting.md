@@ -35,6 +35,32 @@ presence log and a bundle grep for `localhost:3000` (must be 0).
 Local dev: `frontend/web/.env` must be `http://localhost:3000`, never the
 production URL.
 
+## 2b. Google callback lands on `/auth/callback` but "No Google session found"
+
+The backend minted the session (the 302 to `/auth/callback` only happens
+after `res.cookie` on the same response) and the SPA did attempt the
+cookie refresh — so a 401/401 pair on `/refresh` + `/me` means the cookie
+never went on the wire. Distinguish in order:
+
+1. **Jar check:** DevTools → Application → Cookies →
+   `https://anatomiax-api.onrender.com` right after the callback. Cookie
+   **present** → it stores but isn't sent: confirm the response set
+   `SameSite=None; Secure` (Lax is withheld on cross-site fetch by
+   design). Cookie **absent** → rejected at set time or third-party
+   cookies blocked (step 3).
+2. **Env check (Render):** `NODE_ENV=production` must be set (the
+   production defaults key off it). `COOKIE_SAMESITE` should be unset
+   (code defaults to `none` in production) or `none`; explicit `lax` /
+   `strict` now fails boot loudly instead of breaking silently. Redeploy
+   after any change — env edits alone do nothing until redeploy.
+3. **Browser check:** `chrome://settings/cookies` — if "Block third-party
+   cookies" is on (default in Incognito), `SameSite=None` cannot help;
+   retest in a normal profile. Persistent blocking across profiles means
+   the durable fix is a same-site API domain, not code (ADR-006).
+4. **Do not "fix" by downgrading:** no CORS wildcard, no credentials
+   changes, no token-in-URL fallback — the cookie must travel cross-site
+   for refresh to function, and CSRF is covered by `OriginCheckGuard`.
+
 ## 3. Refresh/logout returns 403 (not 401)
 
 That is the `OriginCheckGuard` (ADR-001), not CORS. A 403 on
