@@ -8,8 +8,14 @@ export interface SafeUser {
   createdAt: Date;
 }
 
-/** Strips credentials and internal fields before anything leaves the service layer. */
-export function toSafeUser(user: User): SafeUser {
+/**
+ * Strips credentials and internal fields before anything leaves the service
+ * layer. Accepts the narrowed column selection so list queries can avoid
+ * fetching `passwordHash` at all (defense in depth beyond this mapping).
+ */
+export function toSafeUser(
+  user: Pick<User, 'id' | 'email' | 'name' | 'role' | 'createdAt'>
+): SafeUser {
   return {
     id: user.id,
     email: user.email,

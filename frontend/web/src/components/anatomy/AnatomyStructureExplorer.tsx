@@ -55,6 +55,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     return registry
       .getAllLoadedStructures()
       .filter(s => s.bodyModel === selectedBodyModel && visibleSystems[s.systemKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- registryVersion intentionally invalidates on content changes
   }, [registry, registryVersion, selectedBodyModel, visibleSystems]);
 
   const availableSystems = useMemo(() => {
@@ -168,6 +169,7 @@ export default function AnatomyStructureExplorer(): JSX.Element {
       }
       setExpandedParents(allParents);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- derived filtered/hierarchy already encode filter
   }, [filtered, hierarchy]);
 
   // Expand all systems by default when first loaded

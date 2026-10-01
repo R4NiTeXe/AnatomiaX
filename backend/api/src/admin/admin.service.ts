@@ -54,11 +54,21 @@ export class AdminService {
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 5,
+        // Narrowed: passwordHash/updatedAt/deletedAt never leave the driver.
+        select: { id: true, email: true, name: true, role: true, createdAt: true },
       }),
       this.prisma.cohort.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: { _count: { select: { members: true } } },
+        // Narrowed: inviteCode/updatedAt never leave the driver.
+        select: {
+          id: true,
+          name: true,
+          archivedAt: true,
+          createdAt: true,
+          createdById: true,
+          _count: { select: { members: true } },
+        },
       }),
     ]);
 
@@ -116,6 +126,8 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        // Narrowed: passwordHash/updatedAt/deletedAt never leave the driver.
+        select: { id: true, email: true, name: true, role: true, createdAt: true },
       }),
     ]);
 
@@ -162,7 +174,15 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: { _count: { select: { members: true } } },
+        // Narrowed: inviteCode/updatedAt never leave the driver.
+        select: {
+          id: true,
+          name: true,
+          institutionLabel: true,
+          archivedAt: true,
+          createdAt: true,
+          _count: { select: { members: true } },
+        },
       }),
     ]);
 
@@ -185,7 +205,15 @@ export class AdminService {
   async getCohort(id: string): Promise<(CohortView & { memberCount: number }) | null> {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id },
-      include: { _count: { select: { members: true } } },
+      // Narrowed: inviteCode/updatedAt/createdById never leave the driver.
+      select: {
+        id: true,
+        name: true,
+        institutionLabel: true,
+        archivedAt: true,
+        createdAt: true,
+        _count: { select: { members: true } },
+      },
     });
     if (!cohort) return null;
     const count = cohort._count.members;

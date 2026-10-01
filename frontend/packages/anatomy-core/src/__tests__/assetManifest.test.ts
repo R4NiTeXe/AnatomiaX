@@ -1,7 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { ASSET_MANIFEST, devAssetFilename, findManifestEntry } from '../assetManifest';
+import {
+  ASSET_MANIFEST,
+  devAssetFilename,
+  findManifestEntry,
+  getAllProductionUrls,
+  getManifestAssetUrl,
+} from '../assetManifest';
 
 const SYSTEMS = [
   'skin',
@@ -40,6 +46,18 @@ describe('asset manifest', () => {
     expect(devAssetFilename('male', 'skin-meshopt.glb')).toBe('skin-meshopt.glb');
     expect(devAssetFilename('female', 'skin-meshopt.glb')).toBe('female-skin-meshopt.glb');
     expect(devAssetFilename('female', 'nervous-meshopt.glb')).toBe('female-nervous-meshopt.glb');
+  });
+
+  it('resolves production URLs under a base in manifest order', () => {
+    const entry = findManifestEntry('male', 'skin');
+    expect(entry).toBeDefined();
+    expect(getManifestAssetUrl('https://cdn.example/a/', entry!)).toBe(
+      'https://cdn.example/a/male/skin-meshopt.glb'
+    );
+    const urls = getAllProductionUrls('https://cdn.example/a/');
+    expect(urls).toHaveLength(18);
+    expect(urls[0]).toMatch(/^https:\/\/cdn\.example\/a\/male\//);
+    expect(new Set(urls).size).toBe(18);
   });
 });
 

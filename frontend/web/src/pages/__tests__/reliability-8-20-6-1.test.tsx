@@ -6,7 +6,7 @@
 jest.mock('@/components/anatomy/AnatomyViewer', () => ({
   __esModule: true,
   default: () => {
-    const React = require('react');
+    const React = jest.requireActual<typeof import('react')>('react');
     return React.createElement('div', { 'data-testid': 'mock-anatomy-viewer' }, 'viewer');
   },
 }));

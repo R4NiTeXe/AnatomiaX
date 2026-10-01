@@ -63,7 +63,7 @@ describe('validateProductionEnv (8.19.23)', () => {
     );
   });
 
-  it('keeps FCM optional but rejects project id without server key (8.19.24)', () => {
+  it('keeps Firebase optional but rejects project id without complete credentials', () => {
     process.env.NODE_ENV = 'production';
     const base = {
       JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
@@ -73,10 +73,15 @@ describe('validateProductionEnv (8.19.23)', () => {
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
     expect(() =>
       validateProductionEnv(configFor({ ...base, FIREBASE_PROJECT_ID: 'my-project' }))
-    ).toThrow('FCM_SERVER_KEY');
+    ).toThrow('FIREBASE_CLIENT_EMAIL');
     expect(() =>
       validateProductionEnv(
-        configFor({ ...base, FCM_SERVER_KEY: 'key', FIREBASE_PROJECT_ID: 'my-project' })
+        configFor({
+          ...base,
+          FIREBASE_PROJECT_ID: 'my-project',
+          FIREBASE_CLIENT_EMAIL: 'email@example.com',
+          FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\nMIIE...',
+        })
       )
     ).not.toThrow();
   });
@@ -189,14 +194,24 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
     expect(message).not.toMatch(/postgres:.+@/);
   });
 
-  it('keeps SMTP optional but rejects partial SMTP config in production (8.20.22)', () => {
+  it('keeps SMTP optional but rejects partial SMTP config in production (Brevo SMTP)', () => {
     process.env.NODE_ENV = 'production';
     // Absent SMTP keeps the safe stub — no failure.
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
     // Host without sender fails clearly.
     expect(() =>
-      validateProductionEnv(configFor({ ...base, SMTP_HOST: 'mail.example.com' }))
+      validateProductionEnv(configFor({ ...base, SMTP_HOST: 'smtp-relay.brevo.com' }))
     ).toThrow('SMTP_FROM');
+    // Brevo host without user/password credentials fails clearly.
+    expect(() =>
+      validateProductionEnv(
+        configFor({
+          ...base,
+          SMTP_HOST: 'smtp-relay.brevo.com',
+          SMTP_FROM: 'noreply@example.com',
+        })
+      )
+    ).toThrow('SMTP_USER');
     // Orphaned sender-side values without a host fail clearly.
     expect(() =>
       validateProductionEnv(configFor({ ...base, SMTP_FROM: 'noreply@example.com' }))
@@ -220,22 +235,64 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
         configFor({ ...base, SMTP_HOST: 'h', SMTP_FROM: 'f', SMTP_SECURE: 'sometimes' })
       )
     ).toThrow('SMTP_SECURE');
-    // Complete SMTP config (authless relay and authenticated) passes.
-    expect(() =>
-      validateProductionEnv(
-        configFor({ ...base, SMTP_HOST: 'mail.example.com', SMTP_FROM: 'noreply@example.com' })
-      )
-    ).not.toThrow();
+    // Complete Brevo SMTP config passes.
     expect(() =>
       validateProductionEnv(
         configFor({
           ...base,
-          SMTP_HOST: 'mail.example.com',
+          SMTP_HOST: 'smtp-relay.brevo.com',
           SMTP_FROM: 'AnatomiaX <noreply@example.com>',
-          SMTP_PORT: '465',
-          SMTP_SECURE: 'true',
-          SMTP_USER: 'u',
-          SMTP_PASSWORD: 'p',
+          SMTP_PORT: '587',
+          SMTP_SECURE: 'false',
+          SMTP_USER: 'brevo-user',
+          SMTP_PASSWORD: 'brevo-password',
+        })
+      )
+    ).not.toThrow();
+  });
+
+  it('keeps OAUTH_TIMEOUT_MS optional but rejects non-positive values in production', () => {
+    process.env.NODE_ENV = 'production';
+    expect(() => validateProductionEnv(configFor(base))).not.toThrow();
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, OAUTH_TIMEOUT_MS: '5000' }))
+    ).not.toThrow();
+    for (const raw of ['soon', '0', '-5', '1.5', '999999999']) {
+      expect(() => validateProductionEnv(configFor({ ...base, OAUTH_TIMEOUT_MS: raw }))).toThrow(
+        'OAUTH_TIMEOUT_MS'
+      );
+    }
+  });
+
+  it('keeps Firebase push optional but rejects partial Firebase config in production', () => {
+    process.env.NODE_ENV = 'production';
+    // Absent Firebase config keeps safe stub — no failure.
+    expect(() => validateProductionEnv(configFor(base))).not.toThrow();
+    // Project ID alone fails clearly.
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, FIREBASE_PROJECT_ID: 'my-project' }))
+    ).toThrow('FIREBASE_CLIENT_EMAIL');
+    // Email alone fails clearly.
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, FIREBASE_CLIENT_EMAIL: 'email@example.com' }))
+    ).toThrow('FIREBASE_PROJECT_ID');
+    // Complete direct credentials pass.
+    expect(() =>
+      validateProductionEnv(
+        configFor({
+          ...base,
+          FIREBASE_PROJECT_ID: 'my-project',
+          FIREBASE_CLIENT_EMAIL: 'email@example.com',
+          FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\nMIIE...',
+        })
+      )
+    ).not.toThrow();
+    // Service account JSON passes.
+    expect(() =>
+      validateProductionEnv(
+        configFor({
+          ...base,
+          FIREBASE_SERVICE_ACCOUNT: '{"project_id":"my-project"}',
         })
       )
     ).not.toThrow();

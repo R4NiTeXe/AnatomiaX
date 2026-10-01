@@ -232,6 +232,17 @@ describe('Auth (e2e, no database)', () => {
       .map(c => c.split(';')[0])
       .join('; ');
 
+  // Fire-and-forget delivery: poll bounded instead of assuming a
+  // single-tick flush, so assertions hold however the transport schedules
+  // the deferred dispatch.
+  const waitForDelivery = async (ready: () => boolean): Promise<void> => {
+    const deadline = Date.now() + 2000;
+    while (!ready()) {
+      if (Date.now() > deadline) throw new Error('timed out waiting for mail delivery');
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  };
+
   beforeAll(async () => {
     db = new FakeDb();
     delivered.length = 0;
@@ -344,6 +355,23 @@ describe('Auth (e2e, no database)', () => {
       .post('/api/v1/auth/refresh')
       .set('Cookie', cookie);
     expect(reuse.status).toBe(401);
+  });
+
+  it('rejects cookie refresh from forged origins without burning the token (CSRF)', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'student@example.com', password: 'password123' });
+    const cookie = refreshCookie(login);
+    const forged = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', cookie)
+      .set('Origin', 'https://evil.example');
+    expect(forged.status).toBe(403);
+    // Guard rejection happens before rotation: the token still works.
+    const plain = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', cookie);
+    expect(plain.status).toBe(200);
   });
 
   it('concurrent refresh of one token never mints two live sessions (8.57)', async () => {
@@ -554,6 +582,10 @@ describe('Auth (e2e, no database)', () => {
       const req = await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/request')
         .send({ email: 'resetuser@example.com' });
+      // Delivery is fire-and-forget: poll (bounded) instead of assuming a
+      // single-tick flush, so the assertion holds however the transport
+      // schedules the deferred dispatch.
+      await waitForDelivery(() => delivered.length === before + 1);
       expect(req.status).toBe(200);
       expect(req.body).toEqual({ status: 'ok' });
       expect(req.body).not.toHaveProperty('token');
@@ -601,9 +633,11 @@ describe('Auth (e2e, no database)', () => {
       await request(app.getHttpServer())
         .post('/api/v1/auth/register')
         .send({ email: 'expiryuser@example.com', password: 'password123' });
+      const beforeExpiry = delivered.length;
       await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/request')
         .send({ email: 'expiryuser@example.com' });
+      await waitForDelivery(() => delivered.length === beforeExpiry + 1);
       const raw = delivered[delivered.length - 1].token;
       for (const row of db.resets.values()) {
         if (createHash('sha256').update(raw).digest('hex') === row.tokenHash) {
@@ -619,6 +653,10 @@ describe('Auth (e2e, no database)', () => {
       const ghost = await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/request')
         .send({ email: 'nobody-here-123@example.com' });
+      // Absence cannot poll: flush one macrotask (prior tests already
+      // drained their own dispatches via waitForDelivery), then assert
+      // nothing was dispatched for the ghost account.
+      await new Promise(resolve => setImmediate(resolve));
       expect(ghost.status).toBe(200);
       expect(ghost.body).toEqual({ status: 'ok' });
       expect(delivered.length).toBe(before);

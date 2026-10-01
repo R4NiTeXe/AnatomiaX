@@ -103,6 +103,48 @@ describe('NotificationsService (8.19.24)', () => {
     await expect(service.remove(userA, 'missing')).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('strips non-allowlisted key material on register', async () => {
+    prisma.pushSubscription.findUnique.mockResolvedValue(null);
+    prisma.pushSubscription.create.mockImplementation(async ({ data }: never) => ({
+      id: 'sub-1',
+      createdAt: new Date(),
+      ...(data as object),
+    }));
+    await service.register(userA, {
+      endpoint: 'https://push.example.com/sub/abc123',
+      keys: {
+        p256dh: 'p256dh-key',
+        auth: 12345,
+        expirationTime: 'not-a-number',
+        evil: 'x',
+      },
+    } as never);
+    expect(prisma.pushSubscription.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-a',
+        endpoint: 'https://push.example.com/sub/abc123',
+        keys: { p256dh: 'p256dh-key' },
+      },
+    });
+  });
+
+  it('treats missing keys as empty on register', async () => {
+    prisma.pushSubscription.findUnique.mockResolvedValue(null);
+    prisma.pushSubscription.create.mockImplementation(async ({ data }: never) => ({
+      id: 'sub-2',
+      createdAt: new Date(),
+      ...(data as object),
+    }));
+    await service.register(userA, { endpoint: 'https://push.example.com/sub/abc123' } as never);
+    expect(prisma.pushSubscription.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-a',
+        endpoint: 'https://push.example.com/sub/abc123',
+        keys: {},
+      },
+    });
+  });
+
   it('accepts Expo-style token endpoints for future mobile compat', async () => {
     prisma.pushSubscription.findUnique.mockResolvedValue(null);
     prisma.pushSubscription.create.mockImplementation(async ({ data }: never) => ({

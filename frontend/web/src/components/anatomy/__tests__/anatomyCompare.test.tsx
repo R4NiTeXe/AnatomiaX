@@ -90,6 +90,21 @@ function Harness() {
       <button data-testid="clear-select" onClick={() => selectStructure(null)}>
         clear-select
       </button>
+      <button
+        data-testid="select-unknown"
+        onClick={() =>
+          selectStructure({
+            structureKey: 'male:nervous:UBERON:9999999',
+            name: 'Mystery blob',
+            objectName: 'VH_M_mystery',
+            systemKey: 'nervous',
+            bodyModel: 'male',
+            ontologyId: null,
+          })
+        }
+      >
+        select-unknown
+      </button>
     </div>
   );
 }
@@ -167,6 +182,27 @@ describe('compare', () => {
     fireEvent.click(screen.getByTestId('select-brain'));
     fireEvent.click(screen.getByTestId('compare-spinal'));
     fireEvent.click(screen.getByTestId('clear-select'));
+    expect(screen.getByTestId('selected')).toHaveTextContent('null');
+    expect(screen.getByTestId('compare')).toHaveTextContent('null');
+  });
+
+  it('shows a fallback card for structures without manifest info', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('select-unknown'));
+    fireEvent.click(screen.getByTestId('compare-spinal'));
+    expect(screen.getByTestId('anatomy-compare-panel')).toHaveTextContent('Mystery blob');
+  });
+
+  it('hiding a visible system clears its selection and comparison', () => {
+    renderWithProvider();
+    // Nervous starts hidden: show it first so selection persists.
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('select-brain'));
+    fireEvent.click(screen.getByTestId('compare-spinal'));
+    expect(screen.getByTestId('selected')).toHaveTextContent('male:nervous:UBERON:0000955');
+    expect(screen.getByTestId('compare')).toHaveTextContent('male:nervous:UBERON:0002240');
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
     expect(screen.getByTestId('selected')).toHaveTextContent('null');
     expect(screen.getByTestId('compare')).toHaveTextContent('null');
   });

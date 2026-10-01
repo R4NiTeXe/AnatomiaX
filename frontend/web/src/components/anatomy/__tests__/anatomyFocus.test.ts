@@ -1,4 +1,5 @@
-// @ts-nocheck
+import * as fs from 'fs';
+import * as path from 'path';
 import * as THREE from 'three';
 import {
   computeCameraPosition,
@@ -59,6 +60,28 @@ describe('anatomyFocus — pure focus calculation', () => {
       expect(center.x).toBe(0);
       expect(center.y).toBe(0);
       expect(center.z).toBe(0);
+    });
+
+    it('returns zero radius for empty boxes', () => {
+      expect(getBoundingSphereRadius(new THREE.Box3().makeEmpty())).toBe(0);
+      const box = getWorldBoundingBox([]);
+      expect(getBoundingSphereRadius(box)).toBe(0);
+    });
+
+    it('falls back to half-extent size for non-finite spheres', () => {
+      const infinite = new THREE.Box3(
+        new THREE.Vector3(-Infinity, -Infinity, -Infinity),
+        new THREE.Vector3(Infinity, Infinity, Infinity)
+      );
+      expect(getBoundingSphereRadius(infinite)).toBe(Infinity);
+    });
+
+    it('delegates distance math with default and explicit padding', () => {
+      const near = computeFocusDistance(1, 60);
+      expect(near).toBeGreaterThan(0);
+      expect(Number.isFinite(near)).toBe(true);
+      const padded = computeFocusDistance(1, 60, 2);
+      expect(padded).toBeGreaterThan(near);
     });
   });
 
@@ -193,7 +216,7 @@ describe('anatomyFocus — pure focus calculation', () => {
       parent.add(mesh);
       parent.updateWorldMatrix(true, true);
       const box = getWorldBoundingBox([mesh]);
-      const { center, radius, distance } = computeFocusMetrics(box, 50, 1.35);
+      const { center, distance } = computeFocusMetrics(box, 50, 1.35);
       expect(center.y).toBeCloseTo(1, 5);
       expect(Number.isFinite(distance)).toBe(true);
     });
@@ -223,8 +246,6 @@ describe('anatomyFocus — pure focus calculation', () => {
     });
 
     it('anatomyFocus source contains no literal heart/ovary positions', () => {
-      const fs = require('fs');
-      const path = require('path');
       // Resolve via __dirname relative to test file location
       let src = '';
       try {

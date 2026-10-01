@@ -27,4 +27,11 @@ describe('parseStudiedKey', () => {
     expect(parseStudiedKey('male::')).toBeNull();
     expect(parseStudiedKey('x'.repeat(300))).toBeNull();
   });
+
+  it('falls back to the full key for empty object names', () => {
+    const parsed = parseStudiedKey('male:skin:object:');
+    expect(parsed).not.toBeNull();
+    expect(parsed?.objectName).toBe('male:skin:object:');
+    expect(parsed?.ontologyId).toBeNull();
+  });
 });

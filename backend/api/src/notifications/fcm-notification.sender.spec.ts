@@ -12,21 +12,12 @@ const fcmSub = (endpoint: string) => ({
   userId: 'user-1',
 });
 
-describe('FcmNotificationSender (8.19.24)', () => {
-  const OLD_FETCH = global.fetch;
-  let fetchMock: jest.Mock;
-
-  beforeEach(() => {
-    fetchMock = jest.fn();
-    global.fetch = fetchMock as never;
-  });
-
+describe('FcmNotificationSender (Firebase Admin SDK / HTTP v1)', () => {
   afterEach(() => {
-    global.fetch = OLD_FETCH;
     jest.restoreAllMocks();
   });
 
-  it('stubs safely without credentials: no network, skipped count, no secrets in result', async () => {
+  it('stubs safely without credentials: no messaging calls, skipped count, no secrets in result', async () => {
     const prisma = {
       pushSubscription: {
         findMany: jest.fn(async () => [
@@ -37,12 +28,11 @@ describe('FcmNotificationSender (8.19.24)', () => {
     };
     const sender = new FcmNotificationSender(prisma as never, configFor({}) as never);
     const out = await sender.dispatch('user-1', { title: 'Hi', body: 'Hello' });
-    expect(fetchMock).not.toHaveBeenCalled();
     expect(out).toEqual({ delivered: 0, skipped: 2, reason: 'fcm-unconfigured' });
-    expect(JSON.stringify(out)).not.toContain('FCM');
+    expect(JSON.stringify(out)).not.toContain('FIREBASE');
   });
 
-  it('reports no-subscriptions without touching the network', async () => {
+  it('reports no-subscriptions without dispatching', async () => {
     const prisma = { pushSubscription: { findMany: jest.fn(async () => []) } };
     const sender = new FcmNotificationSender(prisma as never, configFor({}) as never);
     await expect(sender.dispatch('user-1', { title: 'Hi', body: 'Hello' })).resolves.toEqual({
@@ -50,11 +40,9 @@ describe('FcmNotificationSender (8.19.24)', () => {
       skipped: 0,
       reason: 'no-subscriptions',
     });
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('sends only FCM-routed endpoints when configured, never leaking the key', async () => {
-    fetchMock.mockResolvedValue({ ok: true });
+  it('sends only FCM-routed endpoints when configured, never leaking credentials', async () => {
     const prisma = {
       pushSubscription: {
         findMany: jest.fn(async () => [
@@ -63,32 +51,72 @@ describe('FcmNotificationSender (8.19.24)', () => {
         ]),
       },
     };
+    const mockMessaging = {
+      sendEachForMulticast: jest.fn(async () => ({
+        successCount: 1,
+        failureCount: 0,
+        responses: [{ success: true }],
+      })),
+    };
     const sender = new FcmNotificationSender(
       prisma as never,
-      configFor({ FCM_SERVER_KEY: 'secret-server-key' }) as never
+      configFor({ FIREBASE_PROJECT_ID: 'anatomiax-7d0a0' }) as never,
+      mockMessaging as never
     );
     const out = await sender.dispatch('user-1', { title: 'Hi', body: 'Hello' });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [, init] = fetchMock.mock.calls[0] as [string, Record<string, unknown>];
-    expect(init.headers).toMatchObject({ Authorization: 'key=secret-server-key' });
+    expect(mockMessaging.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(mockMessaging.sendEachForMulticast).toHaveBeenCalledWith({
+      tokens: ['token-abc'],
+      notification: { title: 'Hi', body: 'Hello' },
+    });
     expect(out).toEqual({ delivered: 1, skipped: 1, reason: undefined });
-    expect(JSON.stringify(out)).not.toContain('secret-server-key');
   });
 
   it('counts failures as skipped instead of throwing', async () => {
-    fetchMock.mockRejectedValue(new Error('network down'));
     const prisma = {
       pushSubscription: {
         findMany: jest.fn(async () => [fcmSub('https://fcm.googleapis.com/fcm/send/t1')]),
       },
     };
+    const mockMessaging = {
+      sendEachForMulticast: jest.fn(async () => {
+        throw new Error('network down');
+      }),
+    };
     const sender = new FcmNotificationSender(
       prisma as never,
-      configFor({ FCM_SERVER_KEY: 'k' }) as never
+      configFor({ FIREBASE_PROJECT_ID: 'anatomiax-7d0a0' }) as never,
+      mockMessaging as never
     );
-    await expect(sender.dispatch('user-1', { title: 'Hi', body: 'Hello' })).resolves.toMatchObject({
+    await expect(sender.dispatch('user-1', { title: 'Hi', body: 'Hello' })).resolves.toEqual({
       delivered: 0,
       skipped: 1,
+      reason: 'fcm-delivery-failed',
     });
+  });
+
+  it('handles partial multicast delivery results correctly', async () => {
+    const prisma = {
+      pushSubscription: {
+        findMany: jest.fn(async () => [
+          fcmSub('https://fcm.googleapis.com/fcm/send/token-1'),
+          fcmSub('https://fcm.googleapis.com/fcm/send/token-2'),
+        ]),
+      },
+    };
+    const mockMessaging = {
+      sendEachForMulticast: jest.fn(async () => ({
+        successCount: 1,
+        failureCount: 1,
+        responses: [{ success: true }, { success: false, error: new Error('token expired') }],
+      })),
+    };
+    const sender = new FcmNotificationSender(
+      prisma as never,
+      configFor({ FIREBASE_PROJECT_ID: 'anatomiax-7d0a0' }) as never,
+      mockMessaging as never
+    );
+    const out = await sender.dispatch('user-1', { title: 'Hi', body: 'Hello' });
+    expect(out).toEqual({ delivered: 1, skipped: 1, reason: undefined });
   });
 });

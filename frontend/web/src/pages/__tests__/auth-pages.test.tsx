@@ -279,6 +279,92 @@ describe('auth pages (8.20.2)', () => {
     ).toBeInTheDocument();
   });
 
+  it('reset password starts blank without query parameters', async () => {
+    (global.fetch as unknown as jest.Mock).mockImplementation((url: string) =>
+      Promise.resolve(
+        (url as string).endsWith('/api/v1/auth/me') ||
+          (url as string).endsWith('/api/v1/auth/refresh')
+          ? jsonResponse({ message: 'Unauthorized' }, 401)
+          : jsonResponse({}, 404)
+      )
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/reset-password']}>
+            <Routes>
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+    await screen.findByTestId('reset-submit');
+    expect(screen.getByTestId('reset-email')).toHaveValue('');
+  });
+
+  it('reset password surfaces backend failures inline', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      const u = url as string;
+      if (u.endsWith('/api/v1/auth/me') || u.endsWith('/api/v1/auth/refresh'))
+        return Promise.resolve(jsonResponse({ message: 'Unauthorized' }, 401));
+      if (u.endsWith('/api/v1/auth/password-reset/confirm'))
+        return Promise.resolve(jsonResponse({ message: 'Invalid or expired reset token' }, 401));
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <MemoryRouter
+            initialEntries={['/reset-password?email=a%40b.c&token=token-12345678901234567890']}
+          >
+            <Routes>
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/login" element={<LoginPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+    await screen.findByTestId('reset-submit');
+    fireEvent.change(screen.getByTestId('reset-password'), { target: { value: 'new-pass-123' } });
+    fireEvent.click(screen.getByTestId('reset-submit'));
+    expect(await screen.findByTestId('reset-error', {}, { timeout: 4000 })).toHaveTextContent(
+      /Authentication failed/
+    );
+  });
+
+  it('register redirects an already-authenticated user instead of showing the form', async () => {
+    (global.fetch as unknown as jest.Mock).mockImplementation((url: string) => {
+      const u = url as string;
+      if (u.endsWith('/api/v1/auth/me')) return Promise.resolve(jsonResponse(USER));
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/register']}>
+            <Routes>
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/human" element={<div data-testid="human-probe">human</div>} />
+            </Routes>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+    expect(await screen.findByTestId('human-probe', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.queryByTestId('register-submit')).not.toBeInTheDocument();
+  });
+
   it('callback shows provider errors with a retry entry', async () => {
     (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve(jsonResponse({}, 404)));
     renderWithAuth(<AuthCallbackPage />, ['/auth/callback?error=access_denied']);

@@ -111,15 +111,36 @@ export function validateProductionEnv(config: ConfigService): void {
     }
   }
 
-  // 8.19.24: FCM stays optional (sender stubs without it), but a project id
-  // without a server key is always a misconfiguration.
-  const fcmKey = config.get<string>('FCM_SERVER_KEY');
-  const fcmProject = config.get<string>('FIREBASE_PROJECT_ID');
-  if (!fcmKey && fcmProject) {
-    failures.push('FCM_SERVER_KEY is required when FIREBASE_PROJECT_ID is set in production');
+  // Firebase Admin SDK / FCM HTTP v1: push notifications stay optional
+  // (sender stubs without credentials), but partial credentials fail fast in production.
+  const firebaseProject = (config.get<string>('FIREBASE_PROJECT_ID') ?? '').trim();
+  const firebaseEmail = (config.get<string>('FIREBASE_CLIENT_EMAIL') ?? '').trim();
+  const firebaseKey = (config.get<string>('FIREBASE_PRIVATE_KEY') ?? '').trim();
+  const firebaseServiceAccount = (config.get<string>('FIREBASE_SERVICE_ACCOUNT') ?? '').trim();
+  const googleAppCreds = (config.get<string>('GOOGLE_APPLICATION_CREDENTIALS') ?? '').trim();
+
+  const hasDirectCreds = Boolean(firebaseProject || firebaseEmail || firebaseKey);
+  const hasFileOrJsonCreds = Boolean(firebaseServiceAccount || googleAppCreds);
+
+  if (hasDirectCreds && !hasFileOrJsonCreds) {
+    if (!firebaseProject) {
+      failures.push(
+        'FIREBASE_PROJECT_ID is required when Firebase credentials are configured in production'
+      );
+    }
+    if (!firebaseEmail) {
+      failures.push(
+        'FIREBASE_CLIENT_EMAIL is required when Firebase credentials are configured in production'
+      );
+    }
+    if (!firebaseKey) {
+      failures.push(
+        'FIREBASE_PRIVATE_KEY is required when Firebase credentials are configured in production'
+      );
+    }
   }
 
-  // 8.20.22: SMTP reset delivery is optional (stub applies without SMTP_HOST),
+  // Brevo SMTP email delivery: optional (stub applies without SMTP_HOST),
   // but a partial configuration must fail clearly rather than silently never
   // delivering. Rules mirror PasswordResetDelivery.resolveSmtpConfig.
   const smtpHost = (config.get<string>('SMTP_HOST') ?? '').trim();
@@ -128,13 +149,15 @@ export function validateProductionEnv(config: ConfigService): void {
   const smtpPass = (config.get<string>('SMTP_PASSWORD') ?? '').trim();
   const smtpAny = smtpHost || smtpFrom || smtpUser || smtpPass;
   if (smtpAny && !smtpHost) {
-    failures.push('SMTP_HOST is required when SMTP_* reset delivery is configured in production');
+    failures.push('SMTP_HOST is required when SMTP_* email delivery is configured in production');
   }
   if (smtpHost) {
     if (!smtpFrom) {
       failures.push('SMTP_FROM is required when SMTP_HOST is set in production');
     }
-    if ((smtpUser && !smtpPass) || (!smtpUser && smtpPass)) {
+    if (smtpHost.includes('brevo') && (!smtpUser || !smtpPass)) {
+      failures.push('SMTP_USER and SMTP_PASSWORD are required for Brevo SMTP in production');
+    } else if ((smtpUser && !smtpPass) || (!smtpUser && smtpPass)) {
       failures.push('SMTP_USER and SMTP_PASSWORD must be set together in production');
     }
     const smtpPortRaw = (config.get<string>('SMTP_PORT') ?? '').trim();
@@ -147,6 +170,20 @@ export function validateProductionEnv(config: ConfigService): void {
     const smtpSecureRaw = (config.get<string>('SMTP_SECURE') ?? '').toLowerCase().trim();
     if (smtpSecureRaw && !['true', 'false'].includes(smtpSecureRaw)) {
       failures.push('SMTP_SECURE must be true or false in production');
+    }
+  }
+
+  // OAuth round-trip bound: optional tuning (GoogleAuthGuard defaults to
+  // 15s, clamps at 120s), but a set value must be a positive integer of
+  // milliseconds within the cap — an unbounded value would silently neuter
+  // the round-trip DoS bound via misconfiguration.
+  const oauthTimeoutRaw = (config.get<string>('OAUTH_TIMEOUT_MS') ?? '').trim();
+  if (oauthTimeoutRaw) {
+    const oauthTimeout = Number(oauthTimeoutRaw);
+    if (!Number.isInteger(oauthTimeout) || oauthTimeout <= 0 || oauthTimeout > 120_000) {
+      failures.push(
+        'OAUTH_TIMEOUT_MS must be a positive integer of milliseconds (max 120000) in production'
+      );
     }
   }
 

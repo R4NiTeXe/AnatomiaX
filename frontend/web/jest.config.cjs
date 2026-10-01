@@ -50,6 +50,28 @@ module.exports = {
     // env.jest.ts (static `import.meta` cannot parse in ts-jest CJS output).
     '!src/lib/env.ts',
     '!src/lib/env.jest.ts',
+    // Three.js Canvas-bound modules: unrenderable in jsdom (no WebGL). Their
+    // paths are covered by Playwright in a real browser (human-model-switch,
+    // web deep-link specs) instead of unit coverage.
+    '!src/components/anatomy/AnatomySystem.tsx',
+    '!src/components/anatomy/AnatomyViewer.tsx',
+    '!src/components/anatomy/OptimizedModelStage.tsx',
+    '!src/components/anatomy/AnatomyFocusController.tsx',
+    '!src/components/anatomy/VerticalCameraHandler.tsx',
+    // Dev-only asset browser (dev-gated out of production bundles).
+    '!src/pages/HumanTestPage.tsx',
+    // Application entry bootstrap (imports + render call only).
+    '!src/main.tsx',
   ],
   coverageReporters: ['text', 'lcov'],
+  // tdd-workflow gate: unit + integration + E2E (Playwright covers the
+  // Canvas-bound paths excluded above). CI runs with --coverage.
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
 };

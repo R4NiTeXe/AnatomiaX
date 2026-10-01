@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const crypto = require('crypto');
+const nodeCrypto = require('node:crypto');
 
 const OFFICIAL_URL =
   'https://cdn.humanatlas.io/digital-objects/ref-organ/united-male/v1.5/assets/3d-vh-m-united.glb';
@@ -29,7 +29,7 @@ const EXPECTED_SHA256 =
 
 function sha256File(filePath) {
   return new Promise((resolve, reject) => {
-    const hash = crypto.createHash('sha256');
+    const hash = nodeCrypto.createHash('sha256');
     const stream = fs.createReadStream(filePath);
     stream.on('error', reject);
     stream.on('data', d => hash.update(d));

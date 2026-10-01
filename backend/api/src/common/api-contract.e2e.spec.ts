@@ -283,7 +283,6 @@ describe('API contract (e2e, 8.19.25)', () => {
     const statuses: number[] = [];
     let last: request.Response | undefined;
     for (let i = 0; i < 40; i += 1) {
-      // eslint-disable-next-line no-await-in-loop
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({ email: `throttle-probe-${i}@example.com`, password: 'wrong-password-1' });

@@ -89,6 +89,15 @@ describe('cohortAnalytics (8.53)', () => {
     expect(rows.map(r => r.userId)).toEqual(['u-0', 'u-1', 'u-2', 'u-3']);
   });
 
+  it('orders two null names by userId behind named members', () => {
+    const rows = assignmentStudentRows(
+      'skin',
+      [member('u-b', null, []), member('u-a', null, []), member('u-c', 'Ann', [])],
+      'name'
+    );
+    expect(rows.map(r => r.userId)).toEqual(['u-c', 'u-a', 'u-b']);
+  });
+
   it('exposes text status labels (never color-only)', () => {
     expect(ASSIGNMENT_STATUS_LABEL).toEqual({
       complete: 'Completed',

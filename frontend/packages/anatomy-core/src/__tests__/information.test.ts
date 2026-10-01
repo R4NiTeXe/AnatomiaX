@@ -39,6 +39,24 @@ describe('anatomy information repository', () => {
     expect(getRelatedAnatomyInformation(null)).toEqual([]);
   });
 
+  it('resolves shared ontologies per body model, ambiguously without one', () => {
+    expect(getAnatomyInformationByOntologyId('UBERON:0002097', 'male')).toMatchObject({
+      bodyModel: 'male',
+    });
+    expect(getAnatomyInformationByOntologyId('UBERON:0002097', 'female')).toMatchObject({
+      bodyModel: 'female',
+    });
+    expect(getAnatomyInformationByOntologyId('UBERON:0002097')).toBeUndefined();
+    expect(getAnatomyInformationByOntologyId(null)).toBeUndefined();
+    expect(getAnatomyInformationByOntologyId('UBERON:nope')).toBeUndefined();
+  });
+
+  it('skips cross-body relations when resolving related info', () => {
+    const related = getRelatedAnatomyInformation('female:cardiovascular:UBERON:0000948');
+    expect(Array.isArray(related)).toBe(true);
+    for (const r of related) expect(r.info.bodyModel).toBe('female');
+  });
+
   it('keeps a stable, non-empty seed with unique keys', () => {
     const seed = getAnatomyInformationSeed();
     expect(seed.length).toBeGreaterThan(0);

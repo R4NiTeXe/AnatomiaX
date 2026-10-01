@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { screen, fireEvent } from '@testing-library/react';
 import { renderWithAppProviders as render } from '@/test-utils';
 import '@testing-library/jest-dom';

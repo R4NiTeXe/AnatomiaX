@@ -43,7 +43,9 @@ export function resolveSmtpConfig(values: Record<string, string | undefined>): {
   }
   const user = (values.SMTP_USER ?? '').trim() || undefined;
   const pass = (values.SMTP_PASSWORD ?? '').trim() || undefined;
-  if ((user && !pass) || (!user && pass)) {
+  if (host.includes('brevo') && (!user || !pass)) {
+    failures.push('SMTP_USER and SMTP_PASSWORD are required for Brevo SMTP');
+  } else if ((user && !pass) || (!user && pass)) {
     failures.push('SMTP_USER and SMTP_PASSWORD must be set together');
   }
   let port = 587;
@@ -69,13 +71,13 @@ export function resolveSmtpConfig(values: Record<string, string | undefined>): {
 }
 
 /**
- * 8.19.23 abstraction, 8.20.22 provider-neutral SMTP delivery.
+ * Transactional email delivery (Brevo SMTP).
  *
- * - No SMTP_HOST → the original safe stub (logs the request, never the token;
+ * - No SMTP_HOST → the safe stub (logs the request, never the token;
  *   resolves). Development/test work without any mail infrastructure.
- * - SMTP_HOST set → concise reset email via plain SMTP (any provider or local
- *   relay — no vendor SDK, no paid service required). The reset link reuses
- *   the existing web flow: <web-origin>/reset-password?email=…&token=….
+ * - SMTP_HOST set (e.g. smtp-relay.brevo.com:587) → transactional email via
+ *   Brevo SMTP relay. The reset link reuses the existing web flow:
+ *   <web-origin>/reset-password?email=…&token=….
  * - dispatch() NEVER throws and NEVER logs tokens, reset URLs, or SMTP
  *   secrets: AuthService always resolves reset requests (no account-enumeration
  *   oracle), so a mail outage must be indistinguishable from success.

@@ -18,3 +18,7 @@ yarn.lock
 *.log
 # Next.js generated TypeScript declarations
 **/next-env.d.ts
+# Vendored third-party skill playbooks (verbatim upstream; see skills/README.md).
+# skills/README.md itself stays format-checked.
+skills/*
+!skills/README.md

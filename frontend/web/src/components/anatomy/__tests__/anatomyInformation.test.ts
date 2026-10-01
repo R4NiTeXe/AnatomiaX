@@ -1,4 +1,5 @@
-// @ts-nocheck
+import * as fs from 'fs';
+import * as path from 'path';
 import { AnatomyStructureRegistry } from '../anatomyRegistry';
 import type { AnatomySelection } from '../anatomyTypes';
 import {
@@ -159,8 +160,6 @@ describe('anatomyInformation — verified source architecture', () => {
   it('no GLB loading', () => {
     // Verify that the module does not import or trigger GLB loading
     // — it only uses the local seed Map, no THREE, no useGLTF, no fetch
-    const fs = require('fs');
-    const path = require('path');
     const src = fs.readFileSync(path.join(__dirname, '../anatomyInformation.ts'), 'utf8');
     expect(src).not.toMatch(/useGLTF/);
     expect(src).not.toMatch(/\.glb/);

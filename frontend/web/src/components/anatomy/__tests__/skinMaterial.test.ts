@@ -92,4 +92,52 @@ describe('skinMaterial (8.31)', () => {
     }
     expect(bone.color.getHexString()).toBe('ffffff');
   });
+
+  it('passes already-physical materials through with realism flags', () => {
+    const physical = new THREE.MeshPhysicalMaterial({ color: '#ffffff' });
+    physical.name = 'Skin_mat';
+    expect(enhanceSkinMaterial(physical)).toBe(physical);
+    expect(physical.clearcoat).toBeLessThanOrEqual(0.2);
+  });
+
+  it('returns the input when physical materials are unavailable', () => {
+    const holder = THREE as unknown as Record<string, unknown>;
+    const saved = holder.MeshPhysicalMaterial;
+    delete holder.MeshPhysicalMaterial;
+    try {
+      const material = skinStandard('Skin_mat');
+      expect(enhanceSkinMaterial(material)).toBe(material);
+    } finally {
+      holder.MeshPhysicalMaterial = saved;
+    }
+  });
+
+  it('carries normal and emissive maps across the upgrade', () => {
+    const material = skinStandard('Skin_mat');
+    const normal = new THREE.DataTexture(new Uint8Array([0, 0, 255, 255]), 1, 1);
+    normal.needsUpdate = true;
+    material.normalMap = normal;
+    material.emissive = new THREE.Color('#110000');
+    material.emissiveMap = normal;
+    const upgraded = enhanceSkinMaterial(material) as THREE.MeshPhysicalMaterial;
+    expect(upgraded.normalMap).toBe(normal);
+    expect(upgraded.emissiveMap).toBe(normal);
+  });
+
+  it('ignores tone application on materials without color', () => {
+    expect(() => applySkinToneColor({} as THREE.Material, 'deep')).not.toThrow();
+  });
+
+  it('upgrades array bases and tolerates dispose failures', () => {
+    const skin = skinStandard('Skin_mat');
+    const throwing = skinStandard('Skin_mat2');
+    throwing.dispose = () => {
+      throw new Error('gl gone');
+    };
+    const arrayEntry = entryFor([skin, throwing] as unknown as THREE.Material, true);
+    expect(() => enhanceSkinEntries([arrayEntry], 'medium')).not.toThrow();
+    const mounted = arrayEntry.mesh.material as THREE.Material[];
+    expect(Array.isArray(mounted)).toBe(true);
+    expect(mounted.every(m => m !== skin && m !== throwing)).toBe(true);
+  });
 });

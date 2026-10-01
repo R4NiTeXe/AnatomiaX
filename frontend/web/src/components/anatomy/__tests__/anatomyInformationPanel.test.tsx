@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AnatomyStateProvider, useAnatomyState } from '../AnatomyStateContext';
@@ -244,8 +246,6 @@ describe('AnatomyInformationPanel', () => {
   });
 
   it('does not duplicate seed data and uses getAnatomyInformation', () => {
-    const fs = require('fs');
-    const path = require('path');
     const src = fs.readFileSync(path.join(__dirname, '../AnatomyInformationPanel.tsx'), 'utf8');
     expect(src).toMatch(/getAnatomyInformation/);
     expect(src).not.toMatch(/ANATOMY_INFORMATION_SEED/);

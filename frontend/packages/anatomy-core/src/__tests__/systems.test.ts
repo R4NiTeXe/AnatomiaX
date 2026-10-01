@@ -3,7 +3,9 @@ import { getAnatomyAsset } from '../anatomyAssets';
 import {
   ANATOMY_BODY_MODELS,
   ANATOMY_SYSTEM_DEFINITIONS,
+  getAnatomySystemAsset,
   getAnatomySystemAssetForBody,
+  getAnatomySystemDefinition,
   getAnatomySystemDefinitionForBody,
   getBodyModelDefinition,
 } from '../anatomySystems';
@@ -27,6 +29,40 @@ describe('anatomy systems catalog', () => {
     expect(getAnatomySystemAssetForBody('female', 'nervous').path).toContain(
       'female-nervous-meshopt.glb'
     );
+  });
+
+  it('looks definitions and assets up by key', () => {
+    expect(getAnatomySystemDefinition('skin').key).toBe('skin');
+    expect(getAnatomySystemAsset('nervous').key).toBe('nervous');
+    expect(() => getAnatomySystem('bogus' as never)).toThrow(/Unknown anatomy system/);
+  });
+
+  it('reads the configured asset base at module load', () => {
+    process.env.VITE_ANATOMY_ASSET_BASE_URL = 'https://cdn.example/a/';
+    try {
+      let base: string | undefined;
+      jest.isolateModules(() => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- isolateModules needs synchronous require for module reload; import cannot do this
+        base = require('../anatomySystems').ASSET_BASE_URL as string;
+      });
+      expect(base).toBe('https://cdn.example/a/');
+    } finally {
+      delete process.env.VITE_ANATOMY_ASSET_BASE_URL;
+    }
+  });
+
+  it.each([[''], ['   ']])('falls back to local mode for blank base %p', blank => {
+    process.env.VITE_ANATOMY_ASSET_BASE_URL = blank;
+    try {
+      let base: string | undefined;
+      jest.isolateModules(() => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- isolateModules needs synchronous require for module reload; import cannot do this
+        base = require('../anatomySystems').ASSET_BASE_URL as string;
+      });
+      expect(base).toBe('/models-dev/');
+    } finally {
+      delete process.env.VITE_ANATOMY_ASSET_BASE_URL;
+    }
   });
 
   it('preserves the exact legacy dev URLs from the manifest', () => {

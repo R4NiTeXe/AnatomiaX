@@ -17,6 +17,19 @@ describe('computeFocusDistance', () => {
     expect(Number.isFinite(computeFocusDistance(0.5, Number.NaN, 1.35))).toBe(true);
     expect(Number.isFinite(computeFocusDistance(-1, 50, 1.35))).toBe(true);
   });
+
+  it('falls back safely on overflow and near-zero field of view', () => {
+    expect(computeFocusDistance(1e308, 50, 1e308)).toBe(Infinity);
+    expect(computeFocusDistance(1, 1e-7, 1.35)).toBeCloseTo(2.7, 5);
+  });
+
+  it('resets invalid padding to the default', () => {
+    expect(computeFocusDistance(1, 60, Number.NaN)).toBeCloseTo(
+      computeFocusDistance(1, 60, 1.35),
+      10
+    );
+    expect(computeFocusDistance(1, 60, -2)).toBeCloseTo(computeFocusDistance(1, 60, 1.35), 10);
+  });
 });
 
 describe('computeCameraPosition', () => {

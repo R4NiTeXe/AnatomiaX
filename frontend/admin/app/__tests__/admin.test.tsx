@@ -16,8 +16,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('next/link', () => ({
   __esModule: true,
   default: (props: { children: React.ReactNode; href: string }) => {
-    const React = require('react');
-    // eslint-disable-next-line @next/next/no-html-link-for-pages
+    const React = jest.requireActual<typeof import('react')>('react');
     return React.createElement('a', props, props.children);
   },
 }));

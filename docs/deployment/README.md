@@ -156,10 +156,15 @@ npx playwright install --with-deps chromium
 npx playwright test --reporter=list
 ```
 
-Current baselines (verified by full audit run):
+Current baselines (verified by full post-Phase-5 runs):
 
-- web Jest 443/443 (53 suites), admin Jest 10/10, anatomy-core 37/37
-  (8 suites), API 226/226 (21 suites), Playwright 17/17.
+- web Jest 547/547 (70 suites), admin Jest 57/57 (6 suites),
+  anatomy-core 61/61 (10 suites), API 276/276 (25 suites),
+  Playwright 17/17.
+- Coverage gates: 80% branches/functions/lines/statements enforced in
+  web, admin, anatomy-core, and API Jest configs.
+- Security gates: `node scripts/security-grep.js` (fail-closed secret
+  scan) + `npm audit --audit-level=critical`, both wired into CI.
 
 Backend tests use isolated fake-DB modules; no real PostgreSQL is required
 for unit tests. `PrismaService` is intentionally lazy (`onModuleInit` does
@@ -570,20 +575,25 @@ Google-callback liveness — exit 0 only when every probe passes.
 
 ## 19. Common failure conditions
 
-| Symptom                                         | Likely cause                                                 | Fix                                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `Invalid production configuration: JWT_SECRET…` | short/placeholder secret                                     | set `>=32` random `JWT_SECRET`                                          |
-| `…DATABASE_URL…`                                | missing or non-`postgresql://`                               | set full `postgresql://` URL                                            |
-| `…CORS_ORIGIN…wildcard/localhost`               | `*` or localhost in prod                                     | set explicit HTTPS origins                                              |
-| `…COOKIE_SECURE…none`                           | `SameSite=None` + `Secure=false`                             | set `COOKIE_SECURE=true`                                                |
-| `…GOOGLE_CALLBACK_URL…localhost`                | OAuth callback still dev                                     | set HTTPS callback                                                      |
-| `…PORT…`                                        | bad port                                                     | set 1–65535                                                             |
-| `503 {degraded, disconnected}`                  | DB unreachable                                               | check `DATABASE_URL`, network, `migrate deploy`                         |
-| Web calls `localhost:3000` in prod              | `VITE_API_BASE_URL` not set at build                         | rebuild web with HTTPS API base                                         |
-| Admin calls `localhost:3000` in prod            | `NEXT_PUBLIC_API_BASE_URL` not set                           | rebuild admin with HTTPS API base                                       |
-| Viewer 404/CORS on GLBs                         | wrong `VITE_ANATOMY_ASSET_BASE_URL` or host headers          | fix base + host per `asset-hosting.md`, rerun `check-anatomy-assets.js` |
-| Cookies rejected in prod                        | `SameSite=None` without `Secure` or cross-site without HTTPS | use `lax` + `Secure` + HTTPS                                            |
-| Google flow fails in prod                       | partial ID/secret or localhost callback                      | set both + HTTPS callback                                               |
+| Symptom                                         | Likely cause                                                  | Fix                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `Invalid production configuration: JWT_SECRET…` | short/placeholder secret                                      | set `>=32` random `JWT_SECRET`                                          |
+| `…DATABASE_URL…`                                | missing or non-`postgresql://`                                | set full `postgresql://` URL                                            |
+| `…CORS_ORIGIN…wildcard/localhost`               | `*` or localhost in prod                                      | set explicit HTTPS origins                                              |
+| `…COOKIE_SECURE…none`                           | `SameSite=None` + `Secure=false`                              | set `COOKIE_SECURE=true`                                                |
+| `…GOOGLE_CALLBACK_URL…localhost`                | OAuth callback still dev                                      | set HTTPS callback                                                      |
+| `…PORT…`                                        | bad port                                                      | set 1–65535                                                             |
+| `503 {degraded, disconnected}`                  | DB unreachable                                                | check `DATABASE_URL`, network, `migrate deploy`                         |
+| Web calls `localhost:3000` in prod              | `VITE_API_BASE_URL` not set at build                          | rebuild web with HTTPS API base                                         |
+| Admin calls `localhost:3000` in prod            | `NEXT_PUBLIC_API_BASE_URL` not set                            | rebuild admin with HTTPS API base                                       |
+| Viewer 404/CORS on GLBs                         | wrong `VITE_ANATOMY_ASSET_BASE_URL` or host headers           | fix base + host per `asset-hosting.md`, rerun `check-anatomy-assets.js` |
+| Cookies rejected in prod                        | `SameSite=None` without `Secure` or cross-site without HTTPS  | use `lax` + `Secure` + HTTPS                                            |
+| Google flow fails in prod                       | partial ID/secret or localhost callback                       | set both + HTTPS callback                                               |
+| Refresh/logout 403 (not 401)                    | `OriginCheckGuard` fired: unlisted/forged Origin              | fix `CORS_ORIGIN` allow-list on the API (fails closed by design)        |
+| Google callback 408                             | provider round-trip exceeded `OAUTH_TIMEOUT_MS` (15s default) | retry; persistent stalls are provider/egress, not app                   |
+
+Field procedures for the auth-cookie incidents (jar checks, signature
+requests, redeploy order): `troubleshooting.md`.
 
 ---
 

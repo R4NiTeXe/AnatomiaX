@@ -1,5 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { randomUUID } from 'crypto';
 import request from 'supertest';
@@ -297,17 +297,19 @@ class FakeDb {
       skip?: number;
       take?: number;
       include?: Record<string, unknown>;
+      select?: Record<string, unknown>;
     }) => {
       const where = args?.where;
       const orderBy = args?.orderBy;
       const skip = args?.skip;
       const take = args?.take;
-      const include = args?.include;
+      // The service selects _count inside `select` (not `include`); honor both.
+      const withCount = Boolean(args?.include?._count ?? args?.select?._count);
       let rows = [...this.cohorts.values()].filter(c => !where || this.matchCohort(c, where));
       if (orderBy) rows = this.order(rows, orderBy);
       if (skip !== undefined) rows = rows.slice(skip);
       if (take !== undefined) rows = rows.slice(0, take);
-      if (include && (include as Record<string, unknown>)._count) {
+      if (withCount) {
         return rows.map(r => ({
           ...r,
           _count: { members: [...this.members.values()].filter(m => m.cohortId === r.id).length },
@@ -318,13 +320,15 @@ class FakeDb {
     findUnique: async ({
       where,
       include,
+      select,
     }: {
       where: Record<string, unknown>;
       include?: Record<string, unknown>;
+      select?: Record<string, unknown>;
     }) => {
       const row = this.cohorts.get(where.id as string);
       if (!row) return null;
-      if (include && (include as Record<string, unknown>)._count) {
+      if (include?._count ?? select?._count) {
         return {
           ...row,
           _count: { members: [...this.members.values()].filter(m => m.cohortId === row.id).length },

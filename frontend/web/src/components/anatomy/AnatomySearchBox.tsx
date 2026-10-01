@@ -30,6 +30,7 @@ export default function AnatomySearchBox(): JSX.Element {
       systemKey: 'all',
       limit: 8,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- registrySize intentionally invalidates on content changes
   }, [registry, query, selectedBodyModel, registrySize]);
 
   // Reset active index when results change

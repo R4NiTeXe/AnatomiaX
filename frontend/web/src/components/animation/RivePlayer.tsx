@@ -53,7 +53,6 @@ class RiveErrorBoundary extends Component<
 
   componentDidUpdate(prevProps: { resetKey: string }): void {
     if (prevProps.resetKey !== this.props.resetKey && this.state.failed) {
-      // eslint-disable-next-line react/no-did-update-set-state
       this.setState({ failed: false });
     }
   }

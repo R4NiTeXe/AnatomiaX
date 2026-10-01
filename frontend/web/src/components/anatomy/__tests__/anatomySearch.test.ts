@@ -1,24 +1,6 @@
-// @ts-nocheck
 import * as THREE from 'three';
 import { AnatomyStructureRegistry, collectStructuresFromScene } from '../anatomyRegistry';
 import { normalizeQuery, searchStructures } from '../anatomyRegistry';
-
-function meshWithUserData(
-  name: string,
-  ontologyId: string | null,
-  parentName?: string
-): THREE.Mesh {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
-  mesh.name = name;
-  if (ontologyId) mesh.userData.ontologyId = ontologyId;
-  if (parentName) {
-    const parent = new THREE.Group();
-    parent.name = parentName;
-    parent.add(mesh);
-    return mesh;
-  }
-  return mesh;
-}
 
 function createTestScenes() {
   const maleScene = new THREE.Group();

@@ -16,7 +16,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const nodeCrypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const BODY_MODELS = ['male', 'female'];
@@ -50,7 +50,7 @@ function parseEntry(bodyModel, filename) {
 }
 
 function sha256File(filePath) {
-  const hash = crypto.createHash('sha256');
+  const hash = nodeCrypto.createHash('sha256');
   const stat = fs.statSync(filePath);
   if (stat.size === 0) fail(`empty file: ${filePath}`);
   const fd = fs.openSync(filePath, 'r');

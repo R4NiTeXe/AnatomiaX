@@ -62,6 +62,18 @@ describe('AdminService', () => {
       expect(overview.recentUsers[0]).not.toHaveProperty('passwordHash');
       expect(overview.recentUsers[0]).toHaveProperty('email');
       expect(overview.recentCohorts[0].memberCount).toBe(2);
+      // Column narrowing: secrets never leave the driver in list paths.
+      const overviewUserArgs = prisma.user.findMany.mock.calls[0][0] as {
+        select?: Record<string, boolean>;
+      };
+      expect(overviewUserArgs.select).toBeDefined();
+      expect(overviewUserArgs.select).not.toHaveProperty('passwordHash');
+      expect(overviewUserArgs.select).not.toHaveProperty('deletedAt');
+      const overviewCohortArgs = prisma.cohort.findMany.mock.calls[0][0] as {
+        select?: Record<string, unknown>;
+      };
+      expect(overviewCohortArgs.select).toBeDefined();
+      expect(overviewCohortArgs.select).not.toHaveProperty('inviteCode');
     });
   });
 
@@ -84,6 +96,26 @@ describe('AdminService', () => {
       expect(res.items[0]).not.toHaveProperty('passwordHash');
       expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 0, take: 20 })
+      );
+      const listUserArgs = prisma.user.findMany.mock.calls[0][0] as {
+        select?: Record<string, boolean>;
+      };
+      expect(listUserArgs.select).toEqual({
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      });
+    });
+
+    it('ignores roles outside the allowlist instead of reaching Prisma untyped', async () => {
+      prisma.user.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([]);
+      // Bypasses the DTO (which constrains role at the HTTP boundary).
+      await service.listUsers({ role: 'SUPERADMIN' });
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { deletedAt: null } })
       );
     });
 
@@ -112,6 +144,12 @@ describe('AdminService', () => {
       expect(res.total).toBe(1);
       expect(res.items[0].memberCount).toBe(3);
       expect(res.items[0].name).toBe('Bio');
+      const listCohortArgs = prisma.cohort.findMany.mock.calls[0][0] as {
+        select?: Record<string, unknown>;
+      };
+      expect(listCohortArgs.select).toBeDefined();
+      expect(listCohortArgs.select).not.toHaveProperty('inviteCode');
+      expect(listCohortArgs.select).toHaveProperty('_count');
     });
   });
 

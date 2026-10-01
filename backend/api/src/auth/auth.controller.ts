@@ -11,6 +11,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { RequestPasswordResetDto } from './dto/request-reset.dto';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { OriginCheckGuard } from './origin-check.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -115,6 +116,8 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  // Cookie-CSRF: the refresh credential travels in a cross-site cookie.
+  @UseGuards(OriginCheckGuard)
   async refresh(
     @Body() dto: RefreshDto,
     @Req() req: AuthRequest,
@@ -128,6 +131,8 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
+  // Cookie-CSRF: logout revokes the cookie-presented token.
+  @UseGuards(OriginCheckGuard)
   async logout(
     @Body() dto: RefreshDto,
     @Req() req: AuthRequest,

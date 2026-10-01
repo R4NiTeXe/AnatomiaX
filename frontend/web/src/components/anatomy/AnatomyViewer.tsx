@@ -4,7 +4,7 @@ import { Bounds, OrbitControls, useBounds } from '@react-three/drei';
 import { useAnatomyState } from './AnatomyStateContext';
 import AnatomySystemSlot from './AnatomySystem';
 import { ANATOMY_BODY_MODELS } from './anatomySystems';
-import { VerticalCameraHandler } from './AnatomyVerticalNavigator';
+import { VerticalCameraHandler } from './VerticalCameraHandler';
 import AnatomyFocusController from './AnatomyFocusController';
 
 function FitController({ resetSignal }: { resetSignal: number }): null {
@@ -16,6 +16,7 @@ function FitController({ resetSignal }: { resetSignal: number }): null {
       return;
     }
     api.refresh().fit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fit on resetSignal only; api identity is not semantic
   }, [resetSignal]);
   return null;
 }

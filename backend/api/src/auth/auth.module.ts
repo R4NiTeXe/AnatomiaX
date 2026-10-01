@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleStrategy } from './google.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { OriginCheckGuard } from './origin-check.guard';
 import { PasswordResetDelivery } from './password-reset-delivery';
 import { RolesGuard } from './roles.guard';
 
@@ -54,6 +55,7 @@ function googleStrategyProvider(): Provider {
     googleStrategyProvider(),
     JwtAuthGuard,
     RolesGuard,
+    OriginCheckGuard,
   ],
   // JwtModule re-exported so feature modules using JwtAuthGuard resolve JwtService.
   // ThrottlerModule re-exported so feature modules can guard their

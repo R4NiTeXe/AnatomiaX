@@ -444,7 +444,6 @@ async function checkPublicUrls({ webUrl, adminUrl, siteUrl }, timeout) {
 function checkUrlConsistency({
   apiBase,
   healthUrl,
-  assetBase,
   webUrl,
   adminUrl,
   siteUrl,

@@ -28,7 +28,7 @@ function loggedText(delivery: PasswordResetDelivery): string {
     .join('\n');
 }
 
-describe('resolveSmtpConfig (8.20.22)', () => {
+describe('resolveSmtpConfig (Brevo SMTP)', () => {
   it('stays unconfigured without SMTP_HOST', () => {
     const { config, failures } = resolveSmtpConfig({});
     expect(config.configured).toBe(false);
@@ -51,6 +51,34 @@ describe('resolveSmtpConfig (8.20.22)', () => {
       SMTP_PASSWORD: 'p',
     });
     expect(passOnly.failures).toEqual(['SMTP_USER and SMTP_PASSWORD must be set together']);
+  });
+
+  it('requires credentials specifically for Brevo SMTP relay', () => {
+    const brevoWithoutAuth = resolveSmtpConfig({
+      SMTP_HOST: 'smtp-relay.brevo.com',
+      SMTP_FROM: 'noreply@anatomiax.com',
+    });
+    expect(brevoWithoutAuth.failures).toEqual([
+      'SMTP_USER and SMTP_PASSWORD are required for Brevo SMTP',
+    ]);
+    const brevoComplete = resolveSmtpConfig({
+      SMTP_HOST: 'smtp-relay.brevo.com',
+      SMTP_FROM: 'noreply@anatomiax.com',
+      SMTP_PORT: '587',
+      SMTP_SECURE: 'false',
+      SMTP_USER: 'brevo-user',
+      SMTP_PASSWORD: 'brevo-key',
+    });
+    expect(brevoComplete.failures).toEqual([]);
+    expect(brevoComplete.config).toMatchObject({
+      configured: true,
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      user: 'brevo-user',
+      pass: 'brevo-key',
+      from: 'noreply@anatomiax.com',
+    });
   });
 
   it('validates PORT bounds and SECURE enum, keeps nodemailer-friendly defaults', () => {
@@ -95,7 +123,7 @@ describe('resolveSmtpConfig (8.20.22)', () => {
   });
 });
 
-describe('PasswordResetDelivery (8.20.22)', () => {
+describe('PasswordResetDelivery (Brevo SMTP)', () => {
   const OLD_ENV = process.env.NODE_ENV;
 
   beforeEach(() => {
@@ -114,12 +142,16 @@ describe('PasswordResetDelivery (8.20.22)', () => {
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
   });
 
-  it('sends a concise reset email with the existing web flow link', async () => {
+  it('sends a concise reset email with the existing web flow link via Brevo SMTP', async () => {
     const sendMail = jest.fn().mockResolvedValue({ messageId: 'm1' });
     (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
     const delivery = deliveryFor({
-      SMTP_HOST: 'mail.example.com',
-      SMTP_FROM: 'AnatomiaX <noreply@example.com>',
+      SMTP_HOST: 'smtp-relay.brevo.com',
+      SMTP_PORT: '587',
+      SMTP_SECURE: 'false',
+      SMTP_USER: 'brevo-login',
+      SMTP_PASSWORD: 'brevo-master-key',
+      SMTP_FROM: 'AnatomiaX <noreply@anatomiax.com>',
       CORS_ORIGIN: 'https://app.example.com/, https://admin.example.com',
       PASSWORD_RESET_TTL_MINUTES: '60',
     });
@@ -128,9 +160,10 @@ describe('PasswordResetDelivery (8.20.22)', () => {
 
     expect(nodemailer.createTransport).toHaveBeenCalledWith(
       expect.objectContaining({
-        host: 'mail.example.com',
+        host: 'smtp-relay.brevo.com',
         port: 587,
         secure: false,
+        auth: { user: 'brevo-login', pass: 'brevo-master-key' },
         // 8.58: bounded delivery — a dead relay fails fast, never hangs the request.
         connectionTimeout: expect.any(Number),
         greetingTimeout: expect.any(Number),
@@ -139,7 +172,7 @@ describe('PasswordResetDelivery (8.20.22)', () => {
     );
     expect(sendMail).toHaveBeenCalledTimes(1);
     const mail = sendMail.mock.calls[0][0] as Record<string, string>;
-    expect(mail.from).toBe('AnatomiaX <noreply@example.com>');
+    expect(mail.from).toBe('AnatomiaX <noreply@anatomiax.com>');
     expect(mail.to).toBe(EMAIL);
     expect(mail.subject).toMatch(/reset/i);
     expect(mail.subject).toMatch(/password/i);
@@ -147,25 +180,29 @@ describe('PasswordResetDelivery (8.20.22)', () => {
     expect(mail.text).toContain(
       `https://app.example.com/reset-password?email=${encodeURIComponent(EMAIL)}&token=${encodeURIComponent(TOKEN)}`
     );
-    // No token material in logs.
+    // No token material or credentials in logs.
     expect(loggedText(delivery)).not.toContain(TOKEN);
+    expect(loggedText(delivery)).not.toContain('brevo-master-key');
   });
 
   it('resolves identically when SMTP sending fails (no enumeration oracle)', async () => {
     const sendMail = jest.fn().mockRejectedValue(new Error('relay down'));
     (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
     const delivery = deliveryFor({
-      SMTP_HOST: 'mail.example.com',
-      SMTP_FROM: 'noreply@example.com',
+      SMTP_HOST: 'smtp-relay.brevo.com',
+      SMTP_USER: 'brevo-login',
+      SMTP_PASSWORD: 'brevo-master-key',
+      SMTP_FROM: 'noreply@anatomiax.com',
     });
 
     await expect(delivery.dispatch(EMAIL, TOKEN)).resolves.toBeUndefined();
     // Failure is visible in server logs only, without token material.
     expect(loggedText(delivery)).not.toContain(TOKEN);
+    expect(loggedText(delivery)).not.toContain('brevo-master-key');
   });
 
   it('refuses partial SMTP config loudly but still resolves', async () => {
-    const delivery = deliveryFor({ SMTP_HOST: 'mail.example.com' });
+    const delivery = deliveryFor({ SMTP_HOST: 'smtp-relay.brevo.com' });
     await expect(delivery.dispatch(EMAIL, TOKEN)).resolves.toBeUndefined();
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
     expect(loggedText(delivery)).toMatch('SMTP_FROM');

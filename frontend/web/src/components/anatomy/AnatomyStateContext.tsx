@@ -425,7 +425,7 @@ export function AnatomyStateProvider({
     for (const s of seed) {
       if (!uniqueByCanonical.has(s.canonicalName)) uniqueByCanonical.set(s.canonicalName, s);
     }
-    let uniquePool = [...uniqueByCanonical.values()];
+    const uniquePool = [...uniqueByCanonical.values()];
     if (uniquePool.length < 5) return [];
     // Resolve selectedStructure by exact bodyModel + structureKey, independent of canonical dedup
     let ordered: typeof uniquePool = [];

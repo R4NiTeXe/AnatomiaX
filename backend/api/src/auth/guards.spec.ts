@@ -4,6 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { CurrentUser } from './current-user.decorator';
@@ -36,6 +37,16 @@ describe('JwtAuthGuard', () => {
       jest.fn().mockResolvedValue(STUDENT)
     );
     const req: Record<string, unknown> = { headers: { authorization: 'Bearer good.token.here' } };
+    await expect(guard.canActivate(contextWith(req) as never)).resolves.toBe(true);
+    expect(req.user).toEqual(STUDENT);
+  });
+
+  it('applies the Bearer split to array Authorization headers', async () => {
+    const guard = guardWith(
+      jest.fn().mockResolvedValue({ sub: 'u1' }),
+      jest.fn().mockResolvedValue(STUDENT)
+    );
+    const req: Record<string, unknown> = { headers: { authorization: ['Bearer good.token.here'] } };
     await expect(guard.canActivate(contextWith(req) as never)).resolves.toBe(true);
     expect(req.user).toEqual(STUDENT);
   });
@@ -104,6 +115,32 @@ describe('CurrentUser', () => {
   it('is a param decorator factory', () => {
     expect(typeof CurrentUser).toBe('function');
   });
+
+  it('resolves the user, a key subset, or undefined via route-args metadata', () => {
+    const user = { id: 'u1', email: 's@example.com', role: 'STUDENT' };
+    class Target {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- decorator params are metadata carriers; names are required for route-arg indices
+      handler(@CurrentUser() _u: unknown, @CurrentUser('id') _id: unknown): void {
+        // Intentionally empty: metadata carrier only.
+      }
+    }
+    const meta = Reflect.getMetadata(ROUTE_ARGS_METADATA, Target, 'handler') as Record<
+      string,
+      { index: number; factory: (data: unknown, ctx: ExecutionContext) => unknown; data: unknown }
+    >;
+    const factories = Object.values(meta);
+    const noKey = factories.find(f => f.data === undefined);
+    const withKey = factories.find(f => f.data === 'id');
+    expect(noKey).toBeDefined();
+    expect(withKey).toBeDefined();
+    const ctxFor = (u: unknown) =>
+      ({
+        switchToHttp: () => ({ getRequest: () => ({ user: u }) }),
+      }) as never;
+    expect(noKey?.factory(undefined, ctxFor(null))).toBeUndefined();
+    expect(noKey?.factory(undefined, ctxFor(user))).toEqual(user);
+    expect(withKey?.factory('id', ctxFor(user))).toBe('u1');
+  });
 });
 
 describe('GoogleAuthGuard (optional Google login)', () => {
@@ -116,6 +153,22 @@ describe('GoogleAuthGuard (optional Google login)', () => {
         getResponse: () => ({ cookie: jest.fn(), clearCookie: jest.fn() }),
       }),
     }) as unknown as ExecutionContext;
+
+  it('rejects with 401 when the state cookie cannot be written', async () => {
+    const guard = new GoogleAuthGuard(
+      configWith({ GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 'secret' })
+    );
+    const throwing = () => {
+      throw new Error('headers sent');
+    };
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({ query: {}, cookies: {} }),
+        getResponse: () => ({ cookie: throwing, clearCookie: jest.fn() }),
+      }),
+    } as unknown as ExecutionContext;
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
 
   it('returns 404 without touching passport when credentials are missing', async () => {
     const guard = new GoogleAuthGuard(configWith({}));

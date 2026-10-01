@@ -104,8 +104,7 @@ async function main() {
     allNodes.forEach(node => {
       const name = node.getName();
       // If node is a direct child of VH_M and not in keepNames, mark for removal
-      // Check if node's parent is VH_M
-      const parent = node.getParentNode ? node.getParentNode() : null; // not reliable, use listParents?
+      // Parent lookup is unreliable; check VH_M's children directly instead.
       // Instead, check if node is in VH_M's children and not kept
       if (vhM && vhM.listChildren().includes(node) && !keepNames.has(name)) {
         toRemove.push(node);

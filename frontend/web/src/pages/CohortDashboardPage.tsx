@@ -3,13 +3,16 @@ import { Link, useParams } from 'react-router-dom';
 import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { friendlyCohortError } from '@/components/auth/friendlyAuthError';
-import { Reveal, Stagger, StaggerItem } from '@/components/motion';
+import AssignmentAnalytics from '@/components/cohorts/dashboard/AssignmentAnalytics';
+import DashboardHeader from '@/components/cohorts/dashboard/DashboardHeader';
+import DashboardKpis from '@/components/cohorts/dashboard/DashboardKpis';
+import MemberRoster from '@/components/cohorts/dashboard/MemberRoster';
+import RecentActivity from '@/components/cohorts/dashboard/RecentActivity';
+import { useDashboardAggregates } from '@/components/cohorts/dashboard/useDashboardAggregates';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   canManageCohort,
@@ -18,47 +21,11 @@ import {
   useCohortProgress,
 } from '@/hooks/useCohorts';
 import {
-  ASSIGNMENT_STATUS_LABEL,
   assignmentStudentRows,
   summarizeAssignment,
   type AssignmentSort,
   type AssignmentSummary,
 } from '@/lib/cohortAnalytics';
-import { buildHumanFocusUrl } from '@/lib/humanLink';
-
-function formatDate(value: string | Date | null): string {
-  if (!value) return '—';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function formatDateTime(value: string | Date | null): string {
-  if (!value) return '—';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function bestScoreText(attempts: { score: number; total: number }[]): string {
-  if (attempts.length === 0) return '—';
-  let best = attempts[0];
-  let bestPct = best.score / Math.max(1, best.total);
-  for (const a of attempts.slice(1)) {
-    const pct = a.score / Math.max(1, a.total);
-    if (pct > bestPct || (pct === bestPct && a.score > best.score)) {
-      best = a;
-      bestPct = pct;
-    }
-  }
-  return `${best.score} / ${best.total}`;
-}
 
 export default function CohortDashboardPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -111,6 +78,26 @@ export default function CohortDashboardPage(): JSX.Element {
     return assignmentStudentRows(effectiveSelectedKey, progressQuery.data, assignmentSort);
   }, [effectiveSelectedKey, progressQuery.data, assignmentSort]);
   const isAssignmentsLoading = assignmentsQuery.isLoading && !assignmentsQuery.data;
+
+  // Client-side aggregates from server-authorized member progress.
+  const progress = progressQuery.data ?? null;
+  const {
+    totalMembers,
+    aggregateStudied,
+    aggregateQuizzes,
+    bestOverall,
+    latestOverall,
+    recentAttempts,
+  } = useDashboardAggregates(progress);
+  const isProgressLoading = progressQuery.isLoading && !progress;
+  const isProgressError = progressQuery.isError;
+
+  const showProgress = canManage;
+  const progressDenied =
+    !canManage &&
+    !isProgressLoading &&
+    progressQuery.isError &&
+    (progressQuery.error as unknown as { status?: number })?.status === 403;
 
   if (cohortQuery.isLoading && !cohort) {
     return (
@@ -206,853 +193,62 @@ export default function CohortDashboardPage(): JSX.Element {
     );
   }
 
-  const progress = progressQuery.data ?? null;
-  const isProgressLoading = progressQuery.isLoading && !progress;
-  const isProgressError = progressQuery.isError;
-
-  // Aggregates — client-side from server-authorized member progress
-  const totalMembers = progress ? progress.length : null;
-  const archivedBadge = isArchived ? (
-    <Badge variant="secondary" data-testid="dashboard-archived-badge">
-      Archived
-    </Badge>
-  ) : null;
-
-  let aggregateStudied = 0;
-  let aggregateQuizzes = 0;
-  let bestOverall = '—';
-  let latestOverall = '—';
-  let recentAttempts: Array<{
-    id: string;
-    userId: string;
-    name: string | null;
-    score: number;
-    total: number;
-    bodyModel: string;
-    completedAt: string;
-  }> = [];
-
-  if (progress) {
-    aggregateStudied = progress.reduce((sum, m) => sum + (m.studiedKeys?.length ?? 0), 0);
-    aggregateQuizzes = progress.reduce((sum, m) => sum + (m.quizAttempts?.length ?? 0), 0);
-    const allAttempts = progress.flatMap(m =>
-      m.quizAttempts.map(a => ({ ...a, name: m.name, userId: m.userId }))
-    );
-    allAttempts.sort(
-      (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
-    );
-    recentAttempts = allAttempts.slice(0, 5);
-    bestOverall = bestScoreText(allAttempts);
-    if (allAttempts.length > 0) latestOverall = `${allAttempts[0].score} / ${allAttempts[0].total}`;
-  }
-
-  const showProgress = canManage;
-  const progressDenied =
-    !canManage &&
-    !isProgressLoading &&
-    progressQuery.isError &&
-    (progressQuery.error as unknown as { status?: number })?.status === 403;
-
   return (
     <main
       id="main-content"
       tabIndex={-1}
       className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8"
     >
-      {/* Top navigation + header hierarchy */}
-      <Reveal>
-        <div className="flex flex-col gap-4">
-          <Link
-            to={`/cohorts/${cohort.id}`}
-            className="w-fit rounded-lg px-2 py-1 text-sm text-slate-400 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-          >
-            ← Back to cohort
-          </Link>
+      <DashboardHeader cohort={cohort} isArchived={isArchived} />
 
-          <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-900/20 p-4 shadow-soft sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="ax-kicker">Teacher dashboard</p>
-                <h1
-                  className="mt-1 break-words text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl"
-                  data-testid="dashboard-cohort-name"
-                >
-                  {cohort.name}
-                </h1>
-                <p className="mt-1 text-sm text-slate-400" data-testid="dashboard-institution">
-                  {cohort.institutionLabel ?? 'No institution'}
-                  <span className="mx-2 text-slate-600">·</span>
-                  <span className="text-slate-500">Created {formatDate(cohort.createdAt)}</span>
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge data-testid="dashboard-role-badge" className="capitalize">
-                  {cohort.myRole ?? 'MEMBER'}
-                </Badge>
-                {archivedBadge}
-                {!isArchived ? (
-                  <Badge variant="outline" className="border-emerald-900/50 text-emerald-300">
-                    Active
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
-            <p className="mt-3 text-xs leading-5 text-slate-500">
-              Cohort progress is server-authorized. Only owners and admins can view member details.
-              Studied structures link to <span className="font-mono">/human?focus=</span> where
-              available.
-            </p>
-          </div>
-        </div>
-      </Reveal>
+      <DashboardKpis
+        totalMembers={totalMembers}
+        aggregateStudied={aggregateStudied}
+        aggregateQuizzes={aggregateQuizzes}
+        bestOverall={bestOverall}
+        latestOverall={latestOverall}
+        progressLoaded={!!progress}
+        isArchived={isArchived}
+      />
 
-      {isArchived ? (
-        <Reveal delay={0.05}>
-          <Alert
-            variant="default"
-            className="border-amber-900/50 bg-amber-950/30 text-amber-200"
-            data-testid="dashboard-archived-notice"
-          >
-            <AlertDescription>
-              This cohort is archived and read-only. Progress is frozen from archive time. Members
-              cannot be added and settings cannot be changed.
-            </AlertDescription>
-          </Alert>
-        </Reveal>
-      ) : null}
-
-      {/* KPI hierarchy — operational cards with subtle glow on primary */}
-      <Reveal delay={0.05}>
-        <section aria-labelledby="kpi-heading">
-          <h2 id="kpi-heading" className="sr-only">
-            Cohort overview
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="dashboard-summary">
-            <Card className="border-teal-900/30 bg-gradient-to-br from-teal-950/20 via-slate-900/60 to-slate-900/40 shadow-glow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-teal-300/80">
-                  Members
-                </CardTitle>
-                <CardDescription>Total enrolled</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className="text-3xl font-bold tracking-tight"
-                  data-testid="dashboard-member-count"
-                >
-                  {totalMembers ?? '—'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {isArchived ? 'Archived · read-only' : 'Active cohort'}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Studied
-                </CardTitle>
-                <CardDescription>Structures explored</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className="text-3xl font-bold tracking-tight"
-                  data-testid="dashboard-studied-total"
-                >
-                  {progress ? aggregateStudied : '—'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {progress && totalMembers
-                    ? `avg ${(aggregateStudied / Math.max(1, totalMembers)).toFixed(1)} / member`
-                    : 'across members'}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Quizzes
-                </CardTitle>
-                <CardDescription>Completed attempts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className="text-3xl font-bold tracking-tight"
-                  data-testid="dashboard-quizzes-total"
-                >
-                  {progress ? aggregateQuizzes : '—'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {progress && totalMembers
-                    ? `avg ${(aggregateQuizzes / Math.max(1, totalMembers)).toFixed(1)} / member`
-                    : 'total'}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-700/50 bg-slate-900/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Performance
-                </CardTitle>
-                <CardDescription>Best · Latest</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold tracking-tight" data-testid="dashboard-best">
-                  {progress ? bestOverall : '—'}
-                </p>
-                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                  <span>Latest</span>
-                  <Badge variant="secondary" className="font-mono text-[11px]">
-                    {progress ? latestOverall : '—'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      </Reveal>
-
-      {/* Assignment analytics — per-module summaries + per-student progress */}
       {showProgress ? (
-        <Reveal delay={0.06}>
-          <section aria-labelledby="assignment-analytics-heading">
-            <Card>
-              <CardHeader>
-                <p className="ax-kicker">Assignments</p>
-                <CardTitle
-                  id="assignment-analytics-heading"
-                  className="mt-1 text-sm font-bold tracking-tight text-slate-100"
-                >
-                  Assignment progress
-                </CardTitle>
-                <CardDescription>
-                  Completion counts derive from member studied structures (complete means every
-                  module structure studied). Select an assignment to see per-student progress.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isAssignmentsLoading || isProgressLoading ? (
-                  <div className="flex flex-col gap-3" data-testid="dashboard-assignments-loading">
-                    <Skeleton className="h-16 w-full rounded-xl" />
-                    <Skeleton className="h-16 w-full rounded-xl" />
-                  </div>
-                ) : assignmentsQuery.isError ? (
-                  <div className="flex flex-col gap-3">
-                    <AuthErrorNotice
-                      error={friendlyCohortError(assignmentsQuery.error)}
-                      testId="dashboard-assignments-error"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => assignmentsQuery.refetch()}
-                      data-testid="dashboard-assignments-retry"
-                      className="w-fit"
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                ) : progressQuery.isError ? (
-                  <div className="flex flex-col gap-3">
-                    <AuthErrorNotice
-                      error={friendlyCohortError(progressQuery.error)}
-                      testId="dashboard-assignments-progress-error"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => progressQuery.refetch()}
-                      data-testid="dashboard-assignments-progress-retry"
-                      className="w-fit"
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                ) : assignmentSummaries.length === 0 ? (
-                  <div
-                    className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-8 text-center"
-                    data-testid="dashboard-assignments-empty"
-                  >
-                    <p className="text-sm font-medium text-slate-200">No modules assigned yet</p>
-                    <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
-                      Assign a study module from the cohort page. Progress per assignment will
-                      appear here.
-                    </p>
-                    <Button variant="outline" size="sm" asChild className="mt-4">
-                      <Link to={`/cohorts/${cohort.id}`}>Go to cohort</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    <ul className="flex flex-col gap-2" data-testid="dashboard-assignments">
-                      {assignmentSummaries.map(({ moduleKey, summary }) => {
-                        const isSelected = moduleKey === effectiveSelectedKey;
-                        return (
-                          <li key={moduleKey} data-testid="dashboard-assignment-row">
-                            <div
-                              className={`flex flex-col gap-2 rounded-xl border px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between ${
-                                isSelected
-                                  ? 'border-teal-800/60 bg-teal-950/10'
-                                  : 'border-slate-800 bg-slate-950/60'
-                              }`}
-                            >
-                              <div className="min-w-0 flex-1">
-                                <Link
-                                  to={`/learn/${moduleKey}`}
-                                  className="rounded font-medium text-teal-300 hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                                >
-                                  {summary?.title ?? moduleKey}
-                                </Link>
-                                <p className="mt-0.5 text-xs text-slate-500">
-                                  {summary ? (
-                                    <>
-                                      {summary.totalStructures} structures · {summary.totalMembers}{' '}
-                                      member{summary.totalMembers === 1 ? '' : 's'}
-                                    </>
-                                  ) : (
-                                    'Module data unavailable'
-                                  )}
-                                </p>
-                                {summary ? (
-                                  <p
-                                    className="mt-0.5 text-xs text-slate-400"
-                                    data-testid="dashboard-assignment-progress"
-                                  >
-                                    {summary.completed} complete · {summary.inProgress} in progress
-                                    · {summary.notStarted} not started
-                                  </p>
-                                ) : null}
-                              </div>
-                              <Button
-                                variant={isSelected ? 'default' : 'outline'}
-                                size="sm"
-                                type="button"
-                                onClick={() => setSelectedModuleKey(moduleKey)}
-                                aria-pressed={isSelected}
-                                data-testid="dashboard-assignment-select"
-                                className="w-fit shrink-0"
-                              >
-                                {isSelected ? 'Selected' : 'View students'}
-                              </Button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    {effectiveSelectedKey ? (
-                      <div
-                        className="rounded-xl border border-slate-800 bg-slate-950/40 p-4"
-                        data-testid="dashboard-assignment-detail"
-                      >
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <h3 className="text-sm font-semibold text-slate-100">
-                            Student progress — {selectedSummary?.title ?? effectiveSelectedKey}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <Label
-                              htmlFor="dashboard-assignment-sort"
-                              className="text-xs text-slate-400"
-                            >
-                              Sort
-                            </Label>
-                            <select
-                              id="dashboard-assignment-sort"
-                              value={assignmentSort}
-                              onChange={e => setAssignmentSort(e.target.value as AssignmentSort)}
-                              data-testid="dashboard-assignment-sort"
-                              aria-label="Sort students by completion or name"
-                              className="h-9 rounded-lg border border-slate-700 bg-slate-800/50 px-2 text-sm text-slate-100 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                            >
-                              <option value="completion">Completion</option>
-                              <option value="name">Name</option>
-                            </select>
-                          </div>
-                        </div>
-                        {selectedSummary === null ? (
-                          <p
-                            className="mt-3 text-sm text-slate-500"
-                            data-testid="dashboard-student-empty"
-                          >
-                            Module data unavailable for this assignment.
-                          </p>
-                        ) : selectedRows.length === 0 ? (
-                          <p
-                            className="mt-3 text-sm text-slate-500"
-                            data-testid="dashboard-student-empty"
-                          >
-                            No members in this cohort yet.
-                          </p>
-                        ) : (
-                          <>
-                            <p className="mt-2 text-xs text-slate-500" role="status">
-                              {selectedSummary.completed} of {selectedSummary.totalMembers} members
-                              completed {selectedSummary.title}.
-                            </p>
-                            <ul
-                              className="mt-2 flex flex-col gap-2"
-                              data-testid="dashboard-student-list"
-                            >
-                              {selectedRows.map(row => (
-                                <li
-                                  key={row.userId}
-                                  data-testid="dashboard-student-row"
-                                  className="flex flex-col gap-1.5 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
-                                >
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="truncate text-sm font-medium text-slate-100">
-                                        {row.name ?? 'Unnamed member'}
-                                      </span>
-                                      <Badge
-                                        variant="outline"
-                                        className="shrink-0 text-[11px] capitalize"
-                                      >
-                                        {row.role.toLowerCase()}
-                                      </Badge>
-                                      <Badge
-                                        variant={
-                                          row.status === 'complete'
-                                            ? 'teal'
-                                            : row.status === 'in-progress'
-                                              ? 'secondary'
-                                              : 'outline'
-                                        }
-                                        className="shrink-0 text-[11px]"
-                                        data-testid="dashboard-student-status"
-                                      >
-                                        {ASSIGNMENT_STATUS_LABEL[row.status]}
-                                      </Badge>
-                                    </div>
-                                    <p className="mt-1 font-mono text-xs text-slate-400">
-                                      studied {row.studied} of {row.total} ({row.percent}%)
-                                    </p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    asChild
-                                    className="w-fit shrink-0 text-teal-300 hover:text-teal-200"
-                                  >
-                                    <Link
-                                      to={`/learn/${effectiveSelectedKey}`}
-                                      aria-label={`Open ${selectedSummary.title} module for ${row.name ?? 'member'}`}
-                                    >
-                                      Open module →
-                                    </Link>
-                                  </Button>
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-        </Reveal>
+        <AssignmentAnalytics
+          cohortId={cohort.id}
+          summaries={assignmentSummaries}
+          effectiveSelectedKey={effectiveSelectedKey}
+          selectedSummary={selectedSummary}
+          selectedRows={selectedRows}
+          assignmentSort={assignmentSort}
+          onSelectModuleKey={setSelectedModuleKey}
+          onSortChange={setAssignmentSort}
+          isAssignmentsLoading={isAssignmentsLoading}
+          isProgressLoading={isProgressLoading}
+          assignmentsFailed={assignmentsQuery.isError}
+          progressFailed={progressQuery.isError}
+          assignmentsError={assignmentsQuery.isError ? assignmentsQuery.error : null}
+          progressError={progressQuery.isError ? progressQuery.error : null}
+          onRetryAssignments={() => assignmentsQuery.refetch()}
+          onRetryProgress={() => progressQuery.refetch()}
+        />
       ) : null}
 
-      {/* Member progress — searchable, operational density */}
-      <Reveal delay={0.08}>
-        <section aria-labelledby="members-heading">
-          <Card>
-            <CardHeader className="space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="ax-kicker">Roster</p>
-                  <CardTitle
-                    id="members-heading"
-                    className="mt-1 text-sm font-bold tracking-tight text-slate-100"
-                  >
-                    Member progress
-                  </CardTitle>
-                  <CardDescription>
-                    Searchable, server-authorized. Non-owners see 403. Links open{' '}
-                    <span className="font-mono">/human?focus=</span> where structureKey exists.
-                  </CardDescription>
-                </div>
-                {showProgress && progress && progress.length > 0 ? (
-                  <Badge variant="outline" className="shrink-0 font-mono text-xs">
-                    {filteredProgress?.length ?? 0} / {progress.length}
-                  </Badge>
-                ) : null}
-              </div>
+      <MemberRoster
+        cohort={cohort}
+        progress={progress}
+        filteredProgress={filteredProgress}
+        memberQuery={memberQuery}
+        onMemberQueryChange={setMemberQuery}
+        isProgressLoading={isProgressLoading}
+        isProgressError={isProgressError}
+        progressError={progressQuery.isError ? progressQuery.error : null}
+        onRetryProgress={() => progressQuery.refetch()}
+        showProgress={showProgress}
+        progressDenied={progressDenied}
+        bestOverall={bestOverall}
+        isArchived={isArchived}
+      />
 
-              {showProgress && progress && progress.length > 1 ? (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="dashboard-member-search" className="text-xs text-slate-400">
-                    Filter members
-                  </Label>
-                  <Input
-                    id="dashboard-member-search"
-                    data-testid="dashboard-member-search"
-                    placeholder="Search by name or role…"
-                    value={memberQuery}
-                    onChange={e => setMemberQuery(e.target.value)}
-                    className="max-w-sm bg-slate-950/40"
-                    aria-label="Filter members by name or role"
-                  />
-                </div>
-              ) : null}
-            </CardHeader>
-
-            <CardContent>
-              {!showProgress ? (
-                <Alert variant="destructive" data-testid="dashboard-progress-denied">
-                  <AlertDescription>
-                    Only the cohort owner (or admin) can view member progress. You have{' '}
-                    <span className="font-medium">{cohort.myRole ?? 'no access'}</span> access.
-                  </AlertDescription>
-                </Alert>
-              ) : isProgressLoading ? (
-                <div className="flex flex-col gap-3" data-testid="dashboard-progress-loading">
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                  <Skeleton className="h-10 w-32" />
-                </div>
-              ) : isProgressError ? (
-                <div className="flex flex-col gap-3 rounded-xl border border-red-900/50 bg-red-950/20 p-4">
-                  <AuthErrorNotice
-                    error={friendlyCohortError(progressQuery.error)}
-                    testId="dashboard-progress-error"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => progressQuery.refetch()}
-                      data-testid="dashboard-progress-retry"
-                    >
-                      Retry
-                    </Button>
-                    <Button variant="ghost" asChild>
-                      <Link to="/cohorts">Back to cohorts</Link>
-                    </Button>
-                  </div>
-                </div>
-              ) : !progress || progress.length === 0 ? (
-                <div
-                  className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-10 text-center"
-                  data-testid="dashboard-progress-empty"
-                >
-                  <h3 className="text-sm font-semibold text-slate-200">No members yet</h3>
-                  <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
-                    Share the invite code from the cohort page. Once members join and explore
-                    anatomy or complete quizzes, their progress will appear here.
-                  </p>
-                  <Button variant="outline" size="sm" asChild className="mt-4">
-                    <Link to={`/cohorts/${cohort.id}`}>Go to cohort</Link>
-                  </Button>
-                </div>
-              ) : filteredProgress && filteredProgress.length === 0 ? (
-                <div
-                  className="rounded-xl border border-slate-800 bg-slate-950/30 px-6 py-8 text-center"
-                  data-testid="dashboard-progress-empty"
-                >
-                  <p className="text-sm text-slate-400">No members match “{memberQuery}”.</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setMemberQuery('')}
-                    className="mt-2"
-                    data-testid="dashboard-progress-clear-filter"
-                  >
-                    Clear filter
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <Stagger>
-                    <div className="flex flex-col gap-4" data-testid="dashboard-progress-list">
-                      {filteredProgress!.map(member => {
-                        const studiedCount = member.studiedKeys.length;
-                        const totalQuizzes = member.quizAttempts.length;
-                        const sortedAttempts = [...member.quizAttempts].sort(
-                          (a, b) =>
-                            new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
-                        );
-                        const latest = sortedAttempts[0] ?? null;
-                        const best = bestScoreText(member.quizAttempts);
-                        const lastActivity = latest ? formatDateTime(latest.completedAt) : '—';
-                        const recentKey = member.studiedKeys[0] ?? null;
-                        const isTopPerformer =
-                          member.quizAttempts.length > 0 &&
-                          bestScoreText(member.quizAttempts) === bestOverall &&
-                          bestOverall !== '—';
-                        return (
-                          <StaggerItem key={member.userId} data-testid="dashboard-member-progress">
-                            <Card
-                              className={`overflow-hidden border-slate-800 bg-slate-950/60 transition-colors hover:border-slate-700 ${isArchived ? 'opacity-90' : ''}`}
-                            >
-                              <CardContent className="p-0">
-                                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <h3
-                                        className="truncate text-sm font-semibold text-slate-100"
-                                        data-testid="dashboard-member-name"
-                                      >
-                                        {member.name ?? 'Unnamed member'}
-                                      </h3>
-                                      <Badge
-                                        variant={
-                                          member.role === 'TEACHER' ? 'secondary' : 'outline'
-                                        }
-                                        className="capitalize"
-                                      >
-                                        {member.role.toLowerCase()}
-                                      </Badge>
-                                      {isTopPerformer ? (
-                                        <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
-                                          Top
-                                        </Badge>
-                                      ) : null}
-                                    </div>
-                                    <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:flex sm:flex-wrap sm:gap-3">
-                                      <div className="flex items-center gap-1">
-                                        <dt className="text-slate-500">Studied</dt>
-                                        <dd
-                                          className="font-medium text-slate-200"
-                                          data-testid="dashboard-member-studied"
-                                        >
-                                          {studiedCount}
-                                        </dd>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <dt className="text-slate-500">Quizzes</dt>
-                                        <dd
-                                          className="font-medium text-slate-200"
-                                          data-testid="dashboard-member-quizzes"
-                                        >
-                                          {totalQuizzes}
-                                        </dd>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <dt className="text-slate-500">Best</dt>
-                                        <dd
-                                          className="font-mono text-slate-300"
-                                          data-testid="dashboard-member-best"
-                                        >
-                                          {best}
-                                        </dd>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <dt className="text-slate-500">Latest</dt>
-                                        <dd
-                                          className="font-mono"
-                                          data-testid="dashboard-member-latest"
-                                        >
-                                          <Badge
-                                            variant={
-                                              latest && latest.score === latest.total
-                                                ? 'teal'
-                                                : 'secondary'
-                                            }
-                                            className="font-mono text-xs"
-                                          >
-                                            {latest ? `${latest.score}/${latest.total}` : '—'}
-                                          </Badge>
-                                        </dd>
-                                      </div>
-                                    </dl>
-                                    <p className="mt-2 text-xs text-slate-500">
-                                      Joined {formatDate(member.joinedAt)} · Last activity{' '}
-                                      <span className="text-slate-400">{lastActivity}</span>
-                                    </p>
-                                  </div>
-
-                                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                    {recentKey ? (
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        asChild
-                                        className="h-8 bg-teal-600 text-white hover:bg-teal-700"
-                                      >
-                                        <Link
-                                          to={buildHumanFocusUrl(recentKey)}
-                                          data-testid="dashboard-member-focus"
-                                          aria-label={`Open ${member.name ?? 'member'} recent structure in 3D`}
-                                        >
-                                          Open recent in 3D →
-                                        </Link>
-                                      </Button>
-                                    ) : null}
-                                  </div>
-                                </div>
-
-                                {member.studiedKeys.length > 0 ? (
-                                  <div className="border-t border-slate-800 bg-slate-900/30 px-4 py-3">
-                                    <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                                      Recent structures
-                                    </p>
-                                    <div className="mt-2 flex flex-wrap gap-1.5">
-                                      {member.studiedKeys.slice(0, 3).map(k => {
-                                        const short = k.split(':').pop() ?? k;
-                                        const label =
-                                          short.length > 28 ? `${short.slice(0, 28)}…` : short;
-                                        return (
-                                          <Button
-                                            key={k}
-                                            variant="outline"
-                                            size="sm"
-                                            asChild
-                                            className="h-7 border-slate-700 bg-slate-800/40 px-2.5 text-xs hover:bg-slate-700"
-                                          >
-                                            <Link
-                                              to={buildHumanFocusUrl(k)}
-                                              data-testid="dashboard-member-open"
-                                              aria-label={`Open ${short} in 3D viewer`}
-                                              title={k}
-                                            >
-                                              Open {label}
-                                            </Link>
-                                          </Button>
-                                        );
-                                      })}
-                                      {member.studiedKeys.length > 3 ? (
-                                        <span className="inline-flex items-center px-2 py-1 text-xs text-slate-500">
-                                          +{member.studiedKeys.length - 3} more
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                ) : null}
-
-                                {member.quizAttempts.length > 0 ? (
-                                  <div className="border-t border-slate-800 px-4 py-3">
-                                    <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                                      Quiz attempts
-                                    </p>
-                                    <ul
-                                      className="mt-2 flex flex-col gap-1.5"
-                                      data-testid="dashboard-member-attempts"
-                                    >
-                                      {sortedAttempts.slice(0, 3).map(a => (
-                                        <li
-                                          key={a.id}
-                                          data-testid="dashboard-member-attempt"
-                                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs"
-                                        >
-                                          <span className="flex items-center gap-2">
-                                            <Badge
-                                              variant={a.score === a.total ? 'teal' : 'secondary'}
-                                              className="font-mono"
-                                            >
-                                              {a.score}/{a.total}
-                                            </Badge>
-                                            <span className="text-slate-400">{a.bodyModel}</span>
-                                          </span>
-                                          <span className="text-slate-500">
-                                            {formatDate(a.completedAt)}
-                                          </span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                ) : (
-                                  <div className="border-t border-slate-800 px-4 py-3">
-                                    <p className="text-xs italic text-slate-500">No quizzes yet</p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </StaggerItem>
-                        );
-                      })}
-                    </div>
-                  </Stagger>
-                </>
-              )}
-              {progressDenied ? (
-                <p
-                  className="mt-3 rounded-lg border border-amber-900/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/80"
-                  data-testid="dashboard-progress-forbidden"
-                >
-                  View requires owner/admin — your role is{' '}
-                  <span className="font-medium">{cohort.myRole}</span>.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        </section>
-      </Reveal>
-
-      {/* Recent activity — quiz attempts, deep-link where structureKey exists */}
-      <Reveal delay={0.08}>
-        <section aria-labelledby="activity-heading">
-          <Card>
-            <CardHeader>
-              <CardTitle
-                id="activity-heading"
-                className="text-xs font-semibold uppercase tracking-widest text-slate-400"
-              >
-                Recent activity
-              </CardTitle>
-              <CardDescription>
-                Latest 5 quiz completions across members. Studied structures link to 3D.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isProgressLoading ? (
-                <div className="flex flex-col gap-2" data-testid="dashboard-activity-loading">
-                  <Skeleton className="h-12 w-full rounded-lg" />
-                  <Skeleton className="h-12 w-full rounded-lg" />
-                  <Skeleton className="h-12 w-full rounded-lg" />
-                </div>
-              ) : recentAttempts.length === 0 ? (
-                <div
-                  className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-6 py-10 text-center"
-                  data-testid="dashboard-activity-empty"
-                >
-                  <h3 className="text-sm font-semibold text-slate-300">No recent quizzes</h3>
-                  <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">
-                    Quiz completions will appear here once members start learning. Studied
-                    structures are shown in member cards above.
-                  </p>
-                </div>
-              ) : (
-                <ul className="flex flex-col gap-2" data-testid="dashboard-activity-list">
-                  {recentAttempts.map(a => {
-                    const pct = Math.round((a.score / Math.max(1, a.total)) * 100);
-                    return (
-                      <li
-                        key={a.id}
-                        data-testid="dashboard-activity-item"
-                        className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-3 transition-colors hover:border-slate-700 sm:px-4"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-2 truncate text-sm font-medium text-slate-100">
-                            <span className="truncate">{a.name ?? 'Member'}</span>
-                            <Badge
-                              variant={pct === 100 ? 'teal' : pct >= 60 ? 'secondary' : 'outline'}
-                            >
-                              {a.score}/{a.total} · {pct}%
-                            </Badge>
-                          </p>
-                          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                            <span>{formatDateTime(a.completedAt)}</span>
-                            <span className="hidden sm:inline">·</span>
-                            <Badge variant="outline" className="capitalize">
-                              {a.bodyModel}
-                            </Badge>
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span className="hidden text-xs text-slate-500 sm:inline">Quiz</span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-      </Reveal>
+      <RecentActivity recentAttempts={recentAttempts} isProgressLoading={isProgressLoading} />
 
       <p className="text-center text-xs text-slate-600">
         Dashboard data is live from{' '}

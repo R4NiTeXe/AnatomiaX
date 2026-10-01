@@ -26,6 +26,12 @@
 - Follow npm workspaces structure.
 - Document architecture decisions in `docs/`.
 
+## Skills
+
+- Curated playbooks live in `skills/` (see `skills/README.md` for index and provenance).
+- Consult the matching skill before starting work in its area and follow it during implementation and review.
+- Never silently edit vendored skill files; record project deviations in `skills/README.md`.
+
 ## Workflow
 
 - Inspect existing repository before making changes.

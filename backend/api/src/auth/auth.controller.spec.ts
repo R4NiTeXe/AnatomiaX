@@ -60,3 +60,73 @@ describe('AuthController.googleCallback (8.20.20 OAuth redirect)', () => {
     expect(res.redirect).toHaveBeenCalledWith('https://app.example.com/auth/callback');
   });
 });
+
+describe('AuthController session cookie flags', () => {
+  const session = { user: { id: 'u1' }, accessToken: 'a', refreshToken: 'rt-1' };
+  const authFor = () => ({
+    register: jest.fn().mockResolvedValue(session),
+    login: jest.fn().mockResolvedValue(session),
+  });
+  const loginDto = { email: 'a@b.c', password: 'password123' };
+
+  it('sets HttpOnly SameSite=Lax non-secure cookie by default outside production', async () => {
+    const controller = new AuthController(authFor() as never, configFor({}) as never);
+    const res = mockRes();
+    await controller.login(loginDto as never, res as never);
+    expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt-1', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/api/v1/auth',
+      maxAge: 30 * 86400000,
+    });
+  });
+
+  it('honors explicit COOKIE_SAMESITE and COOKIE_SECURE flags', async () => {
+    const controller = new AuthController(
+      authFor() as never,
+      configFor({ COOKIE_SAMESITE: 'none', COOKIE_SECURE: 'true' }) as never
+    );
+    const res = mockRes();
+    await controller.login(loginDto as never, res as never);
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'rt-1',
+      expect.objectContaining({ sameSite: 'none', secure: true })
+    );
+  });
+
+  it('forces Secure in production regardless of config', async () => {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const controller = new AuthController(
+        authFor() as never,
+        configFor({ COOKIE_SECURE: 'false' }) as never
+      );
+      const res = mockRes();
+      await controller.login(loginDto as never, res as never);
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        'rt-1',
+        expect.objectContaining({ secure: true })
+      );
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  });
+
+  it('scales cookie maxAge with REFRESH_TTL_DAYS', async () => {
+    const controller = new AuthController(
+      authFor() as never,
+      configFor({ REFRESH_TTL_DAYS: '7' }) as never
+    );
+    const res = mockRes();
+    await controller.login(loginDto as never, res as never);
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'rt-1',
+      expect.objectContaining({ maxAge: 7 * 86400000 })
+    );
+  });
+});

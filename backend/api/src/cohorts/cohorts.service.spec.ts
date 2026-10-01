@@ -176,6 +176,25 @@ describe('CohortsService', () => {
       });
     });
 
+    it('join reports the idempotent conflict when create loses the unique race (P2002)', async () => {
+      prisma.cohort.findFirst.mockResolvedValue(cohortRow());
+      prisma.cohortMember.findFirst.mockResolvedValue(null);
+      prisma.cohortMember.create.mockRejectedValue(
+        Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+      );
+      await expect(service.join(STUDENT as never, 'invite-abc')).rejects.toThrow(
+        'Already a member of this cohort'
+      );
+    });
+
+    it('join rethrows non-unique errors unchanged', async () => {
+      prisma.cohort.findFirst.mockResolvedValue(cohortRow());
+      prisma.cohortMember.findFirst.mockResolvedValue(null);
+      const dbError = Object.assign(new Error('connection lost'), { code: 'P2024' });
+      prisma.cohortMember.create.mockRejectedValue(dbError);
+      await expect(service.join(STUDENT as never, 'invite-abc')).rejects.toBe(dbError);
+    });
+
     it('leave removes membership only, never ownership', async () => {
       prisma.cohortMember.findFirst.mockResolvedValue({ id: 'm-1' });
       await service.leave(TEACHER as never, 'cohort-1');
@@ -290,6 +309,41 @@ describe('CohortsService', () => {
       await expect(
         service.assignModule(STUDENT as never, 'cohort-1', 'nervous')
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('re-reads the winner when create loses the unique race (P2002)', async () => {
+      ownerCtx();
+      const mocks = mockAssignment();
+      mocks.cohortAssignment.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(assignmentRow());
+      mocks.cohortAssignment.create.mockRejectedValue(
+        Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+      );
+      const out = await service.assignModule(TEACHER as never, 'cohort-1', 'nervous');
+      expect(out.id).toBe('a-1');
+    });
+
+    it('rethrows when the race winner is gone', async () => {
+      ownerCtx();
+      const mocks = mockAssignment();
+      mocks.cohortAssignment.findFirst.mockResolvedValue(null);
+      const dbError = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+      mocks.cohortAssignment.create.mockRejectedValue(dbError);
+      await expect(service.assignModule(TEACHER as never, 'cohort-1', 'nervous')).rejects.toBe(
+        dbError
+      );
+    });
+
+    it('rethrows non-unique errors unchanged', async () => {
+      ownerCtx();
+      const mocks = mockAssignment();
+      mocks.cohortAssignment.findFirst.mockResolvedValue(null);
+      const dbError = Object.assign(new Error('connection lost'), { code: 'P2024' });
+      mocks.cohortAssignment.create.mockRejectedValue(dbError);
+      await expect(service.assignModule(TEACHER as never, 'cohort-1', 'nervous')).rejects.toBe(
+        dbError
+      );
     });
 
     it('archived cohorts reject assignment', async () => {

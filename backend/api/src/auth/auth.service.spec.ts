@@ -23,10 +23,9 @@ function makeUser(overrides: Record<string, unknown> = {}) {
 describe('AuthService', () => {
   const OLD_ENV = process.env.NODE_ENV;
   let service: AuthService;
-  let prisma: Record<string, jest.Mock | Record<string, jest.Mock>>;
+  let prisma: Record<string, any>;
   let users: Record<string, jest.Mock>;
   let jwt: JwtService;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let tx: any;
 
   const configFor = (values: Record<string, string | undefined>) => ({
@@ -470,6 +469,165 @@ describe('AuthService', () => {
         where: { userId: 'user-1' },
       });
       expect(tx.user.delete).toHaveBeenCalledWith({ where: { id: 'user-1' } });
+    });
+  });
+
+  describe('configuration fail-fast', () => {
+    it('refuses to boot with a malformed JWT_ACCESS_TTL', () => {
+      const delivery = { dispatch: jest.fn() };
+      expect(
+        () =>
+          new AuthService(
+            prisma as never,
+            users as never,
+            jwt,
+            configFor({ JWT_ACCESS_TTL: 'bogus' }) as never,
+            delivery as never
+          )
+      ).toThrow(/JWT_ACCESS_TTL has an invalid format/);
+    });
+  });
+
+  describe('credential edge cases', () => {
+    it('login treats an unverifiable stored hash as invalid credentials', async () => {
+      users.findLiveByEmail.mockResolvedValue(makeUser({ passwordHash: 'not-a-valid-hash' }));
+      await expect(service.login('a@b.c', 'password123')).rejects.toThrow('Invalid credentials');
+    });
+
+    it('issueSessionForUser rejects unknown users', async () => {
+      users.findLiveById.mockResolvedValue(null);
+      await expect(service.issueSessionForUser('ghost')).rejects.toThrow('Invalid credentials');
+    });
+
+    it('issueSessionForUser mints a session for live users', async () => {
+      users.findLiveById.mockResolvedValue(makeUser());
+      const session = await service.issueSessionForUser('user-1');
+      expect(session.user.id).toBe('user-1');
+      expect(typeof session.accessToken).toBe('string');
+      expect(typeof session.refreshToken).toBe('string');
+    });
+
+    it('changePassword treats an unverifiable stored hash as invalid credentials', async () => {
+      users.findLiveById.mockResolvedValue(makeUser({ passwordHash: 'bad-hash' }));
+      await expect(service.changePassword('user-1', 'whatever', 'new-password-1')).rejects.toThrow(
+        'Invalid credentials'
+      );
+    });
+  });
+
+  describe('password-reset robustness', () => {
+    it('request still resolves when stale-token cleanup fails', async () => {
+      const delivery = { dispatch: jest.fn(async () => undefined) };
+      const svc = new AuthService(
+        prisma as never,
+        users as never,
+        jwt,
+        configFor({ JWT_ACCESS_TTL: '15m', REFRESH_TTL_DAYS: '30' }) as never,
+        delivery as never
+      );
+      users.findLiveByEmail.mockResolvedValue(makeUser({ email: 'me@example.com' }));
+      (prisma.passwordResetToken.deleteMany as jest.Mock).mockRejectedValueOnce(
+        new Error('db down')
+      );
+      await expect(svc.requestPasswordReset('me@example.com')).resolves.toBeUndefined();
+      expect(delivery.dispatch).toHaveBeenCalled();
+    });
+
+    it('request does not wait for slow mail delivery (non-blocking dispatch)', async () => {
+      let release!: () => void;
+      const gate = new Promise<void>(resolve => {
+        release = resolve;
+      });
+      const delivery = { dispatch: jest.fn(() => gate) };
+      const svc = new AuthService(
+        prisma as never,
+        users as never,
+        jwt,
+        configFor({ JWT_ACCESS_TTL: '15m', REFRESH_TTL_DAYS: '30' }) as never,
+        delivery as never
+      );
+      users.findLiveByEmail.mockResolvedValue(makeUser({ email: 'me@example.com' }));
+      const outcome = await Promise.race([
+        svc.requestPasswordReset('me@example.com').then(() => 'resolved'),
+        new Promise(resolve => setTimeout(() => resolve('blocked'), 100)),
+      ]);
+      expect(delivery.dispatch).toHaveBeenCalledTimes(1);
+      release();
+      await gate;
+      expect(outcome).toBe('resolved');
+    });
+
+    it('request stays silent for accounts without an email', async () => {
+      const delivery = { dispatch: jest.fn(async () => undefined) };
+      const svc = new AuthService(
+        prisma as never,
+        users as never,
+        jwt,
+        configFor({ JWT_ACCESS_TTL: '15m', REFRESH_TTL_DAYS: '30' }) as never,
+        delivery as never
+      );
+      users.findLiveByEmail.mockResolvedValue(makeUser({ email: null }));
+      await expect(svc.requestPasswordReset('x@y.z')).resolves.toBeUndefined();
+      expect(delivery.dispatch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('export and deletion edge cases', () => {
+    it('export rejects unknown users', async () => {
+      users.findLiveById.mockResolvedValue(null);
+      await expect(service.exportUserData('ghost')).rejects.toThrow('Invalid credentials');
+    });
+
+    it('export maps owned rows without secrets', async () => {
+      const when = new Date('2026-01-02T00:00:00Z');
+      users.findLiveById.mockResolvedValue(makeUser({ email: 'me@example.com' }));
+      (prisma.cohort.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'c1',
+          name: 'Bio',
+          institutionLabel: 'Dept',
+          archivedAt: null,
+          createdAt: when,
+          updatedAt: when,
+          inviteCode: 'secret-code',
+        },
+      ]);
+      (prisma.cohortMember.findMany as jest.Mock).mockResolvedValue([
+        {
+          cohortId: 'c1',
+          role: 'STUDENT',
+          joinedAt: when,
+          cohort: { id: 'c1', name: 'Bio', institutionLabel: 'Dept' },
+        },
+      ]);
+      (prisma.quizAttempt.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'q1',
+          bodyModel: 'male',
+          score: 2,
+          total: 5,
+          answers: [],
+          startedAt: null,
+          completedAt: when,
+        },
+      ]);
+      (prisma.progressSnapshot.findUnique as jest.Mock).mockResolvedValue({
+        userId: 'user-1',
+        studiedKeys: ['skin'],
+        bodyModel: 'male',
+        updatedAt: when,
+      });
+      const out = await service.exportUserData('user-1');
+      expect(out.cohortsCreated).toHaveLength(1);
+      expect(out.memberships).toHaveLength(1);
+      expect(out.quizAttempts).toHaveLength(1);
+      expect(out.progressSnapshot).toMatchObject({ studiedKeys: ['skin'] });
+      expect(JSON.stringify(out)).not.toContain('secret-code');
+    });
+
+    it('delete rejects unknown users', async () => {
+      users.findLiveById.mockResolvedValue(null);
+      await expect(service.deleteAccount('ghost')).rejects.toThrow('Invalid credentials');
     });
   });
 });

@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const nodeCrypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const MANIFEST_TS = path.join(
@@ -50,14 +50,15 @@ function parseArgs() {
   if (!out.base) {
     // Try env then fallback to /models-dev/ (local dev). Mirrors anatomySystems.ts default.
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const envPath = path.join(ROOT, 'frontend', 'web', '.env');
       if (fs.existsSync(envPath)) {
         const env = fs.readFileSync(envPath, 'utf8');
         const m = env.match(/VITE_ANATOMY_ASSET_BASE_URL\s*=\s*(.+)/);
         if (m) out.base = m[1].trim().replace(/^["']|["']$/g, '');
       }
-    } catch {}
+    } catch {
+      // .env is optional; the env-var/file fallback below applies.
+    }
     if (!out.base) out.base = process.env.VITE_ANATOMY_ASSET_BASE_URL || '/models-dev/';
   }
   return out;
@@ -135,7 +136,7 @@ async function checkLocalDev(entries, base) {
         missing++;
       } else {
         const data = fs.readFileSync(full);
-        const sha = crypto.createHash('sha256').update(data).digest('hex');
+        const sha = nodeCrypto.createHash('sha256').update(data).digest('hex');
         const verified = sha === e.sha256;
         console.log(
           `  ${verified ? 'OK' : 'HASH MISMATCH'}: ${url} ${stat.size}B ${sha.slice(0, 8)} ${verified ? '' : `!= ${e.sha256.slice(0, 8)}`}`
@@ -227,7 +228,7 @@ async function checkHttp(entries, base, verify, origin, timeout) {
           console.log(`    VERIFY FAIL: bytes ${buf.byteLength} != ${e.bytes}`);
           failures++;
         } else {
-          const sha = crypto.createHash('sha256').update(buf).digest('hex');
+          const sha = nodeCrypto.createHash('sha256').update(buf).digest('hex');
           const ok = sha === e.sha256;
           console.log(
             `    SHA-256: ${sha.slice(0, 8)} ${ok ? 'verified' : `MISMATCH (expected ${e.sha256.slice(0, 8)})`}`

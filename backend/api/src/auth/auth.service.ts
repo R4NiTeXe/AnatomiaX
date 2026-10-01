@@ -264,7 +264,14 @@ export class AuthService {
     await this.prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash: hashToken(token), expiresAt },
     });
-    await this.resetDelivery.dispatch(normalized, token);
+    // Fire-and-forget: mail I/O (timeouts, dead relays) must never hold the
+    // HTTP response. Deferred past the current tick so even a synchronously
+    // throwing transport cannot fail the request; rejections are swallowed
+    // (dispatch() already resolves on failure) to keep the reset flow a
+    // non-oracle and the response latency DB-bound only.
+    void Promise.resolve()
+      .then(() => this.resetDelivery.dispatch(normalized, token))
+      .catch(() => undefined);
   }
 
   /**

@@ -74,6 +74,7 @@ function FitController({ resetSignal }: FitControllerProps): null {
       return;
     }
     api.refresh().fit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fit on resetSignal only; api identity is not semantic
   }, [resetSignal]);
   return null;
 }

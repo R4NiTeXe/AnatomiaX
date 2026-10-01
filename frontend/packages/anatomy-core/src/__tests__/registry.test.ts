@@ -3,6 +3,9 @@ import {
   AnatomyStructureRegistry,
   createStructureKey,
   createStructureKeyForBody,
+  findStructureByOntologyId,
+  findStructuresByName,
+  findStructuresBySystem,
   normalizeQuery,
   readOntologyCandidate,
   searchStructures,
@@ -87,5 +90,91 @@ describe('AnatomyStructureRegistry', () => {
     expect(hits[0]?.structureKey).toBe('male:respiratory:UBERON:0004887');
     expect(searchStructures(registry, '', { bodyModel: 'male' })).toEqual([]);
     expect(searchStructures(registry, 'skin', { bodyModel: 'female' })).toEqual([]);
+  });
+
+  it('looks structures up through the module-level wrappers', () => {
+    const registry = new AnatomyStructureRegistry();
+    registry.register(fakeStructure());
+    expect(findStructureByOntologyId(registry, 'UBERON:0002097')?.name).toBe('Skin');
+    expect(findStructureByOntologyId(registry, 'UBERON:nope')).toBeUndefined();
+    expect(findStructuresBySystem(registry, 'skin')).toHaveLength(1);
+    expect(findStructuresBySystem(registry, 'nervous')).toEqual([]);
+    expect(findStructuresByName(registry, 'VH_M_skin')).toHaveLength(1);
+    expect(findStructuresByName(registry, 'nope')).toEqual([]);
+  });
+
+  it('finds by object name with miss paths', () => {
+    const registry = new AnatomyStructureRegistry();
+    registry.register(fakeStructure());
+    expect(registry.findStructureByObjectName('VH_M_skin')?.name).toBe('Skin');
+    expect(registry.findStructureByObjectName('missing')).toBeUndefined();
+    expect(registry.findStructuresByObjectName('VH_M_skin')).toHaveLength(1);
+    expect(registry.findStructuresByObjectName('missing')).toEqual([]);
+    expect(registry.findStructuresByOntologyId('UBERON:nope')).toEqual([]);
+  });
+
+  it('exercises every match tier through crafted entries', () => {
+    const entryFor = (name: string, tag: string) =>
+      fakeStructure({
+        id: `male:skin:object:${tag}`,
+        structureKey: `male:skin:object:${tag}`,
+        name,
+        objectName: `VH_M_${tag}`,
+        ontologyId: null,
+      });
+    const withEntry = (name: string, tag: string) => {
+      const registry = new AnatomyStructureRegistry();
+      registry.register(entryFor(name, tag));
+      return registry;
+    };
+    // Tier 0 exact, 1 prefix, 2 substring each match only through their tier.
+    expect(searchStructures(withEntry('alpha', 'q0'), 'alpha', { bodyModel: 'male' })).toHaveLength(
+      1
+    );
+    expect(searchStructures(withEntry('alpha', 'q1'), 'alph', { bodyModel: 'male' })).toHaveLength(
+      1
+    );
+    expect(searchStructures(withEntry('alpha', 'q2'), 'lpha', { bodyModel: 'male' })).toHaveLength(
+      1
+    );
+    expect(
+      searchStructures(withEntry('alpha beta gamma', 'q3'), 'alpha gamma', { bodyModel: 'male' })
+    ).toHaveLength(1);
+    expect(
+      searchStructures(withEntry('alpha beta gamma', 'q4'), 'gamma alpha', { bodyModel: 'male' })
+    ).toHaveLength(1);
+    expect(searchStructures(withEntry('alpha', 'q5'), 'zzzqqq', { bodyModel: 'male' })).toEqual([]);
+  });
+
+  it('breaks specificity ties deterministically', () => {
+    const registry = new AnatomyStructureRegistry();
+    const entryFor = (name: string, tag: string) =>
+      fakeStructure({
+        id: `male:skin:object:${tag}`,
+        structureKey: `male:skin:object:${tag}`,
+        name,
+        objectName: `VH_M_${tag}`,
+        ontologyId: null,
+      });
+    registry.register(entryFor('abd', 't2'));
+    registry.register(entryFor('abc', 't1'));
+    const hits = searchStructures(registry, 'ab', { bodyModel: 'male' });
+    expect(hits.map(h => h.name)).toEqual(['abc', 'abd']);
+  });
+
+  it('misses cleanly on unknown ontology ids', () => {
+    const registry = new AnatomyStructureRegistry();
+    expect(registry.findStructuresByOntologyId('UBERON:nope')).toEqual([]);
+  });
+
+  it('registers batches idempotently and unregisters unknown systems safely', () => {
+    const registry = new AnatomyStructureRegistry();
+    const added = registry.registerStructures([fakeStructure(), fakeStructure()]);
+    expect(added).toHaveLength(1);
+    expect(registry.size).toBe(1);
+    expect(() => registry.unregisterSystem('nervous')).not.toThrow();
+    registry.unregisterSystem('skin');
+    expect(registry.size).toBe(0);
+    expect(registry.findStructuresBySystem('skin')).toEqual([]);
   });
 });

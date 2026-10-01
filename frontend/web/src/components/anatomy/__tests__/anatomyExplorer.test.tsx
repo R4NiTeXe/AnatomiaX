@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import * as THREE from 'three';
@@ -61,6 +63,9 @@ function Harness() {
       </button>
       <button data-testid="toggle-nervous" onClick={() => toggleSystem('nervous')}>
         toggle-nervous
+      </button>
+      <button data-testid="toggle-musculoskeletal" onClick={() => toggleSystem('musculoskeletal')}>
+        toggle-musculoskeletal
       </button>
       <button
         data-testid="select-brain-external"
@@ -194,8 +199,6 @@ describe('AnatomyStructureExplorer', () => {
   });
 
   it('no GLB request caused by filtering/clicking already-loaded structure', () => {
-    const fs = require('fs');
-    const path = require('path');
     const src = fs.readFileSync(path.join(__dirname, '../AnatomyStructureExplorer.tsx'), 'utf8');
     expect(src).not.toMatch(/\.glb/);
     expect(src).not.toMatch(/fetch\(/);
@@ -348,5 +351,57 @@ describe('AnatomyStructureExplorer', () => {
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     // Brain has canonicalName Brain from seed, should display Brain not VH_M_brain
     expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/Brain/);
+  });
+
+  it('Escape clears the filter and keeps the list usable', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const input = screen.getByTestId('anatomy-explorer-filter') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'zzz-nope' } });
+    expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(input.value).toBe('');
+    expect(screen.getByTestId('anatomy-explorer-list')).toBeInTheDocument();
+  });
+
+  it('ArrowDown on an empty list does not corrupt navigation', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const input = screen.getByTestId('anatomy-explorer-filter') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'zzz-nope' } });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
+  });
+
+  it('system filter narrows the visible structures', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('toggle-musculoskeletal'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    fireEvent.click(screen.getByTestId('load-musculoskeletal-male'));
+    expect(screen.getByTestId('anatomy-explorer-list').textContent).toMatch(/Femur|femur/);
+    fireEvent.change(screen.getByTestId('anatomy-explorer-system-filter'), {
+      target: { value: 'nervous' },
+    });
+    expect(screen.getByTestId('anatomy-explorer-list').textContent).not.toMatch(/Femur/);
+    fireEvent.change(screen.getByTestId('anatomy-explorer-system-filter'), {
+      target: { value: 'all' },
+    });
+    expect(screen.getByTestId('anatomy-explorer-list').textContent).toMatch(/Femur|femur/);
+  });
+
+  it('body-model switch resets the filter', () => {
+    renderWithProvider();
+    fireEvent.click(screen.getByTestId('toggle-nervous'));
+    fireEvent.click(screen.getByTestId('load-nervous-male'));
+    const input = screen.getByTestId('anatomy-explorer-filter') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'brain' } });
+    expect(input.value).toBe('brain');
+    fireEvent.click(screen.getByTestId('switch-female'));
+    expect(input.value).toBe('');
   });
 });

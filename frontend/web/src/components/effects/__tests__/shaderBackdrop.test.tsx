@@ -94,6 +94,74 @@ describe('ShaderBackdrop (8.30)', () => {
     }
   });
 
+  it('mounts through IntersectionObserver when visible and cleans up on unmount', async () => {
+    mockReducedMotion(false);
+    type Entry = { isIntersecting: boolean };
+    // Non-null stub: keeps the callable type (a null initializer would narrow
+    // to `never` after the guard below) and fails loudly if never replaced.
+    let ioCallback: (entries: Entry[]) => void = () => {
+      throw new Error('expected IntersectionObserver callback');
+    };
+    const observe = jest.fn();
+    const disconnect = jest.fn();
+    (global as unknown as Record<string, unknown>).IntersectionObserver = jest.fn(
+      (cb: (entries: Entry[]) => void) => {
+        ioCallback = cb;
+        return { observe, disconnect, unobserve: jest.fn() };
+      }
+    );
+    const proto = HTMLCanvasElement.prototype as unknown as {
+      getContext: (...args: unknown[]) => unknown;
+    };
+    const original = proto.getContext;
+    proto.getContext = () =>
+      ({
+        createShader: () => ({}),
+        shaderSource: () => {},
+        compileShader: () => {},
+        getShaderParameter: () => true,
+        createProgram: () => ({}),
+        attachShader: () => {},
+        linkProgram: () => {},
+        getProgramParameter: () => true,
+        useProgram: () => {},
+        getAttribLocation: () => 0,
+        getUniformLocation: () => ({}),
+        createBuffer: () => ({}),
+        bindBuffer: () => {},
+        bufferData: () => {},
+        enableVertexAttribArray: () => {},
+        vertexAttribPointer: () => {},
+        uniform2f: () => {},
+        uniform1f: () => {},
+        clearColor: () => {},
+        clear: () => {},
+        drawArrays: () => {},
+        getExtension: () => null,
+        viewport: () => {},
+      }) as unknown;
+    try {
+      const { unmount } = render(<ShaderBackdrop testId="fx" />);
+      expect(observe).toHaveBeenCalled();
+      ioCallback([{ isIntersecting: true }]);
+      await waitFor(() => expect(screen.getByTestId('fx-canvas')).toBeInTheDocument());
+      expect(screen.queryByTestId('fx-fallback')).not.toBeInTheDocument();
+      ioCallback([{ isIntersecting: false }]);
+      unmount();
+      expect(disconnect).toHaveBeenCalled();
+    } finally {
+      proto.getContext = original;
+      delete (global as unknown as Record<string, unknown>).IntersectionObserver;
+    }
+  });
+
+  it('handles window resize without throwing', async () => {
+    mockReducedMotion(true);
+    render(<ShaderBackdrop testId="fx" />);
+    expect(await screen.findByTestId('fx')).toBeInTheDocument();
+    expect(() => window.dispatchEvent(new Event('resize'))).not.toThrow();
+  });
+
   it('keeps the shader procedural and restrained', () => {
     expect(BACKDROP_FRAGMENT).toMatch(/precision mediump float/);
     expect(BACKDROP_FRAGMENT).toMatch(/u_resolution/);

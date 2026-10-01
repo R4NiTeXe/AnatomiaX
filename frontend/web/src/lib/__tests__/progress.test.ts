@@ -65,6 +65,21 @@ describe('progress client', () => {
     expect(calls[0].url).toBe('http://localhost:3000/api/v1/progress/quiz-attempts?limit=7');
   });
 
+  it('lists attempts with the default limit', async () => {
+    await login('a@b.c', 'password123');
+    calls.length = 0;
+    await listQuizAttempts();
+    expect(calls[0].url).toBe('http://localhost:3000/api/v1/progress/quiz-attempts?limit=20');
+  });
+
+  it('merges studied keys without a body model', async () => {
+    await login('a@b.c', 'password123');
+    calls.length = 0;
+    await mergeStudiedKeys(['a']);
+    expect(calls[0].url).toBe('http://localhost:3000/api/v1/progress/snapshot/studied');
+    expect(JSON.parse(calls[0].init?.body as string)).toEqual({ keys: ['a'] });
+  });
+
   it('fetches the snapshot and merges studied keys additively', async () => {
     await login('a@b.c', 'password123');
     calls.length = 0;
