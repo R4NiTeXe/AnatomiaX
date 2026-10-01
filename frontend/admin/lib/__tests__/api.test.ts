@@ -40,13 +40,17 @@ describe('admin api client', () => {
     });
 
     it('throws a clear error in production builds when env missing', () => {
-      const originalNodeEnv = process.env.NODE_ENV;
-      (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+      // NODE_ENV is a declared read-only prop on this @types/node ProcessEnv
+      // (index-signature keys like NEXT_PUBLIC_* are still mutable), so all
+      // writes go through a mutable record view.
+      const env = process.env as Record<string, string | undefined>;
+      const originalNodeEnv = env.NODE_ENV;
+      env.NODE_ENV = 'production';
       try {
         expect(() => getApiBaseUrl()).toThrow('NEXT_PUBLIC_API_BASE_URL is not set');
       } finally {
-        if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-        else process.env.NODE_ENV = originalNodeEnv;
+        if (originalNodeEnv === undefined) delete env.NODE_ENV;
+        else env.NODE_ENV = originalNodeEnv;
       }
     });
   });
