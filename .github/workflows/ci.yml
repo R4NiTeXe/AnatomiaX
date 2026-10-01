@@ -65,6 +65,13 @@ jobs:
       - name: Anatomy asset contract (dev layout)
         run: node scripts/check-anatomy-assets.js --base /models-dev/
 
+      # The viewer E2E suite loads real GLBs from the dev server. Fresh
+      # clones lack the gitignored models-dev/ subset (the dev server then
+      # serves index.html for .glb paths and the loader fails), so populate
+      # the documented 13-file subset before Playwright runs.
+      - name: Populate dev GLB subset for viewer E2E
+        run: node scripts/populate-dev-assets.js
+
       - name: Performance budget (informational warnings)
         run: node scripts/check-performance-budget.js
 

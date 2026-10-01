@@ -66,10 +66,10 @@ repo, translate to:
 
 | ECC says             | AnatomiaX equivalent                                                                                                                               |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test` (unit)    | `npm run test --workspaces --if-present` (web 443 · admin 10 · core 37 · api 226)                                                                  |
+| `npm test` (unit)    | `npm run test --workspaces --if-present` (web 547 · admin 57 · core 61 · api 276)                                                                  |
 | e2e run              | `npx playwright test` (17 specs, dev server auto-started)                                                                                          |
 | typecheck            | `npm run typecheck --workspaces --if-present`                                                                                                      |
-| format               | `npm run format:check` (Prettier; no `lint` script — see `coding-standards`)                                                                       |
+| format               | `npm run format:check` (Prettier) + `npm run lint` (ESLint, zero warnings)                                                                         |
 | DB migrate (prod)    | `npx prisma migrate deploy --schema backend/api/prisma/schema.prisma`                                                                              |
 | readiness/perf gates | `node scripts/check-production-readiness.js --check-builds`, `node scripts/check-performance-budget.js`, `node scripts/check-prisma-migrations.js` |
 
