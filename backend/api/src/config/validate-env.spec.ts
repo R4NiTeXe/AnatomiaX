@@ -43,6 +43,8 @@ describe('validateProductionEnv (8.19.23)', () => {
           REFRESH_TTL_DAYS: '30',
           PASSWORD_RESET_TTL_MINUTES: '60',
           COOKIE_SAMESITE: 'none',
+          SMTP_HOST: 'mail.example.com',
+          SMTP_FROM: 'noreply@example.com',
         })
       )
     ).not.toThrow();
@@ -54,6 +56,8 @@ describe('validateProductionEnv (8.19.23)', () => {
       JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/anatomiax',
       CORS_ORIGIN: 'https://app.example.com',
+      SMTP_HOST: 'mail.example.com',
+      SMTP_FROM: 'noreply@example.com',
     };
     for (const sameSite of ['lax', 'strict']) {
       expect(() =>
@@ -70,6 +74,8 @@ describe('validateProductionEnv (8.19.23)', () => {
       JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/anatomiax',
       CORS_ORIGIN: 'https://app.example.com',
+      SMTP_HOST: 'mail.example.com',
+      SMTP_FROM: 'noreply@example.com',
     };
     expect(() =>
       validateProductionEnv(configFor({ ...base, GOOGLE_CLIENT_ID: 'id-only' }))
@@ -85,6 +91,8 @@ describe('validateProductionEnv (8.19.23)', () => {
       JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/anatomiax',
       CORS_ORIGIN: 'https://app.example.com',
+      SMTP_HOST: 'mail.example.com',
+      SMTP_FROM: 'noreply@example.com',
     };
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
     expect(() =>
@@ -120,6 +128,8 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
     JWT_SECRET: 'a-very-long-random-secret-value-0123456789',
     DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/anatomiax',
     CORS_ORIGIN: 'https://app.example.com',
+    SMTP_HOST: 'mail.example.com',
+    SMTP_FROM: 'noreply@example.com',
   };
 
   it('rejects wildcard and localhost CORS origins in production', () => {
@@ -210,13 +220,20 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
     expect(message).not.toMatch(/postgres:.+@/);
   });
 
-  it('keeps SMTP optional but rejects partial SMTP config in production (Brevo SMTP)', () => {
-    process.env.NODE_ENV = 'production';
-    // Absent SMTP keeps the safe stub — no failure.
+  it('requires SMTP in production but rejects partial SMTP config (Brevo SMTP)', () => {
+    // Outside production the stub stays optional (validator returns early).
+    process.env.NODE_ENV = 'test';
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
+    process.env.NODE_ENV = 'production';
+    // Absent SMTP_HOST in production fails: reset requests promise delivery.
+    expect(() =>
+      validateProductionEnv(configFor({ ...base, SMTP_HOST: undefined, SMTP_FROM: undefined }))
+    ).toThrow('SMTP_HOST is required in production for password-reset delivery');
     // Host without sender fails clearly.
     expect(() =>
-      validateProductionEnv(configFor({ ...base, SMTP_HOST: 'smtp-relay.brevo.com' }))
+      validateProductionEnv(
+        configFor({ ...base, SMTP_HOST: 'smtp-relay.brevo.com', SMTP_FROM: undefined })
+      )
     ).toThrow('SMTP_FROM');
     // Brevo host without user/password credentials fails clearly.
     expect(() =>
@@ -230,7 +247,9 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
     ).toThrow('SMTP_USER');
     // Orphaned sender-side values without a host fail clearly.
     expect(() =>
-      validateProductionEnv(configFor({ ...base, SMTP_FROM: 'noreply@example.com' }))
+      validateProductionEnv(
+        configFor({ ...base, SMTP_HOST: undefined, SMTP_FROM: 'noreply@example.com' })
+      )
     ).toThrow('SMTP_HOST');
     // Split credentials fail clearly.
     expect(() =>

@@ -176,6 +176,40 @@ class FakeDb {
       Object.assign(row, data, { updatedAt: new Date() });
       return { ...row };
     },
+    delete: async ({ where }: { where: Record<string, unknown> }) => {
+      const row = this.users.get(where.id as string);
+      if (!row) throw new Error('Record not found');
+      this.users.delete(where.id as string);
+      // Real-DB cascades (memberships, attempts, tokens, subscriptions) are
+      // schema-guaranteed; the fake models row removal only.
+      return { ...row };
+    },
+  };
+
+  audits: Record<string, any>[] = [];
+
+  auditLog = {
+    create: async ({ data }: { data: Record<string, unknown> }) => {
+      const row: Record<string, unknown> = { id: randomUUID(), createdAt: new Date(), ...data };
+      this.audits.push(row);
+      return { ...row };
+    },
+    findMany: async (args?: {
+      where?: Record<string, unknown>;
+      orderBy?: unknown;
+      skip?: number;
+      take?: number;
+    }) => {
+      let rows = this.audits.filter(r => (!args?.where ? true : this.match(r, args.where)));
+      if (args?.orderBy) rows = this.order(rows, args.orderBy as Record<string, string>);
+      if (args?.skip !== undefined) rows = rows.slice(args.skip);
+      if (args?.take !== undefined) rows = rows.slice(0, args.take);
+      return rows.map(r => ({ ...r }));
+    },
+    count: async ({ where }: { where?: Record<string, unknown> } = {}) => {
+      if (!where) return this.audits.length;
+      return this.audits.filter(r => this.match(r, where)).length;
+    },
   };
 
   oAuthAccount = {
@@ -280,6 +314,16 @@ class FakeDb {
       if (!row) throw new Error('Record not found');
       Object.assign(row, data);
       return { ...row };
+    },
+    deleteMany: async ({ where }: { where: Record<string, unknown> }) => {
+      let count = 0;
+      for (const [id, row] of [...this.passwordResetTokens.entries()]) {
+        if (this.match(row, where)) {
+          this.passwordResetTokens.delete(id);
+          count += 1;
+        }
+      }
+      return { count };
     },
   };
 
@@ -644,5 +688,191 @@ describe('Admin (e2e, no database)', () => {
       .get('/api/v1/admin/users?limit=9999')
       .set(auth('admin@example.com'));
     expect(res.status).toBe(400);
+  });
+
+  it('admin inspects a user with safe fields and stats; unknown → 404', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/admin/users/${ids['student@example.com']}`)
+      .set(auth('admin@example.com'));
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({ email: 'student@example.com', role: 'STUDENT' });
+    expect(res.body.user).not.toHaveProperty('passwordHash');
+    expect(res.body).toHaveProperty('deactivatedAt', null);
+    expect(res.body.stats).toMatchObject({ memberships: 0, quizAttempts: 0, cohortsCreated: 0 });
+
+    const ghost = await request(app.getHttpServer())
+      .get('/api/v1/admin/users/00000000-0000-0000-0000-000000000000')
+      .set(auth('admin@example.com'));
+    expect(ghost.status).toBe(404);
+
+    const studentPeek = await request(app.getHttpServer())
+      .get(`/api/v1/admin/users/${ids['teacher@example.com']}`)
+      .set(auth('student@example.com'));
+    expect(studentPeek.status).toBe(403);
+
+    const anonPeek = await request(app.getHttpServer()).get(
+      `/api/v1/admin/users/${ids['teacher@example.com']}`
+    );
+    expect(anonPeek.status).toBe(401);
+  });
+
+  it('admin provisions a teacher; forged role/self/last-admin guarded; audited', async () => {
+    const before = db.audits.length;
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/admin/users/${ids['student@example.com']}/role`)
+      .set(auth('admin@example.com'))
+      .send({ role: 'TEACHER' });
+    expect(res.status).toBe(200);
+    expect(res.body.user.role).toBe('TEACHER');
+
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'student@example.com', password: 'password123' });
+    expect(login.status).toBe(200);
+
+    const forged = await request(app.getHttpServer())
+      .patch(`/api/v1/admin/users/${ids['teacher@example.com']}/role`)
+      .set(auth('admin@example.com'))
+      .send({ role: 'SUPERADMIN' });
+    expect(forged.status).toBe(400);
+
+    const studentTry = await request(app.getHttpServer())
+      .patch(`/api/v1/admin/users/${ids['teacher@example.com']}/role`)
+      .set(auth('student@example.com'))
+      .send({ role: 'TEACHER' });
+    expect(studentTry.status).toBe(403);
+
+    const anonTry = await request(app.getHttpServer())
+      .patch(`/api/v1/admin/users/${ids['teacher@example.com']}/role`)
+      .send({ role: 'TEACHER' });
+    expect(anonTry.status).toBe(401);
+
+    // Non-admin callers never reach the service (guard first).
+    const lastAdmin = await request(app.getHttpServer())
+      .patch(`/api/v1/admin/users/${ids['admin@example.com']}/role`)
+      .set(auth('teacher@example.com'));
+    expect(lastAdmin.status).toBe(403);
+
+    // The sole admin demoting themselves out of the last-admin seat → 409
+    // (the guard counts live admins; self-inflicted removal is covered).
+    const soloDemote = await request(app.getHttpServer())
+      .patch(`/api/v1/admin/users/${ids['admin@example.com']}/role`)
+      .set(auth('admin@example.com'))
+      .send({ role: 'STUDENT' });
+    expect(soloDemote.status).toBe(409);
+
+    // Still an admin afterwards — the rejected write changed nothing.
+    const stillAdmin = await request(app.getHttpServer())
+      .get(`/api/v1/admin/users/${ids['admin@example.com']}`)
+      .set(auth('admin@example.com'));
+    expect(stillAdmin.body.user.role).toBe('ADMIN');
+
+    const audits = db.audits.filter(a => a.action === 'user.role.changed');
+    expect(audits.length).toBeGreaterThanOrEqual(1);
+    expect(audits[0]).toMatchObject({
+      actorId: ids['admin@example.com'],
+      targetType: 'user',
+      targetId: ids['student@example.com'],
+    });
+    expect(JSON.stringify(audits[0])).not.toContain('password');
+    expect(db.audits.length).toBeGreaterThan(before);
+  });
+
+  it('admin deactivates and restores; deactivated cannot log in', async () => {
+    const off = await request(app.getHttpServer())
+      .post(`/api/v1/admin/users/${ids['teacher@example.com']}/deactivate`)
+      .set(auth('admin@example.com'));
+    expect(off.status).toBe(200);
+    expect(off.body.deactivatedAt).not.toBeNull();
+
+    const blocked = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'teacher@example.com', password: 'password123' });
+    expect(blocked.status).toBe(401);
+
+    const again = await request(app.getHttpServer())
+      .post(`/api/v1/admin/users/${ids['teacher@example.com']}/deactivate`)
+      .set(auth('admin@example.com'));
+    expect(again.status).toBe(409);
+
+    const back = await request(app.getHttpServer())
+      .post(`/api/v1/admin/users/${ids['teacher@example.com']}/restore`)
+      .set(auth('admin@example.com'));
+    expect(back.status).toBe(200);
+    expect(back.body.deactivatedAt).toBeNull();
+
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'teacher@example.com', password: 'password123' });
+    expect(login.status).toBe(200);
+
+    const active = await request(app.getHttpServer())
+      .post(`/api/v1/admin/users/${ids['teacher@example.com']}/restore`)
+      .set(auth('admin@example.com'));
+    expect(active.status).toBe(409);
+  });
+
+  it('admin deletes an account; self and last-admin protected; audited', async () => {
+    const gone = await request(app.getHttpServer())
+      .delete(`/api/v1/admin/users/${ids['student@example.com']}`)
+      .set(auth('admin@example.com'));
+    expect(gone.status).toBe(200);
+
+    const check = await request(app.getHttpServer())
+      .get(`/api/v1/admin/users/${ids['student@example.com']}`)
+      .set(auth('admin@example.com'));
+    expect(check.status).toBe(404);
+
+    const relogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'student@example.com', password: 'password123' });
+    expect(relogin.status).toBe(401);
+
+    const lastAdminDelete = await request(app.getHttpServer())
+      .delete(`/api/v1/admin/users/${ids['admin@example.com']}`)
+      .set(auth('teacher@example.com'));
+    expect(lastAdminDelete.status).toBe(403);
+
+    // Sole-admin self-delete is refused (would orphan administration).
+    const selfDelete = await request(app.getHttpServer())
+      .delete(`/api/v1/admin/users/${ids['admin@example.com']}`)
+      .set(auth('admin@example.com'));
+    expect(selfDelete.status).toBe(409);
+
+    const audits = db.audits.filter(a => a.action === 'user.deleted');
+    expect(audits.length).toBe(1);
+    expect(audits[0].targetId).toBe(ids['student@example.com']);
+  });
+
+  it('admin reads audit logs with filters/pagination; never secrets; others denied', async () => {
+    const adminAuth = auth('admin@example.com');
+    const list = await request(app.getHttpServer()).get('/api/v1/admin/audit-logs').set(adminAuth);
+    expect(list.status).toBe(200);
+    expect(list.body.total).toBeGreaterThanOrEqual(3);
+    expect(Array.isArray(list.body.items)).toBe(true);
+    const serialized = JSON.stringify(list.body);
+    expect(serialized).not.toContain('password');
+    expect(serialized).not.toContain('tokenHash');
+    expect(serialized).not.toContain('refreshToken');
+
+    const filtered = await request(app.getHttpServer())
+      .get('/api/v1/admin/audit-logs?action=user.role.changed')
+      .set(adminAuth);
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.total).toBeGreaterThanOrEqual(1);
+    for (const row of filtered.body.items) expect(row.action).toBe('user.role.changed');
+
+    const badAction = await request(app.getHttpServer())
+      .get('/api/v1/admin/audit-logs?action=user.hacked')
+      .set(adminAuth);
+    expect(badAction.status).toBe(400);
+
+    const studentTry = await request(app.getHttpServer())
+      .get('/api/v1/admin/audit-logs')
+      .set(auth('teacher@example.com'));
+    expect(studentTry.status).toBe(403);
+
+    const anonTry = await request(app.getHttpServer()).get('/api/v1/admin/audit-logs');
+    expect(anonTry.status).toBe(401);
   });
 });

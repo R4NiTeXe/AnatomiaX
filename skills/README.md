@@ -66,7 +66,7 @@ repo, translate to:
 
 | ECC says             | AnatomiaX equivalent                                                                                                                               |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test` (unit)    | `npm run test --workspaces --if-present` (web 547 · admin 57 · core 61 · api 276)                                                                  |
+| `npm test` (unit)    | `npm run test --workspaces --if-present` (web 547 · admin 60 · core 61 · api 326)                                                                  |
 | e2e run              | `npx playwright test` (17 specs, dev server auto-started)                                                                                          |
 | typecheck            | `npm run typecheck --workspaces --if-present`                                                                                                      |
 | format               | `npm run format:check` (Prettier) + `npm run lint` (ESLint, zero warnings)                                                                         |

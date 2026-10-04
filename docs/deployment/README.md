@@ -98,7 +98,7 @@ with staging values so the same checks gate staging before production.
 | `GOOGLE_CALLBACK_URL`                       | only if Google enabled | e.g. `https://api.<domain>/api/v1/auth/google/callback`.                                              |
 | `FCM_SERVER_KEY`                            | optional               | Empty = push sender stays stubbed, nothing sent.                                                      |
 | `FIREBASE_PROJECT_ID`                       | optional               | Requires `FCM_SERVER_KEY` when set.                                                                   |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE`   | optional               | Reset-email SMTP relay. Empty host = safe stub (no mail sent). No vendor required.                    |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE`   | required in prod       | Reset-email SMTP relay. Empty host = safe stub (dev/test only); production boot fails without a host. |
 | `SMTP_USER` + `SMTP_PASSWORD`               | optional pair          | Set together or leave both empty (authless relays only need host).                                    |
 | `SMTP_FROM`                                 | iff SMTP enabled       | Sender address, e.g. `AnatomiaX <noreply@example.com>`. Required when `SMTP_HOST` is set.             |
 
@@ -223,12 +223,13 @@ COOKIE_SAMESITE=lax
 # optional:
 # GOOGLE_CLIENT_ID=… GOOGLE_CLIENT_SECRET=… GOOGLE_CALLBACK_URL=https://<api>/api/v1/auth/google/callback
 # FCM_SERVER_KEY=… FIREBASE_PROJECT_ID=…
-# SMTP_HOST=… SMTP_PORT=587 SMTP_SECURE=false SMTP_USER=… SMTP_PASSWORD=… SMTP_FROM=…
+# SMTP_HOST=… SMTP_PORT=587 SMTP_SECURE=false SMTP_USER=… SMTP_PASSWORD=… SMTP_FROM=… (required in prod)
 ```
 
 Password-reset delivery modes (8.20.22, `PasswordResetDelivery`): no
 `SMTP_HOST` → safe stub (requests resolve, mail is only logged server-side —
-development/test need nothing). `SMTP_HOST` set → concise reset email via
+development/test need nothing; production boot refuses this mode).
+`SMTP_HOST` set → concise reset email via
 plain SMTP to any provider/relay (link: `<web-origin>/reset-password?email=…&token=…`,
 existing single-use/expiry/revocation semantics unchanged). Partial SMTP
 config fails fast at boot; mail outages resolve like success (no account

@@ -145,16 +145,16 @@ export function validateProductionEnv(config: ConfigService): void {
     }
   }
 
-  // Brevo SMTP email delivery: optional (stub applies without SMTP_HOST),
-  // but a partial configuration must fail clearly rather than silently never
-  // delivering. Rules mirror PasswordResetDelivery.resolveSmtpConfig.
+  // Brevo SMTP email delivery: REQUIRED in production (the password-reset
+  // request promises delivery with a 200 + generic body, so an unconfigured
+  // relay would silently drop every reset email). Non-production keeps the
+  // safe stub. Rules mirror PasswordResetDelivery.resolveSmtpConfig.
   const smtpHost = (config.get<string>('SMTP_HOST') ?? '').trim();
   const smtpFrom = (config.get<string>('SMTP_FROM') ?? '').trim();
   const smtpUser = (config.get<string>('SMTP_USER') ?? '').trim();
   const smtpPass = (config.get<string>('SMTP_PASSWORD') ?? '').trim();
-  const smtpAny = smtpHost || smtpFrom || smtpUser || smtpPass;
-  if (smtpAny && !smtpHost) {
-    failures.push('SMTP_HOST is required when SMTP_* email delivery is configured in production');
+  if (!smtpHost) {
+    failures.push('SMTP_HOST is required in production for password-reset delivery');
   }
   if (smtpHost) {
     if (!smtpFrom) {

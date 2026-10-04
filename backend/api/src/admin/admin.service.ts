@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma, UserRole } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser, toSafeUser } from '../users/safe-user';
 import type { CohortView } from '../cohorts/cohorts.service';
@@ -36,7 +37,10 @@ export interface PaginatedCohorts {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService
+  ) {}
 
   async getOverview(): Promise<AdminOverview> {
     const [totalUsers, students, teachers, admins, cohortCount, archivedCohortCount] =
@@ -199,6 +203,136 @@ export class AdminService {
       } as CohortView & { memberCount: number };
     });
 
+    return { items, total, page, limit };
+  }
+
+  /**
+   * Account lifecycle state machine (deliberate, documented):
+   * active (deletedAt null) ↔ deactivated (deletedAt set) → hard-deleted
+   * (row gone, dependents cascade). Deactivation reuses the existing
+   * soft-delete column — no new account states were invented. All auth
+   * paths already exclude non-null deletedAt, so deactivation takes
+   * effect immediately without touching sessions (existing refresh
+   * tokens fail closed on next use).
+   */
+  async getUser(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    const [memberships, quizAttempts, cohortsCreated] = await Promise.all([
+      this.prisma.cohortMember.count({ where: { userId: id } }),
+      this.prisma.quizAttempt.count({ where: { userId: id } }),
+      this.prisma.cohort.count({ where: { createdById: id } }),
+    ]);
+    return {
+      user: toSafeUser(user),
+      deactivatedAt: user.deletedAt,
+      stats: { memberships, quizAttempts, cohortsCreated },
+    };
+  }
+
+  /**
+   * Guards the final administrator: any demote/deactivate/delete that would
+   * leave zero live admins is rejected before any write — including
+   * self-inflicted ones (there is deliberately no self-action ban; the
+   * last-admin rule is the backstop, so every guard below stays reachable).
+   */
+  private async requireAnotherAdmin(exceptId: string): Promise<void> {
+    const remaining = await this.prisma.user.count({
+      where: { role: 'ADMIN', deletedAt: null },
+    });
+    const target = await this.prisma.user.findUnique({ where: { id: exceptId } });
+    const targetIsLiveAdmin = !!target && target.role === 'ADMIN' && target.deletedAt === null;
+    if (targetIsLiveAdmin && remaining <= 1) {
+      throw new ConflictException('Cannot remove the last administrator');
+    }
+  }
+
+  async setUserRole(actor: SafeUser, id: string, role: UserRole) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.role === role) {
+      return { user: toSafeUser(target), deactivatedAt: target.deletedAt };
+    }
+    if (target.role === 'ADMIN' && role !== 'ADMIN') {
+      await this.requireAnotherAdmin(id);
+    }
+    const updated = await this.prisma.user.update({ where: { id }, data: { role } });
+    await this.audit.record(actor, 'user.role.changed', 'user', id, {
+      from: target.role,
+      to: role,
+    });
+    return { user: toSafeUser(updated), deactivatedAt: updated.deletedAt };
+  }
+
+  async deactivateUser(actor: SafeUser, id: string) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.deletedAt !== null) {
+      throw new ConflictException('User is already deactivated');
+    }
+    if (target.role === 'ADMIN') {
+      await this.requireAnotherAdmin(id);
+    }
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    await this.audit.record(actor, 'user.deactivated', 'user', id);
+    return { user: toSafeUser(updated), deactivatedAt: updated.deletedAt };
+  }
+
+  async restoreUser(actor: SafeUser, id: string) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.deletedAt === null) {
+      throw new ConflictException('User is already active');
+    }
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+    await this.audit.record(actor, 'user.restored', 'user', id);
+    return { user: toSafeUser(updated), deactivatedAt: updated.deletedAt };
+  }
+
+  async deleteUser(actor: SafeUser, id: string): Promise<void> {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.role === 'ADMIN') {
+      await this.requireAnotherAdmin(id);
+    }
+    // Same purge semantics as self-service account deletion: revoke
+    // sessions, drop reset tokens, hard-delete the row (dependents cascade
+    // per schema), all atomically.
+    await this.prisma.$transaction(async tx => {
+      await tx.refreshToken.updateMany({
+        where: { userId: id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      await tx.passwordResetToken.deleteMany({ where: { userId: id } });
+      await tx.user.delete({ where: { id } });
+    });
+    await this.audit.record(actor, 'user.deleted', 'user', id, { email: target.email });
+  }
+
+  async listAuditLogs(query: {
+    action?: string;
+    actorId?: string;
+    targetType?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(50, Math.max(1, query.limit ?? 20));
+    const skip = (page - 1) * limit;
+    const where: Prisma.AuditLogWhereInput = {};
+    if (query.action) where.action = query.action;
+    if (query.actorId) where.actorId = query.actorId;
+    if (query.targetType) where.targetType = query.targetType;
+    const [total, items] = await Promise.all([
+      this.prisma.auditLog.count({ where }),
+      this.prisma.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+    ]);
     return { items, total, page, limit };
   }
 

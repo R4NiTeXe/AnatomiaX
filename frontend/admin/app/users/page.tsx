@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { AdminShell } from '@/components/admin-shell';
 import { useAdminUsers } from '@/hooks/useAdmin';
@@ -122,6 +123,9 @@ export default function UsersPage(): JSX.Element {
                         <th className="px-4 py-3 font-semibold">User</th>
                         <th className="px-3 py-3 font-semibold">Role</th>
                         <th className="px-3 py-3 font-semibold">Created</th>
+                        <th className="px-3 py-3 font-semibold">
+                          <span className="sr-only">Manage</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
@@ -175,6 +179,16 @@ export default function UsersPage(): JSX.Element {
                               month: 'short',
                               day: 'numeric',
                             })}
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            <Link
+                              href={`/users/${u.id}`}
+                              className="rounded-lg px-2 py-1 text-xs font-medium text-teal-300 hover:text-teal-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                              data-testid="admin-user-manage"
+                              aria-label={`Manage ${u.email ?? 'user'}`}
+                            >
+                              Manage →
+                            </Link>
                           </td>
                         </tr>
                       ))}

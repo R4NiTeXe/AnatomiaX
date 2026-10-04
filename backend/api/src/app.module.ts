@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
+import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CohortsModule } from './cohorts/cohorts.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
@@ -11,6 +12,7 @@ import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProgressModule } from './progress/progress.module';
+import { QuizzesModule } from './quizzes/quizzes.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -27,6 +29,8 @@ import { UsersModule } from './users/users.module';
     NotificationsModule,
     HealthModule,
     AdminModule,
+    AuditModule,
+    QuizzesModule,
   ],
   providers: [
     // 8.19.25 canonical contract: request ids on every response, normalized

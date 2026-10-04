@@ -9,6 +9,7 @@ const nav = [
   { href: '/', label: 'Overview', testId: 'admin-nav-overview' },
   { href: '/users', label: 'Users', testId: 'admin-nav-users' },
   { href: '/cohorts', label: 'Cohorts', testId: 'admin-nav-cohorts' },
+  { href: '/audit-logs', label: 'Audit logs', testId: 'admin-nav-audit' },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }): JSX.Element {

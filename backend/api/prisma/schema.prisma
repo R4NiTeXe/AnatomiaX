@@ -25,6 +25,12 @@ enum CohortMemberRole {
   TEACHER
 }
 
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id           String    @id @default(uuid())
   email        String?   @unique
@@ -42,6 +48,7 @@ model User {
   assignmentsCreated  CohortAssignment[]   @relation("AssignmentCreator")
   memberships         CohortMember[]
   quizAttempts        QuizAttempt[]
+  quizzesAuthored     Quiz[]               @relation("QuizAuthor")
   progressSnapshot    ProgressSnapshot?
   pushSubscriptions   PushSubscription[]
 
@@ -161,7 +168,7 @@ model CohortAssignment {
 }
 
 model QuizAttempt {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   bodyModel   String
   score       Int
   total       Int
@@ -172,8 +179,74 @@ model QuizAttempt {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Nullable: legacy free-form attempts (static-content quizzes) carry no
+  // bank quiz. Bank-graded attempts always set quizId + questionSnapshot
+  // (immutable per-question copy so later quiz edits never rewrite history).
+  quizId           String?
+  quiz             Quiz?   @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  questionSnapshot Json?
+
   @@index([userId, completedAt])
+  @@index([quizId])
   @@map("quiz_attempts")
+}
+
+// Authoritative question bank (server-side grading). Assessment records like
+// QuizAttempt — static anatomy *content* stays out of this schema per the
+// header rule; only the gradable bank structure lives here.
+model Quiz {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  bodyModel   String?
+  status      QuizStatus @default(DRAFT)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  createdById String?
+  createdBy   User?   @relation("QuizAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id           String   @id @default(uuid())
+  prompt       String
+  options      Json
+  correctIndex Int
+  position     Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@index([quizId, position])
+  @@map("quiz_questions")
+}
+
+// Privileged-action ledger. No FK to User (survives account deletion) and
+// NEVER authentication material (see AuditService for the field contract).
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  actorRole  String?
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
 }
 
 model ProgressSnapshot {

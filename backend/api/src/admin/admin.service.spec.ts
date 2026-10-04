@@ -9,6 +9,9 @@ describe('AdminService', () => {
       user: {
         count: jest.fn(),
         findMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
       },
       cohort: {
         count: jest.fn(),
@@ -21,7 +24,8 @@ describe('AdminService', () => {
       user: prisma.user,
       cohort: prisma.cohort,
     } as never;
-    service = new AdminService(prismaMock as never);
+    const audit = { record: jest.fn(async () => undefined) };
+    service = new AdminService(prismaMock as never, audit as never);
   });
 
   describe('getOverview', () => {
@@ -169,6 +173,47 @@ describe('AdminService', () => {
       });
       const c = await service.getCohort('c1');
       expect(c?.memberCount).toBe(1);
+    });
+  });
+
+  describe('user lifecycle guards', () => {
+    const admin = { id: 'admin-1', role: 'ADMIN' } as never;
+    const liveAdmin = (overrides: Record<string, unknown> = {}) => ({
+      id: 'admin-1',
+      email: 'a@b.c',
+      name: 'Ada',
+      role: 'ADMIN',
+      createdAt: new Date(),
+      deletedAt: null,
+      ...overrides,
+    });
+
+    it('refuses to demote the sole administrator', async () => {
+      prisma.user.findUnique.mockResolvedValue(liveAdmin());
+      prisma.user.count.mockResolvedValue(1);
+      await expect(service.setUserRole(admin, 'admin-1', 'STUDENT' as never)).rejects.toThrow(
+        'Cannot remove the last administrator'
+      );
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('allows demotion when another administrator remains', async () => {
+      prisma.user.findUnique.mockResolvedValue(liveAdmin());
+      prisma.user.count.mockResolvedValue(2);
+      prisma.user.update.mockImplementation(async ({ data }: never) => ({
+        ...liveAdmin(),
+        ...(data as object),
+      }));
+      const out = await service.setUserRole(admin, 'admin-1', 'STUDENT' as never);
+      expect(out.user.role).toBe('STUDENT');
+    });
+
+    it('rejects double-deactivate and restore-when-active without writes', async () => {
+      prisma.user.findUnique.mockResolvedValue(liveAdmin({ deletedAt: new Date() }));
+      await expect(service.deactivateUser(admin, 'admin-1')).rejects.toThrow('already deactivated');
+      prisma.user.findUnique.mockResolvedValue(liveAdmin());
+      await expect(service.restoreUser(admin, 'admin-1')).rejects.toThrow('already active');
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 });
