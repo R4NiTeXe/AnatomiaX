@@ -151,6 +151,60 @@ describe('admin quizzes', () => {
     expect(seen.some(u => u.includes('role=TEACHER'))).toBe(true);
   });
 
+  it('archives then deletes from detail with navigation', async () => {
+    let status = 'PUBLISHED';
+    let deleted = false;
+    authedFetch((url, init) => {
+      const u = String(url);
+      const method = init?.method ?? 'GET';
+      if (u.endsWith('/api/v1/quizzes/q1') && method === 'GET')
+        return Promise.resolve(
+          jsonResponse({
+            id: 'q1',
+            title: 'Q',
+            description: null,
+            bodyModel: null,
+            status,
+            createdById: 't1',
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+            questionCount: 0,
+            questions: [],
+          })
+        );
+      if (u.endsWith('/api/v1/quizzes/q1/stats'))
+        return Promise.resolve(
+          jsonResponse({
+            quizId: 'q1',
+            attempts: 0,
+            avgScore: 0,
+            avgPercentage: 0,
+            totalQuestions: 0,
+            perQuestion: [],
+          })
+        );
+      if (u.endsWith('/api/v1/quizzes/q1/archive') && method === 'POST') {
+        status = 'ARCHIVED';
+        return Promise.resolve(jsonResponse({ status }));
+      }
+      if (u.endsWith('/api/v1/quizzes/q1') && method === 'DELETE') {
+        deleted = true;
+        return Promise.resolve(jsonResponse({ status: 'ok' }));
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    renderWithProviders(<AdminQuizDetailPage />);
+    expect(
+      await screen.findByTestId('admin-quiz-title', {}, { timeout: 4000 })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('admin-quiz-archive'));
+    await waitFor(() =>
+      expect(screen.getByTestId('admin-quiz-status')).toHaveTextContent('ARCHIVED')
+    );
+    fireEvent.click(screen.getByTestId('admin-quiz-delete'));
+    await waitFor(() => expect(deleted).toBe(true));
+  });
+
   it('adds a question with 1-based to 0-based key conversion', async () => {
     const posted: unknown[] = [];
     authedFetch((url, init) => {

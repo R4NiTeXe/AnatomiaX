@@ -53,13 +53,15 @@ module.exports = {
     // Three.js Canvas-bound modules: unrenderable in jsdom (no WebGL). Their
     // paths are covered by Playwright in a real browser (human-model-switch,
     // web deep-link specs) instead of unit coverage.
-    '!src/components/anatomy/AnatomySystem.tsx',
-    '!src/components/anatomy/AnatomyViewer.tsx',
-    '!src/components/anatomy/OptimizedModelStage.tsx',
-    '!src/components/anatomy/AnatomyFocusController.tsx',
-    '!src/components/anatomy/VerticalCameraHandler.tsx',
+    // NOTE (Phase 5): paths moved to features/anatomy/ — exclusions must
+    // track the move or untestable files silently re-enter the denominator.
+    '!src/features/anatomy/components/AnatomySystem.tsx',
+    '!src/features/anatomy/components/AnatomyViewer.tsx',
+    '!src/features/anatomy/components/OptimizedModelStage.tsx',
+    '!src/features/anatomy/components/AnatomyFocusController.tsx',
+    '!src/features/anatomy/components/VerticalCameraHandler.tsx',
     // Dev-only asset browser (dev-gated out of production bundles).
-    '!src/pages/HumanTestPage.tsx',
+    '!src/features/anatomy/pages/HumanTestPage.tsx',
     // Application entry bootstrap (imports + render call only).
     '!src/main.tsx',
   ],
