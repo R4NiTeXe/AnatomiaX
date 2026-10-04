@@ -13,6 +13,25 @@ export default defineConfig(({ command, mode }) => {
     if (mode === 'production' && !apiBaseUrlPresent) {
       throw new Error('VITE_API_BASE_URL is missing from the production build environment.');
     }
+    // Anatomy asset base guard (Vercel deployments only): the bundle resolves
+    // GLBs from VITE_ANATOMY_ASSET_BASE_URL, falling back to the gitignored
+    // local /models-dev/ subset when unset. Those dev files can never exist
+    // in a Vercel deployment, so a Vercel build without a real HTTPS static
+    // host bakes in URLs that serve index.html (SPA fallback) instead of
+    // binary — the viewer then fails with "Unexpected token '<'". Fail the
+    // build instead of shipping a model-less app. Scoped to Vercel so local
+    // and CI builds keep working without the variable. Log presence only.
+    const assetBase = process.env.VITE_ANATOMY_ASSET_BASE_URL ?? '';
+    const assetBasePresent = /^https:\/\//i.test(assetBase.trim());
+    console.log('[build] VITE_ANATOMY_ASSET_BASE_URL present:', assetBasePresent);
+    if (process.env.VERCEL && !assetBasePresent) {
+      throw new Error(
+        'VITE_ANATOMY_ASSET_BASE_URL must be set to the HTTPS static asset host base ' +
+          '(e.g. https://<host>/anatomy/) for Vercel builds — unset or /models-dev/ values bake in ' +
+          'dev-only GLB paths that resolve to index.html in deployment. ' +
+          'See docs/architecture/asset-hosting.md.'
+      );
+    }
   }
   return {
     plugins: [react()],

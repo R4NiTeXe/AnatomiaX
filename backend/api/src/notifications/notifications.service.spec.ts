@@ -67,6 +67,37 @@ describe('NotificationsService (8.19.24)', () => {
     expect(out.id).toBe('sub-1');
   });
 
+  it('survives a concurrent double-register for the same user (P2002 → idempotent)', async () => {
+    // RED: both racers miss findUnique; the loser hits @@unique(endpoint).
+    // The documented idempotent contract must hold, not 500/409.
+    prisma.pushSubscription.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'sub-1',
+      userId: 'user-a',
+      endpoint: 'https://push.example.com/sub/abc123',
+    });
+    prisma.pushSubscription.create.mockRejectedValueOnce({ code: 'P2002' });
+    prisma.pushSubscription.update.mockImplementation(async ({ data }: never) => ({
+      id: 'sub-1',
+      endpoint: 'https://push.example.com/sub/abc123',
+      createdAt: new Date(),
+      ...(data as object),
+    }));
+    const out = await service.register(userA, dto());
+    expect(out.id).toBe('sub-1');
+    expect(prisma.pushSubscription.update).toHaveBeenCalled();
+  });
+
+  it('still rejects a P2002 race lost to another user (409, no takeover)', async () => {
+    prisma.pushSubscription.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'sub-1',
+      userId: 'user-b',
+      endpoint: 'https://push.example.com/sub/abc123',
+    });
+    prisma.pushSubscription.create.mockRejectedValueOnce({ code: 'P2002' });
+    await expect(service.register(userA, dto())).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.pushSubscription.update).not.toHaveBeenCalled();
+  });
+
   it('rejects an endpoint owned by another user (409, no takeover)', async () => {
     prisma.pushSubscription.findUnique.mockResolvedValue({
       id: 'sub-1',

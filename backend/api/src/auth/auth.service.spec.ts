@@ -423,6 +423,30 @@ describe('AuthService', () => {
       ).rejects.toThrow('Invalid or expired reset token');
     });
 
+    it('confirm loses a double-submit race instead of resetting twice (atomic single-use)', async () => {
+      // RED: two concurrent confirms both pass findUnique; the unconditional
+      // update lets both reset the password. The claim must be atomic.
+      const record = {
+        id: 'prt-1',
+        tokenHash: 'h',
+        userId: 'user-1',
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: makeUser({ email: 'student@example.com' }),
+      };
+      (prisma.passwordResetToken.findUnique as jest.Mock).mockResolvedValue(record);
+      // Winner already claimed the token: the conditional claim matches nothing.
+      tx.passwordResetToken.updateMany.mockResolvedValue({ count: 0 });
+      await expect(
+        service.confirmPasswordReset(
+          'student@example.com',
+          'valid-token-value-1234567890',
+          'new-password-1'
+        )
+      ).rejects.toThrow('Invalid or expired reset token');
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
     it('confirm rejects email mismatch (cannot target another account)', async () => {
       const record = {
         id: 'prt-1',

@@ -32,6 +32,23 @@ describe('FcmNotificationSender (Firebase Admin SDK / HTTP v1)', () => {
     expect(JSON.stringify(out)).not.toContain('FIREBASE');
   });
 
+  it('treats malformed FIREBASE_SERVICE_ACCOUNT JSON as unconfigured (never throws)', async () => {
+    const prisma = {
+      pushSubscription: {
+        findMany: jest.fn(async () => [fcmSub('https://fcm.googleapis.com/fcm/send/t1')]),
+      },
+    };
+    const sender = new FcmNotificationSender(
+      prisma as never,
+      configFor({ FIREBASE_SERVICE_ACCOUNT: 'not-json{{{ garbage' }) as never
+    );
+    await expect(sender.dispatch('user-1', { title: 'Hi', body: 'Hello' })).resolves.toEqual({
+      delivered: 0,
+      skipped: 1,
+      reason: 'fcm-unconfigured',
+    });
+  });
+
   it('reports no-subscriptions without dispatching', async () => {
     const prisma = { pushSubscription: { findMany: jest.fn(async () => []) } };
     const sender = new FcmNotificationSender(prisma as never, configFor({}) as never);

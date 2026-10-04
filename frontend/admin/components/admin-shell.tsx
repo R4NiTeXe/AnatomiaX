@@ -36,7 +36,7 @@ export function AdminShell({ children }: { children: React.ReactNode }): JSX.Ele
           <p className="mt-2 text-sm text-slate-400">
             {status === 'authenticated'
               ? 'Your account does not have admin privileges.'
-              : 'Please sign in with an admin account.'}
+              : 'Please sign in with an admin account in the main application, then return here.'}
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <Link

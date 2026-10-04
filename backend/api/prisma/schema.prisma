@@ -79,6 +79,7 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([userId, revokedAt])
   @@map("refresh_tokens")
 }
 
@@ -94,6 +95,7 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([userId, usedAt])
   @@map("password_reset_tokens")
 }
 

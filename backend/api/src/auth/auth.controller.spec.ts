@@ -156,6 +156,32 @@ describe('AuthController session cookie flags', () => {
     }
   });
 
+  it('reset-confirm clears the cookie with matching attributes (sessions revoked)', async () => {
+    // RED: confirm used path-only clearCookie while logout/change mirror
+    // the full flags — a stale cookie could survive reset on edge browsers.
+    const auth = { confirmPasswordReset: jest.fn().mockResolvedValue(undefined) };
+    const controller = new AuthController(auth as never, configFor({}) as never);
+    const res = mockRes();
+    await controller.confirmPasswordReset({} as never, res as never);
+    expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', {
+      path: '/api/v1/auth',
+      sameSite: 'lax',
+      secure: false,
+    });
+  });
+
+  it('account-delete clears the cookie with matching attributes', async () => {
+    const auth = { deleteAccount: jest.fn().mockResolvedValue(undefined) };
+    const controller = new AuthController(auth as never, configFor({}) as never);
+    const res = mockRes();
+    await controller.deleteAccount({ id: 'u1' } as never, res as never);
+    expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', {
+      path: '/api/v1/auth',
+      sameSite: 'lax',
+      secure: false,
+    });
+  });
+
   it('scales cookie maxAge with REFRESH_TTL_DAYS', async () => {
     const controller = new AuthController(
       authFor() as never,

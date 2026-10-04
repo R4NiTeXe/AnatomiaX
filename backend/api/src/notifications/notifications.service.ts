@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma, PushSubscription } from '@prisma/client';
+import { prismaCodeFrom } from '../common/api-error';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SafeUser } from '../users/users.service';
 import type { PushKeysDto, RegisterSubscriptionDto } from './dto/register-subscription.dto';
@@ -58,10 +59,29 @@ export class NotificationsService {
       });
       return toView(updated);
     }
-    const created = await this.prisma.pushSubscription.create({
-      data: { userId: user.id, endpoint: dto.endpoint, keys: cleanKeys(dto) },
-    });
-    return toView(created);
+    try {
+      const created = await this.prisma.pushSubscription.create({
+        data: { userId: user.id, endpoint: dto.endpoint, keys: cleanKeys(dto) },
+      });
+      return toView(created);
+    } catch (error) {
+      // Concurrent double-register: both racers miss findUnique, one loses
+      // the @@unique(endpoint) race. Re-read to decide: same user →
+      // idempotent update-and-return (contract preserved); another user's
+      // row → 409 without adopting or observing it. Non-P2002 rethrows.
+      if (prismaCodeFrom(error) !== 'P2002') throw error;
+      const winner = await this.prisma.pushSubscription.findUnique({
+        where: { endpoint: dto.endpoint },
+      });
+      if (!winner || winner.userId !== user.id) {
+        throw new ConflictException('Subscription already registered');
+      }
+      const updated = await this.prisma.pushSubscription.update({
+        where: { id: winner.id },
+        data: { keys: cleanKeys(dto) },
+      });
+      return toView(updated);
+    }
   }
 
   async list(user: SafeUser): Promise<SubscriptionView[]> {

@@ -297,11 +297,18 @@ export class AuthService {
     }
     const passwordHash = await argon2.hash(newPassword);
     await this.prisma.$transaction(async tx => {
-      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
-      await tx.passwordResetToken.update({
-        where: { id: record.id },
+      // Atomic single-use claim (mirrors the refresh rotation claim): two
+      // concurrent confirms both pass the findUnique check above, but only
+      // one wins the conditional update. The loser rolls back with a generic
+      // error — no second password reset, no oracle.
+      const claimed = await tx.passwordResetToken.updateMany({
+        where: { id: record.id, usedAt: null },
         data: { usedAt: new Date() },
       });
+      if (claimed.count !== 1) {
+        throw new UnauthorizedException(GENERIC_RESET_ERROR);
+      }
+      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
       await tx.passwordResetToken.deleteMany({
         where: { userId: record.userId, usedAt: null },
       });

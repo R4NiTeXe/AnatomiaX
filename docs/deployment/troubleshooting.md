@@ -61,6 +61,28 @@ never went on the wire. Distinguish in order:
    changes, no token-in-URL fallback — the cookie must travel cross-site
    for refresh to function, and CSRF is covered by `OriginCheckGuard`.
 
+## 2c-i. Anatomy models fail with "Unexpected token '<'" (HTML instead of GLB)
+
+Signature: `Could not load /models-dev/*.glb`, and fetching the URL returns
+200 + `text/html` + `<!doctype html>` (the SPA shell) instead of binary.
+Differential: run `node scripts/verify-model-url.js <model-url>` — it
+asserts status/body/magic and distinguishes this from decode errors.
+
+Root causes, in order: (1) the deployed bundle resolves the dev-only
+`/models-dev/` base because `VITE_ANATOMY_ASSET_BASE_URL` is unset on
+Vercel — production requires the external HTTPS static host base
+(`<base>/<bodyModel>/<file>`, see `docs/architecture/asset-hosting.md`);
+(2) even with dev paths, the files are gitignored and can never exist in
+a Vercel deployment, so the SPA rewrite serves `index.html`. Vercel
+builds now fail fast without a real base (see build log
+`VITE_ANATOMY_ASSET_BASE_URL present: false`). Runbook: provision a
+static host → upload the 18 `3d-assets/<model>/working/optimized/*.glb`
+with `model/gltf-binary` + immutable caching + CORS → set the Vercel env
+var → redeploy → accept with `verify-model-url.js` per URL. Committing
+binaries to git is rejected (66 MB, contradicts the external-host
+architecture). Note: `/models-dev/*` URLs can never serve GLBs from a
+deployment by design — verify the CDN URLs, not the dev paths.
+
 ## 2c. Browser reports missing `Access-Control-Allow-Origin` (CORS)
 
 Distinguish four causes before touching code — all four look identical in

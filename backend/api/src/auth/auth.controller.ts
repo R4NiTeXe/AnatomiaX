@@ -205,7 +205,8 @@ export class AuthController {
     @Res({ passthrough: true }) res: CookieResponse
   ) {
     await this.auth.confirmPasswordReset(dto.email, dto.token, dto.newPassword);
-    res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+    // All sessions revoked: mirror issuance flags so no live cookie survives.
+    this.clearSession(res);
     return { status: 'ok' as const };
   }
 
@@ -222,7 +223,8 @@ export class AuthController {
     @Res({ passthrough: true }) res: CookieResponse
   ) {
     await this.auth.deleteAccount(user.id);
-    res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+    // Account gone with all sessions: mirror issuance flags on clear.
+    this.clearSession(res);
     return { status: 'ok' as const };
   }
 }
