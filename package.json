@@ -19,7 +19,8 @@
     "migrate:api": "npx prisma migrate deploy --schema backend/api/prisma/schema.prisma",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "boundaries": "node scripts/check-module-boundaries.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

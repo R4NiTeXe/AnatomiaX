@@ -8,7 +8,10 @@ import { cn } from '@/lib/utils';
 const nav = [
   { href: '/', label: 'Overview', testId: 'admin-nav-overview' },
   { href: '/users', label: 'Users', testId: 'admin-nav-users' },
+  { href: '/users?role=TEACHER', label: 'Teachers', testId: 'admin-nav-teachers' },
+  { href: '/users?role=STUDENT', label: 'Students', testId: 'admin-nav-students' },
   { href: '/cohorts', label: 'Cohorts', testId: 'admin-nav-cohorts' },
+  { href: '/quizzes', label: 'Quizzes', testId: 'admin-nav-quizzes' },
   { href: '/audit-logs', label: 'Audit logs', testId: 'admin-nav-audit' },
 ];
 

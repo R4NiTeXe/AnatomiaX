@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { AdminModule } from './admin/admin.module';
-import { AuditModule } from './audit/audit.module';
-import { AuthModule } from './auth/auth.module';
-import { CohortsModule } from './cohorts/cohorts.module';
-import { ApiExceptionFilter } from './common/api-exception.filter';
-import { LoggingInterceptor } from './common/logging.interceptor';
-import { RequestIdInterceptor } from './common/request-id.interceptor';
-import { HealthModule } from './health/health.module';
-import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './modules/admins/admin.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { CohortsModule } from './modules/cohorts/cohorts.module';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
+import { HealthModule } from './modules/health/health.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { ProgressModule } from './progress/progress.module';
-import { QuizzesModule } from './quizzes/quizzes.module';
-import { UsersModule } from './users/users.module';
+import { ProgressModule } from './modules/progress/progress.module';
+import { QuizzesModule } from './modules/quizzes/quizzes.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [

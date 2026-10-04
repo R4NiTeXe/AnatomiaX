@@ -12,6 +12,7 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/',
   useParams: () => ({ id: 'c1' }),
   useRouter: () => ({ push: jest.fn() }),
+  useSearchParams: () => ({ get: () => null }),
 }));
 jest.mock('next/link', () => ({
   __esModule: true,

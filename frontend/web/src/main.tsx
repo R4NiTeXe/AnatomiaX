@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import App from './App';
 import '@/lib/devHealth';
-import { AuthProvider } from '@/components/auth/AuthProvider';
+import { AuthProvider } from '@/features/auth/components/AuthProvider';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import { MotionRoot } from '@/components/motion';
 

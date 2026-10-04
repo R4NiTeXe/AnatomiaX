@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { AdminShell } from '@/components/admin-shell';
 import { useAdminUsers } from '@/hooks/useAdmin';
@@ -12,9 +13,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
+const ROLE_FILTERS = ['ALL', 'STUDENT', 'TEACHER', 'ADMIN'] as const;
+
 export default function UsersPage(): JSX.Element {
+  const searchParams = useSearchParams();
+  const rawRole = searchParams.get('role');
   const [search, setSearch] = useState('');
-  const [role, setRole] = useState('ALL');
+  // Teachers/Students nav entries deep-link with ?role= — validated against
+  // the allowlist so a crafted query cannot inject an arbitrary filter.
+  const [role, setRole] = useState<string>(
+    rawRole && (ROLE_FILTERS as readonly string[]).includes(rawRole) ? rawRole : 'ALL'
+  );
   const [page, setPage] = useState(1);
   const limit = 20;
 

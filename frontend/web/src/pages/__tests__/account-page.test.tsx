@@ -3,10 +3,10 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests, login } from '@/lib/auth';
-import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
+import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
 import AccountPage from '../AccountPage';
-import AccountPanel from '@/components/auth/AccountPanel';
-import LoginPage from '../LoginPage';
+import AccountPanel from '@/features/auth/components/AccountPanel';
+import LoginPage from '../../features/auth/pages/LoginPage';
 
 function jsonResponse(data: unknown, status = 200) {
   return {

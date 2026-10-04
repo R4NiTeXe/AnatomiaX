@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import SiteNav from '@/components/SiteNav';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/features/auth/components/AuthProvider';
 import { PageTransition } from '@/components/motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';

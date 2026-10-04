@@ -2,17 +2,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { ReactNode } from 'react';
-import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
+import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
 import { __resetAuthForTests } from '@/lib/auth';
-import type { ProgressSnapshotRecord } from '@/lib/progress';
-import { progressSnapshotKey, useMergeStudied, useQuizHistory } from '../useProgress';
+import type { ProgressSnapshotRecord } from '@/features/progress/api';
+import {
+  progressSnapshotKey,
+  useMergeStudied,
+  useQuizHistory,
+} from '@/features/progress/hooks/useProgress';
 import {
   useCohort,
   useCohortAssignments,
   useCohortMembers,
   useCohortProgress,
   useMyAssignments,
-} from '../useCohorts';
+} from '@/features/cohorts/hooks/useCohorts';
 
 const USER = { id: 'u1', email: 'a@b.c', name: null, role: 'STUDENT', createdAt: '2026-01-01' };
 const SESSION = { user: USER, accessToken: 'access-1', refreshToken: 'refresh-1' };

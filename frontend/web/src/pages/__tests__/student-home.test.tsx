@@ -3,12 +3,12 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { __resetAuthForTests } from '@/lib/auth';
-import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
-import { displayNameForStudiedKey } from '@/components/learning/StudiedStructures';
-import { documentedCoverage } from '@/components/learning/coverage';
+import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
+import { displayNameForStudiedKey } from '@/features/progress/components/StudiedStructures';
+import { documentedCoverage } from '@/features/progress/components/coverage';
 import AppShell from '@/components/layout/AppShell';
 import HomePage from '../HomePage';
-import LearnPage from '../LearnPage';
+import LearnPage from '@/features/progress/pages/LearnPage';
 
 function jsonResponse(data: unknown, status = 200) {
   return {

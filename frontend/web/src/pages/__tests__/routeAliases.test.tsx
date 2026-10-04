@@ -6,7 +6,7 @@ import App from '@/App';
 // Canonical alias redirects: /anatomy is the /human viewer and /progress is
 // the /learn page (matching nav labels). Guessed/bookmarked URLs must land
 // on the real pages, not the 404 screen.
-jest.mock('@/components/anatomy/AnatomyViewer', () => ({
+jest.mock('@/features/anatomy/components/AnatomyViewer', () => ({
   __esModule: true,
   default: () => <div data-testid="viewer-mock" />,
 }));

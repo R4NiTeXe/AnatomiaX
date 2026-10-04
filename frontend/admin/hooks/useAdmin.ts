@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
+import type { BankQuizStats, BankQuizView } from '@/lib/quizzes';
 
 export interface AdminOverview {
   totalUsers: number;
@@ -200,6 +201,35 @@ export function useAuditLogs(params: {
       const qs = sp.toString();
       return apiRequest<PaginatedAuditLogs>(`/api/v1/admin/audit-logs${qs ? `?${qs}` : ''}`);
     },
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+export function useAdminQuizzes() {
+  return useQuery({
+    queryKey: ['admin', 'quizzes'],
+    queryFn: () => apiRequest<BankQuizView[]>('/api/v1/quizzes'),
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+export function useAdminQuiz(id: string | undefined) {
+  return useQuery({
+    queryKey: ['admin', 'quiz', id ?? ''],
+    queryFn: () => apiRequest<BankQuizView>(`/api/v1/quizzes/${id}`),
+    enabled: !!id,
+    staleTime: 15_000,
+    retry: false,
+  });
+}
+
+export function useAdminQuizStats(id: string | undefined) {
+  return useQuery({
+    queryKey: ['admin', 'quiz-stats', id ?? ''],
+    queryFn: () => apiRequest<BankQuizStats>(`/api/v1/quizzes/${id}/stats`),
+    enabled: !!id,
     staleTime: 15_000,
     retry: false,
   });

@@ -40,6 +40,9 @@ jobs:
       - name: Lint (zero warnings)
         run: npm run lint
 
+      - name: Module boundaries (backend domain edges)
+        run: npm run boundaries
+
       - name: Typecheck workspaces
         run: npm run typecheck --workspaces --if-present
 

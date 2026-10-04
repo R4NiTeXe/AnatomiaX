@@ -1,20 +1,20 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { QuizRecent } from '@/components/learning/QuizAttempts';
+import { useAuth } from '@/features/auth/components/AuthProvider';
+import { QuizRecent } from '@/features/progress/components/QuizAttempts';
 import StudiedStructures, {
   displayNameForStudiedKey,
-} from '@/components/learning/StudiedStructures';
-import { documentedCoverage } from '@/components/learning/coverage';
-import ProgressRing from '@/components/learning/ProgressRing';
-import SectionHeader from '@/components/learning/SectionHeader';
+} from '@/features/progress/components/StudiedStructures';
+import { documentedCoverage } from '@/features/progress/components/coverage';
+import ProgressRing from '@/features/progress/components/ProgressRing';
+import SectionHeader from '@/features/progress/components/SectionHeader';
 import { Reveal } from '@/components/motion';
 import { LottieVisual } from '@/components/animation';
 import { ShaderBackdrop } from '@/components/effects';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProgressSnapshot, useQuizAttempts } from '@/hooks/useProgress';
-import { buildHumanFocusUrl } from '@/lib/humanLink';
+import { useProgressSnapshot, useQuizAttempts } from '@/features/progress/hooks/useProgress';
+import { buildHumanFocusUrl } from '@/features/anatomy/humanLink';
 
 function ContinueHero(): JSX.Element | null {
   const { status } = useAuth();

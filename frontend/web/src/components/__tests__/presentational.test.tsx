@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import { ActiveNavPill } from '../motion/ActiveNavPill';
-import SectionHeader from '../learning/SectionHeader';
-import AuthErrorNotice from '../auth/AuthErrorNotice';
-import AuthLayout from '../auth/AuthLayout';
+import SectionHeader from '../../features/progress/components/SectionHeader';
+import AuthErrorNotice from '../../features/auth/components/AuthErrorNotice';
+import AuthLayout from '../../features/auth/components/AuthLayout';
 
 describe('presentational components', () => {
   it('renders the active nav pill with default and custom ids', () => {

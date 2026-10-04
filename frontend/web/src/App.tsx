@@ -1,27 +1,31 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import RequireAuth from '@/components/auth/RequireAuth';
+import RequireAuth from '@/features/auth/components/RequireAuth';
 import AppShell from '@/components/layout/AppShell';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 const HomePage = lazy(() => import('@/pages/HomePage'));
-const HumanPage = lazy(() => import('@/pages/HumanPage'));
-const HumanTestPage = lazy(() => import('@/pages/HumanTestPage'));
+const HumanPage = lazy(() => import('@/features/anatomy/pages/HumanPage'));
+const HumanTestPage = lazy(() => import('@/features/anatomy/pages/HumanTestPage'));
 const AiHealthPage = lazy(() => import('@/pages/AiHealthPage'));
 const MedicalLabPage = lazy(() => import('@/pages/MedicalLabPage'));
 const SimulationPage = lazy(() => import('@/pages/SimulationPage'));
 const ClinicalCasesPage = lazy(() => import('@/pages/ClinicalCasesPage'));
-const LearnPage = lazy(() => import('@/pages/LearnPage'));
-const ModulePage = lazy(() => import('@/pages/ModulePage'));
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
-const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
+const LearnPage = lazy(() => import('@/features/progress/pages/LearnPage'));
+const ModulePage = lazy(() => import('@/features/progress/pages/ModulePage'));
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
+const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
-const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage'));
-const CohortsPage = lazy(() => import('@/pages/CohortsPage'));
-const CohortDetailPage = lazy(() => import('@/pages/CohortDetailPage'));
-const CohortDashboardPage = lazy(() => import('@/pages/CohortDashboardPage'));
+const AuthCallbackPage = lazy(() => import('@/features/auth/pages/AuthCallbackPage'));
+const CohortsPage = lazy(() => import('@/features/cohorts/pages/CohortsPage'));
+const CohortDetailPage = lazy(() => import('@/features/cohorts/pages/CohortDetailPage'));
+const CohortDashboardPage = lazy(() => import('@/features/cohorts/pages/CohortDashboardPage'));
+const QuizzesPage = lazy(() => import('@/features/quizzes/pages/QuizzesPage'));
+const QuizTakePage = lazy(() => import('@/features/quizzes/pages/QuizTakePage'));
+const TeachQuizzesPage = lazy(() => import('@/features/quizzes/pages/TeachQuizzesPage'));
+const TeachQuizDetailPage = lazy(() => import('@/features/quizzes/pages/TeachQuizDetailPage'));
 
 function RouteFallback(): JSX.Element {
   return (
@@ -76,6 +80,38 @@ export default function App(): JSX.Element {
               element={
                 <RequireAuth>
                   <CohortDetailPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/quizzes"
+              element={
+                <RequireAuth>
+                  <QuizzesPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/quizzes/:id"
+              element={
+                <RequireAuth>
+                  <QuizTakePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/teach/quizzes"
+              element={
+                <RequireAuth>
+                  <TeachQuizzesPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/teach/quizzes/:id"
+              element={
+                <RequireAuth>
+                  <TeachQuizDetailPage />
                 </RequireAuth>
               }
             />

@@ -1,4 +1,4 @@
-import { progressSnapshotKey, quizAttemptsKey } from '../useProgress';
+import { progressSnapshotKey, quizAttemptsKey } from '@/features/progress/hooks/useProgress';
 import {
   assignmentsKey,
   cohortKey,
@@ -6,7 +6,7 @@ import {
   cohortProgressKey,
   cohortsKey,
   myAssignmentsKey,
-} from '../useCohorts';
+} from '@/features/cohorts/hooks/useCohorts';
 
 describe('query key builders (per-user isolation)', () => {
   it('keys progress queries by user, falling back to anonymous', () => {

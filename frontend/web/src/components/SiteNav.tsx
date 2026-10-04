@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/features/auth/components/AuthProvider';
 import { ActiveNavPill } from '@/components/motion';
 import { RivePlayer, animationSrc } from '@/components/animation';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,12 @@ function NavLinkSet({ pillId }: { pillId: string }): JSX.Element {
       {navLink('/learn', 'nav-learn', 'Progress', pillId)}
       {status === 'authenticated' && user
         ? navLink('/cohorts', 'nav-cohorts', 'Cohorts', pillId)
+        : null}
+      {status === 'authenticated' && user
+        ? navLink('/quizzes', 'nav-quizzes', 'Quizzes', pillId)
+        : null}
+      {status === 'authenticated' && user && (user.role === 'TEACHER' || user.role === 'ADMIN')
+        ? navLink('/teach/quizzes', 'nav-teach', 'Teach', pillId)
         : null}
       {status === 'authenticated' && user
         ? navLink('/account', 'nav-account', 'Account', pillId)

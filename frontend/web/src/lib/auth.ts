@@ -140,13 +140,32 @@ function storeSession(body: SessionBody): AuthUser {
   return body.user;
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
+export type LoginRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
+
+/**
+ * Requested login role (login UI tabs). Advisory only: the backend compares
+ * it against the database role and rejects mismatches with a generic 401 —
+ * it can never escalate, and the returned session always carries the DB role.
+ */
+export async function login(email: string, password: string, role?: LoginRole): Promise<AuthUser> {
   const body = await apiRequest<SessionBody>('/api/v1/auth/login', {
     method: 'POST',
     credentials: 'include',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(role ? { email, password, role } : { email, password }),
   });
   return storeSession(body);
+}
+
+/**
+ * Default post-authentication landing by authoritative (database) role.
+ * Explicit destinations (?next=, login `from` state) always win; this only
+ * supplies the fallback. ADMIN lands on /account — role administration
+ * lives in the separate admin app, not this SPA.
+ */
+export function defaultDestinationForRole(role: string | undefined): string {
+  if (role === 'TEACHER') return '/cohorts';
+  if (role === 'ADMIN') return '/account';
+  return '/human';
 }
 
 export async function register(email: string, password: string, name?: string): Promise<AuthUser> {

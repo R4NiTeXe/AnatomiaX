@@ -2,16 +2,19 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import AuthErrorNotice from '@/components/auth/AuthErrorNotice';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { friendlyAuthError, type FriendlyAuthError } from '@/components/auth/friendlyAuthError';
+import AuthErrorNotice from '@/features/auth/components/AuthErrorNotice';
+import { useAuth } from '@/features/auth/components/AuthProvider';
+import {
+  friendlyAuthError,
+  type FriendlyAuthError,
+} from '@/features/auth/components/friendlyAuthError';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useQuizAttempts } from '@/hooks/useProgress';
+import { useQuizAttempts } from '@/features/progress/hooks/useProgress';
 import { changePassword, deleteAccount, exportAccountData } from '@/lib/auth';
 
 type ChangePasswordFormValues = {
