@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { AdminShell } from '@/components/admin-shell';
 import { useAdminUsers } from '@/hooks/useAdmin';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 
 const ROLE_FILTERS = ['ALL', 'STUDENT', 'TEACHER', 'ADMIN'] as const;
 
-export default function UsersPage(): JSX.Element {
+function UsersPageContent(): JSX.Element {
   const searchParams = useSearchParams();
   const rawRole = searchParams.get('role');
   const [search, setSearch] = useState('');
@@ -238,5 +238,23 @@ export default function UsersPage(): JSX.Element {
         </Card>
       </div>
     </AdminShell>
+  );
+}
+
+/**
+ * Next.js requires useSearchParams() behind a Suspense boundary for static
+ * prerendering — without this the production build fails at /users.
+ */
+export default function UsersPage(): JSX.Element {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-2 p-4" data-testid="admin-users-loading">
+          <Skeleton className="h-10 w-full" />
+        </div>
+      }
+    >
+      <UsersPageContent />
+    </Suspense>
   );
 }
