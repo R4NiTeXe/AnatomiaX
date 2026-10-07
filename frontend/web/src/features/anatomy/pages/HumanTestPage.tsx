@@ -13,8 +13,6 @@ interface TestAsset {
   url: string;
 }
 
-// STEP 8.54: test assets resolve through the central resolver (local
-// /models-dev/ by default) — no hand-built GLB URLs.
 const TEST_ASSETS: TestAsset[] = [
   { key: 'skin', label: 'Skin', url: resolveAnatomyAssetUrl('male', 'skin') },
   { key: 'nervous', label: 'Nervous System', url: resolveAnatomyAssetUrl('male', 'nervous') },

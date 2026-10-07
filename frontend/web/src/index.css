@@ -25,9 +25,6 @@
     --ring: 172 66% 50%;
     --radius: 0.75rem;
 
-    /* STEP 8.23 premium medical-tech layer — restrained accents only.
-       Deep clinical background, single teal/cyan accent family, hairline
-       borders, soft depth. Later Rive/Lottie/GLSL work reuses these vars. */
     --surface: 222 47% 10%;
     --surface-raised: 222 47% 13%;
     --surface-overlay: 222 47% 15%;
@@ -46,8 +43,6 @@
 }
 
 @layer components {
-  /* STEP 8.23 type scale — single hierarchy for later pages.
-     Existing pages keep their classes; adopt these going forward. */
   .ax-display {
     @apply text-4xl font-bold tracking-tight text-slate-50 sm:text-5xl;
   }
@@ -67,14 +62,12 @@
     @apply text-xs font-semibold uppercase tracking-widest text-teal-300;
   }
 
-  /* Ambient clinical backdrop — static gradients only (zero runtime cost). */
   .ax-app-bg {
     background:
       radial-gradient(60rem 30rem at 50% -10rem, rgb(45 212 191 / 0.07), transparent 60%),
       radial-gradient(42rem 26rem at 88% 8%, rgb(56 189 248 / 0.05), transparent 60%), #020617;
   }
 
-  /* Skeleton shimmer sweep — GPU-cheap background-position animation. */
   .ax-shimmer {
     background-image: linear-gradient(
       100deg,

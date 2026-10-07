@@ -1,4 +1,3 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
@@ -29,7 +28,6 @@ module.exports = {
     '!**/*.d.ts',
   ],
   coverageReporters: ['text', 'lcov'],
-  // tdd-workflow gate: CI runs with --coverage.
   coverageThreshold: {
     global: {
       branches: 80,

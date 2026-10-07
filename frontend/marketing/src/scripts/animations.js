@@ -4,21 +4,7 @@ import Lenis from 'lenis';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/**
- * AnatomiaX marketing animations
- * - Lenis smooth scroll + GSAP ticker
- * - Hero entrance (once, sequenced timeline with atomic final-state handoff)
- * - Hero ambient: background parallax scrub (transform-only)
- * - Scroll reveals via ScrollTrigger (+ grouped item staggers)
- * - Feature card hover (subtle lift)
- * - Placeholder scan line (lightweight)
- * - Navbar scroll state
- * Respects prefers-reduced-motion (all motion below this guard).
- */
 (function () {
-  // 8.24.5 development diagnostics — query-gated (?ax-debug=1), zero production
-  // UI or console noise otherwise. The harness reads window.__axIntro to prove
-  // the intro path executed deterministically on every load.
   const axDebug = /[?&]ax-debug=1(?:&|$)/.test(window.location.search);
   const axState = {
     bootAt: Math.round(performance.now()),
@@ -48,7 +34,6 @@ gsap.registerPlugin(ScrollTrigger);
     axState.readyStateAtInit = document.readyState;
     axTrace('init', { readyState: document.readyState });
     const ctx = gsap.context(() => {
-      // Lenis
       const lenis = new Lenis({
         duration: 1.1,
         easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -61,13 +46,7 @@ gsap.registerPlugin(ScrollTrigger);
       gsap.ticker.add(time => {
         lenis.raf(time * 1000);
       });
-      // 8.24.5: GSAP default lag smoothing stays ON (the old lagSmoothing(0)
-      // disabled it, so any main-thread stall fast-forwarded every tween past
-      // its visible progression — the intro could jump straight to its final
-      // state on janky loads). With smoothing, stalls pause instead of skip;
-      // Lenis resumes smoothly and position-driven scrub tweens are unaffected.
 
-      // Navbar subtle scroll state
       const navbar = document.querySelector('[data-navbar]');
       if (navbar) {
         const onScroll = () => {
@@ -85,14 +64,6 @@ gsap.registerPlugin(ScrollTrigger);
         onScroll();
       }
 
-      // Hero entrance (once) — one timeline so the first viewport builds in
-      // deliberate beats (~1s total). CSS (via the `js-anim` gate) already
-      // holds every start-state pre-paint, so these `to` tweens can never
-      // flash or flicker — without JS everything simply stays visible.
-      // 8.24.3: single power2.out easing, small distances, staggered beats —
-      // calm and cinematic, never flashy. Beats: ambient 0–150ms →
-      // kicker 150–350 → headline 300–900 → text 450–850 → CTAs 550–1000 →
-      // stats 600–1100 → visual 600–1050.
       const heroBgOnly = document.querySelector('[data-hero-bg]');
       const heroLabelOnly = document.querySelector('[data-hero-label]');
       const heroLines = document.querySelectorAll('.hero-line');
@@ -108,19 +79,8 @@ gsap.registerPlugin(ScrollTrigger);
         heroCtas.length ||
         heroStatsOnly.length ||
         heroVisualOnly;
-      // 8.24.4: NO per-tween clearProps — clearing inline styles while the
-      // `js-anim` gate is still present snaps elements back to the hidden
-      // start-state for a frame (the post-settle blink; worse on CTAs, whose
-      // CSS `transition: transform` re-animates the snap). Instead the gate
-      // is removed and all intro props cleared atomically in the same
-      // synchronous onComplete, so the browser never paints in between.
-      // 8.24.5: the intro starts only while the page is visible. A
-      // background/prerendered tab has no running rAF clock, so starting
-      // there would burn the one-shot entrance unseen; the curtain simply
-      // holds until the tab is shown.
       const beginIntro = () => {
         axTrace('intro begin (page visible)');
-        // Every intro target, collected once for the single atomic cleanup.
         const introTargets = [
           heroBgOnly,
           heroLabelOnly,
@@ -194,7 +154,6 @@ gsap.registerPlugin(ScrollTrigger);
       if (!hasHero) {
         axTrace('no hero targets — intro skipped');
       } else if (document.visibilityState === 'hidden') {
-        // Background/prerendered tab: hold the curtain, play on reveal.
         axState.deferredStart = true;
         axTrace('deferred: tab hidden, curtain holds until visible');
         const onVisible = () => {
@@ -208,10 +167,6 @@ gsap.registerPlugin(ScrollTrigger);
         beginIntro();
       }
 
-      // Hero ambient — background parallax scrub only (transform-only, tied
-      // to scroll). 8.24.3: the glow float loop is gone — the static brand
-      // glow stays as treatment, and nothing ambient competes with the
-      // headline, CTAs, or product visual.
       const heroBg = document.querySelector('[data-hero-bg]');
       const heroSection = heroVisualOnly ? heroVisualOnly.closest('section') : null;
       if (heroBg && heroSection) {
@@ -227,8 +182,6 @@ gsap.registerPlugin(ScrollTrigger);
         });
       }
 
-      // Placeholder scan line — barely-there shimmer so the panel feels alive
-      // without pulsing. 8.24.3: slowed well down from the original tempo.
       const scanLine = document.querySelector('[data-placeholder-scan]');
       if (scanLine) {
         gsap.to(scanLine, {
@@ -241,7 +194,6 @@ gsap.registerPlugin(ScrollTrigger);
         });
       }
 
-      // Section reveals — subtle: small rise, calm timing.
       const reveals = document.querySelectorAll('[data-reveal]');
       reveals.forEach(el => {
         gsap.from(el, {
@@ -258,7 +210,6 @@ gsap.registerPlugin(ScrollTrigger);
         });
       });
 
-      // Grouped reveals — [data-reveal-item] children cascade under one trigger
       const revealGroups = document.querySelectorAll('[data-reveal-group]');
       revealGroups.forEach(group => {
         const items = group.querySelectorAll('[data-reveal-item]');
@@ -278,7 +229,6 @@ gsap.registerPlugin(ScrollTrigger);
         });
       });
 
-      // Feature cards stagger
       const featureCards = document.querySelectorAll('[data-feature-card]');
       if (featureCards.length) {
         gsap.from(featureCards, {
@@ -296,7 +246,6 @@ gsap.registerPlugin(ScrollTrigger);
         });
       }
 
-      // Feature card hover — restrained 3px lift (border glow handled in CSS)
       featureCards.forEach(card => {
         card.addEventListener('mouseenter', () => {
           gsap.to(card, { y: -3, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
@@ -313,7 +262,6 @@ gsap.registerPlugin(ScrollTrigger);
       });
     });
 
-    // cleanup on page hide/unload
     window.addEventListener('pagehide', () => ctx.revert());
     window.addEventListener('beforeunload', () => ctx.revert());
   }

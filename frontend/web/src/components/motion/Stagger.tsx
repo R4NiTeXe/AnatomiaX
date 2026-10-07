@@ -2,11 +2,6 @@ import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { DURATIONS, EASE, staggerChild, staggerParent } from './motion-tokens';
 
-/**
- * STEP 8.23 list reveal — children wrapped in <StaggerItem> inside <Stagger>
- * cascade in sequence on mount. For scroll-gated lists, compose with <Reveal>
- * around <Stagger> instead.
- */
 export function Stagger({
   children,
   className,
@@ -29,7 +24,6 @@ export function StaggerItem({
 }: {
   children: ReactNode;
   className?: string;
-  /** Render as `li` for staggered lists so `ul > li` stays valid HTML. */
   as?: 'div' | 'li';
   [key: `data-${string}`]: unknown;
 }): JSX.Element {

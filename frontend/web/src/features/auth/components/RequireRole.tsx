@@ -1,11 +1,6 @@
 import { useAuth } from './AuthProvider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-/**
- * Role gate for teacher/admin-only views (UX only — every mutation and
- * read is re-authorized server-side; a denied page never implies the API
- * would allow the same call).
- */
 export default function RequireRole({
   roles,
   children,

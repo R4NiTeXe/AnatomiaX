@@ -233,7 +233,6 @@ describe('progress hub (8.20.6)', () => {
     ).toBeInTheDocument();
     mockBackend({ user: USER_A, snapshotKeys: [KEY_SKIN], attempts: [attempt('a1', 'u-a', 1, 2)] });
     fireEvent.click(screen.getByTestId('progress-summary-retry'));
-    // preserved hidden aliases remain in DOM for backward compat
     expect(screen.getByTestId('progress-summary-retry-snapshot')).toBeInTheDocument();
     expect(screen.getByTestId('progress-summary-retry-history')).toBeInTheDocument();
     expect(
@@ -333,7 +332,6 @@ describe('progress hub (8.20.6)', () => {
     });
     renderLearn();
     await screen.findByTestId('learn-continue-link', {}, { timeout: 4000 });
-    // Curriculum Continue: heart studied → first unstudied cardiovascular record.
     expect(screen.getByTestId('learn-continue-link')).toHaveAttribute(
       'href',
       `/human?focus=${encodeURIComponent('female:cardiovascular:UBERON:0000948')}`

@@ -8,7 +8,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export default function AppShell(): JSX.Element {
   const { status } = useAuth();
 
-  // Loading state for authenticated shell initialization — preserves navigation, shows skeleton
   if (status === 'loading') {
     return (
       <div className="ax-app-bg min-h-screen text-slate-100">
@@ -21,8 +20,6 @@ export default function AppShell(): JSX.Element {
     );
   }
 
-  // Error is handled via anonymous -> RequireAuth redirect; shell itself does not need error UI beyond loading.
-  // Keep alert placeholder for future extension without breaking existing flows.
   return (
     <div className="ax-app-bg min-h-screen text-slate-100">
       <SiteNav />

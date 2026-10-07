@@ -213,7 +213,6 @@ function mockBackend(me: typeof TEACHER_A) {
       return Promise.resolve(
         contractError(404, { code: 'NOT_FOUND', message: 'Cohort not found' })
       );
-    // viewer check: mimic 404 for outsiders, but for test we allow TEACHER_A/B if they are owner or member; for simplicity, if me is TEACHER_B and cohort is c-A, treat as member with TEACHER role (non-owner)
     const isOwner = cohort.createdById === me.id;
     const isAdmin = me.role === 'ADMIN';
     const isMember =
@@ -223,7 +222,6 @@ function mockBackend(me: typeof TEACHER_A) {
         contractError(404, { code: 'NOT_FOUND', message: 'Cohort not found' })
       );
     if (rest === '' && (init?.method ?? 'GET') === 'GET') {
-      // myRole already in store, but adjust for viewer
       const myRole = isOwner || isAdmin ? 'OWNER' : me.role === 'TEACHER' ? 'TEACHER' : 'STUDENT';
       return Promise.resolve(
         jsonResponse({ ...cohort, myRole, createdAt: '2026-01-01T00:00:00.000Z' })
@@ -344,7 +342,6 @@ describe('cohort dashboard (8.20.7)', () => {
   });
 
   it('shows loading, error with retry, and empty states', async () => {
-    // loading
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if ((url as string).endsWith('/api/v1/auth/me'))
         return Promise.resolve(jsonResponse(TEACHER_A));
@@ -367,9 +364,7 @@ describe('cohort dashboard (8.20.7)', () => {
     expect(
       await screen.findByTestId('dashboard-progress-loading', {}, { timeout: 4000 })
     ).toBeInTheDocument();
-    // error
     mockBackend(TEACHER_A);
-    // force progress error
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       const u = url as string;
       if (u.endsWith('/api/v1/auth/me')) return Promise.resolve(jsonResponse(TEACHER_A));
@@ -401,7 +396,6 @@ describe('cohort dashboard (8.20.7)', () => {
       await screen.findByTestId('dashboard-progress-list', {}, { timeout: 4000 })
     ).toBeInTheDocument();
     unmount();
-    // empty archived cohort
     mockBackend(TEACHER_A);
     renderDashboard(TEACHER_A, '/cohorts/c-B/dashboard');
     expect(
@@ -414,7 +408,6 @@ describe('cohort dashboard (8.20.7)', () => {
 
   it('archived shows read-only and still shows progress for owner', async () => {
     mockBackend(TEACHER_A);
-    // make c-A archived
     cohortStore.set('c-A', {
       id: 'c-A',
       name: 'Bio 101',
@@ -443,7 +436,6 @@ describe('cohort dashboard (8.20.7)', () => {
     ).toHaveTextContent('2');
     first.unmount();
     __resetAuthForTests();
-    // switch to c-B which has 0 members progress
     mockBackend(TEACHER_A);
     renderDashboard(TEACHER_A, '/cohorts/c-B/dashboard');
     expect(
@@ -455,7 +447,6 @@ describe('cohort dashboard (8.20.7)', () => {
     cleanup();
     seed();
 
-    // logout clears cohort/progress cache (mirrors cohorts.test logout)
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(['cohorts', 'progress', 't-a', 'c-A'], [{ userId: 'x' }]);
     expect(client.getQueryData(['cohorts', 'progress', 't-a', 'c-A'])).toBeDefined();
@@ -490,7 +481,6 @@ describe('cohort dashboard (8.20.7)', () => {
     expect(
       await screen.findByTestId('dashboard-assignments', {}, { timeout: 4000 })
     ).toBeInTheDocument();
-    // seeded: Ada studied 1 of 2 skin keys (in progress), Sam studied 0 (not started)
     const rows = screen.getAllByTestId('dashboard-assignment-row');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('Skin');
@@ -506,7 +496,6 @@ describe('cohort dashboard (8.20.7)', () => {
     mockBackend(TEACHER_A);
     renderDashboard(TEACHER_A);
     await screen.findByTestId('dashboard-assignments', {}, { timeout: 4000 });
-    // first assignment auto-selected: Ada in progress, Sam not started
     const detail = await screen.findByTestId('dashboard-assignment-detail', {}, { timeout: 4000 });
     expect(detail).toHaveTextContent('Student progress — Skin');
     const list = screen.getByTestId('dashboard-student-list');
@@ -518,7 +507,6 @@ describe('cohort dashboard (8.20.7)', () => {
     expect(studentRows[0]).toHaveTextContent('studied 1 of 2 (50%)');
     expect(studentRows[1]).toHaveTextContent('Sam');
     expect(studentRows[1]).toHaveTextContent('Not started');
-    // switch to the nervous assignment: Sam in progress, Ada not started
     const selects = screen.getAllByTestId('dashboard-assignment-select');
     fireEvent.click(selects[1]);
     expect(
@@ -528,7 +516,6 @@ describe('cohort dashboard (8.20.7)', () => {
     expect(studentRows[0]).toHaveTextContent('Sam');
     expect(studentRows[0]).toHaveTextContent('In progress');
     expect(studentRows[1]).toHaveTextContent('Ada');
-    // sort by name keeps deterministic order
     fireEvent.change(screen.getByTestId('dashboard-assignment-sort'), {
       target: { value: 'name' },
     });

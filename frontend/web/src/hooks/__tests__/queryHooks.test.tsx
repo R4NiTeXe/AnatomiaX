@@ -176,7 +176,6 @@ describe('query hooks (enabled gates and fallbacks)', () => {
     await act(async () => {
       await result.current.auth.login('a@b.c', 'password123');
     });
-    // Prefill after login: login clears the user cache by design.
     client.setQueryData<ProgressSnapshotRecord>(key, {
       userId: 'u1',
       studiedKeys: ['a'],
@@ -188,7 +187,6 @@ describe('query hooks (enabled gates and fallbacks)', () => {
     });
     await waitFor(() => {
       const cached = client.getQueryData<ProgressSnapshotRecord>(key);
-      // Non-array server payload folds to [] and unions with cached keys.
       expect(cached?.studiedKeys).toEqual(['a']);
     });
   });

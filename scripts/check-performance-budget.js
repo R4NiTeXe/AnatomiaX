@@ -1,39 +1,3 @@
-/**
- * Production performance budget check (STEP 8.20.17).
- * Provider-neutral, no deps, no cloud, no deployment.
- * Reads the actual build outputs and reports raw sizes with sensible
- * warning budgets. Warnings never fail the release gate; only egregious
- * regressions (missing outputs or >2x budget) fail.
- *
- * Usage:
- *   node scripts/check-performance-budget.js
- *   node scripts/check-performance-budget.js --strict   # warnings become failures
- *   node scripts/check-performance-budget.js --json     # machine-readable summary
- *
- * Budgets (raw JS, measured 8.20.17 post `npm audit fix`):
- *   web three-core (lazy /human)   warn > 950 kB
- *   web react-vendor                warn > 200 kB
- *   web three-r3f (lazy /human)     warn > 170 kB
- *   web HumanPage (lazy route)      warn > 100 kB
- *   web index entry                 warn > 30 kB
- *   web motion-vendor (shared)      warn > 160 kB (added 8.23; Motion foundation)
- *   web lazy runtime chunk          warn > 250 kB each (added 8.31; see below)
- *   web total JS                    warn > 2200 kB (recalibrated 8.31; see below)
- *   Rationale: 8.20.9 manual chunking keeps three-core/three-r3f/HumanPage
- *   lazy behind /human; initial entry stays ~300 kB raw (~100 kB gzip).
- *   Do not tighten aggressively or break the /human frameloop to chase bytes.
- *
- *   8.31 note: several code-split vendor chunks are ALSO named `index-*.js`
- *   (their npm packages ship an `index.js` entry — e.g. the Rive runtime at
- *   ~213 kB and the dotLottie runtime at ~167 kB, both dynamically imported
- *   and absent from the initial load). The old `find largest index-*` logic
- *   misclassified the biggest one as the entry and false-failed the gate.
- *   The true entry is now resolved from dist/index.html and budgeted at
- *   30 kB; leftover `index-*` files are budgeted as lazy runtime chunks.
- *   Total was recalibrated 1700 -> 2200 kB (measured ~2006 kB after the
- *   Rive/Lottie/Motion additions, all off the initial path; the entry
- *   itself remains ~28 kB).
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -50,16 +14,10 @@ const BUDGETS = [
   { match: /^motion-vendor-.*\.js$/, label: 'web motion-vendor (shared)', warnKb: 160 },
 ];
 
-/** Warn budget (kB) for each non-entry `index-*` lazy runtime chunk. */
 const LAZY_RUNTIME_WARN_KB = 250;
 
 const TOTAL_WARN_KB = 2200;
 
-/**
- * Resolve the true initial entry from dist/index.html (`<script src>`).
- * Falls back to null when the HTML is missing so callers can fail loudly
- * instead of mismeasuring a lazy chunk as the entry (the 8.31 false-FAIL).
- */
 function resolveEntryFile() {
   let html;
   try {
@@ -140,8 +98,6 @@ function main() {
     failOver2x(b.label, kb, b.warnKb);
   }
 
-  // True initial entry, resolved from dist/index.html — never the largest
-  // `index-*` file (lazy vendor chunks share that prefix).
   const entryName = resolveEntryFile();
   if (!entryName) {
     console.log('[perf-budget] FAIL: cannot resolve entry from dist/index.html.');
@@ -160,8 +116,6 @@ function main() {
     failOver2x('web index entry', kb, 30);
   }
 
-  // Leftover `index-*` files are lazy runtime chunks (Rive/dotLottie),
-  // loaded on demand only — budget each individually, not as the entry.
   for (const f of files.filter(f => /^index-.*\.js$/.test(f.file) && f.file !== entryName)) {
     const kb = f.bytes / 1024;
     const status = kb > LAZY_RUNTIME_WARN_KB ? 'WARN' : 'OK';

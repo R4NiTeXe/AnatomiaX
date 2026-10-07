@@ -34,7 +34,6 @@ function Harness() {
 }
 
 beforeEach(() => {
-  // jsdom has no layout engine: stub scrolling used to reveal the active option.
   Object.defineProperty(Element.prototype, 'scrollIntoView', {
     configurable: true,
     value: jest.fn(),

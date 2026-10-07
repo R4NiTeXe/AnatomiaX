@@ -11,8 +11,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly authService: AuthService
   ) {
     super({
-      // 'unconfigured' keeps boot/test safe without credentials; Google
-      // rejects the flow at runtime until real values are provided.
       clientID: config.get<string>('GOOGLE_CLIENT_ID') ?? 'unconfigured',
       clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET') ?? 'unconfigured',
       callbackURL: config.get<string>('GOOGLE_CALLBACK_URL') ?? '/api/v1/auth/google/callback',
@@ -26,7 +24,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: GoogleProfile,
     done: VerifyCallback
   ): Promise<void> {
-    // Google tokens are intentionally ignored — never persisted.
     try {
       const user = await this.authService.validateGoogleUser(profile);
       done(null, user);

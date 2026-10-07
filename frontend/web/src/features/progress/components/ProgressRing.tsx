@@ -1,17 +1,11 @@
 interface ProgressRingProps {
-  /** Numerator, e.g. studied structures. */
   value: number;
-  /** Denominator, e.g. documented structures. Zero renders an empty ring. */
   max: number;
   size?: number;
   strokeWidth?: number;
   testId?: string;
 }
 
-/**
- * Deterministic SVG progress ring (transform-free, no animation library).
- * Percentage is always derived from real `value`/`max` props — never invented.
- */
 export default function ProgressRing({
   value,
   max,

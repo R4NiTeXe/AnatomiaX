@@ -7,18 +7,6 @@ import { DispatchResult, NotificationPayload, NotificationSender } from './notif
 
 const FCM_ENDPOINT_PREFIX = 'https://fcm.googleapis.com/fcm/send/';
 
-/**
- * Firebase Admin SDK FCM sender (HTTP v1).
- *
- * - Stubs safely without credentials: if Firebase credentials are not configured,
- *   dispatch resolves `{ delivered: 0, skipped: subscriptions.length, reason: 'fcm-unconfigured' }`.
- * - Compatible with both local development (via GOOGLE_APPLICATION_CREDENTIALS or env vars)
- *   and production hosting like Render (via FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).
- * - Only browser subscriptions routed through FCM or direct FCM tokens are attempted;
- *   other push endpoints (Mozilla/Apple/Expo) are skipped.
- * - Never throws on delivery failure (counts `skipped` instead) and never
- *   logs secrets, endpoints, or key material — counts only.
- */
 @Injectable()
 export class FcmNotificationSender extends NotificationSender {
   private readonly logger = new Logger(FcmNotificationSender.name);
@@ -144,7 +132,6 @@ export class FcmNotificationSender extends NotificationSender {
       const token = endpoint.slice(FCM_ENDPOINT_PREFIX.length).trim();
       return token.length > 0 ? token : null;
     }
-    // Direct device registration tokens (not standard web-push HTTP URLs)
     if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
       const token = endpoint.trim();
       return token.length > 0 ? token : null;

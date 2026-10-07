@@ -73,7 +73,6 @@ export default function ProgressSummary(): JSX.Element | null {
           >
             Retry
           </Button>
-          {/* preserved for existing tests where practical */}
           <span
             className="hidden"
             data-testid="progress-summary-retry-snapshot"

@@ -1,7 +1,3 @@
-/**
- * STEP 8.24 shared form/Google divider — visual hierarchy between the
- * credential submit and the OAuth entry. Decorative; screen readers skip it.
- */
 export default function AuthDivider({
   label = 'or continue with',
 }: {

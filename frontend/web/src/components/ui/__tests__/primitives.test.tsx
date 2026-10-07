@@ -46,7 +46,6 @@ describe('shadcn primitives smoke', () => {
         </DropdownMenuContent>
       </DropdownMenu>
     );
-    // Radix opens menus on pointer interaction; a bare click leaves data-state closed.
     const trigger = screen.getByText('Open');
     fireEvent.pointerDown(trigger);
     fireEvent.keyDown(trigger, { key: 'Enter' });

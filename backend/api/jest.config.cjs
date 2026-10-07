@@ -14,12 +14,9 @@ module.exports = {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.e2e.spec.ts',
-    // Bootstrap entry: untestable by design (starts server/DB); covered by boot smoke, not unit tests.
     '!src/main.ts',
   ],
   coverageReporters: ['text', 'lcov'],
-  // tdd-workflow gate: CI runs with --coverage; main.ts (bootstrap entry)
-  // is excluded from collection above.
   coverageThreshold: {
     global: {
       branches: 80,

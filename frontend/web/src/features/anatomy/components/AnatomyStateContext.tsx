@@ -79,10 +79,8 @@ interface AnatomyStateValue {
   toggleSystem: (key: AnatomySystemKey) => void;
   systemOpacity: SystemOpacityMap;
   setSystemOpacity: (key: AnatomySystemKey, value: number) => void;
-  /** Legacy alias for skin — kept for backward compatibility */
   skinOpacity: number;
   setSkinOpacity: (value: number) => void;
-  /** STEP 8.31: session-scoped skin tone (no persistence layer exists). */
   skinTone: SkinToneId;
   setSkinTone: (tone: SkinToneId) => void;
   isolatedSystem: AnatomySystemKey | null;
@@ -110,10 +108,8 @@ interface AnatomyStateValue {
   nextQuizQuestion: () => void;
   retryQuiz: () => void;
   resetQuiz: () => void;
-  /** Prepared for shared viewer — /human remains male */
   selectedBodyModel: AnatomyBodyModelKey;
   setSelectedBodyModel: (model: AnatomyBodyModelKey) => void;
-  /** Synchronous per-body reset for UI model switches (see resetModelState). */
   resetModelState: (model: AnatomyBodyModelKey) => void;
   status: SystemLoadStatusMap;
   setSystemStatus: (key: AnatomySystemKey, status: SystemLoadStatus) => void;
@@ -182,10 +178,6 @@ export function AnatomyStateProvider({
     lymphatic: 0,
   });
 
-  // STEP 8.20.9: hover is high-frequency (pointerOver per mesh/row). Bail out
-  // when the incoming structure matches the current one so repeated hovers
-  // over meshes of the same structure do not create new objects and retrigger
-  // the whole context (all useAnatomyState consumers). Preserves hover UX.
   const setHoveredStructureSafe = useCallback((next: SelectedStructure | null) => {
     setHoveredStructureRaw(prev => {
       if (prev === next) return prev;
@@ -203,7 +195,6 @@ export function AnatomyStateProvider({
     });
   }, []);
 
-  // Clear selection when its system becomes hidden
   useEffect(() => {
     if (selectedStructure && !visibleSystems[selectedStructure.systemKey]) {
       setSelectedStructure(null);
@@ -223,22 +214,12 @@ export function AnatomyStateProvider({
     setHoveredStructureSafe,
   ]);
 
-  // Also clear highlight when isolated system hides previous selection
   useEffect(() => {
     if (isolatedSystem && selectedStructure && selectedStructure.systemKey !== isolatedSystem) {
-      // selection belongs to a now-hidden system — already handled above, but keep as safety
       if (!visibleSystems[selectedStructure.systemKey]) setSelectedStructure(null);
     }
   }, [isolatedSystem, selectedStructure, visibleSystems]);
 
-  // Handle body model switch — clear per-body state but keep GLTF cache.
-  // Split into a callback so UI switches can reset synchronously BEFORE
-  // setSelectedBodyModel: child effects (slot mount → 'loaded') otherwise
-  // run before this parent effect and the reset clobbers them back to IDLE,
-  // stranding remounted cached scenes in 'loading' forever (STEP 8.45).
-  // lastResetModelRef is the receipt: the effect below skips when the reset
-  // for this model already ran (UI path), and still covers programmatic
-  // switches such as deep-links and direct test switches.
   const lastResetModelRef = useRef<AnatomyBodyModelKey | null>(null);
   const resetModelState = useCallback(
     (model: AnatomyBodyModelKey) => {
@@ -341,7 +322,6 @@ export function AnatomyStateProvider({
       setIsolatedSnapshot(null);
       setIsolatedSystem(null);
     }
-    // Opacity always resets to defaults on Reset View (per spec: restore opacity)
     setSystemOpacityMap(INITIAL_OPACITY);
     if (!isolatedSnapshot) {
       setVisibleSystems(initialVisibleSystems);
@@ -355,7 +335,6 @@ export function AnatomyStateProvider({
     (structure: SelectedStructure | null) => {
       setSelectedStructure(structure);
       setHoveredStructureSafe(null);
-      // If compare is same as new selection, clear compare
       if (structure && compareStructure) {
         const selKey = `${structure.bodyModel}:${structure.structureKey}`;
         const cmpKey = `${compareStructure.bodyModel}:${compareStructure.structureKey}`;
@@ -420,14 +399,12 @@ export function AnatomyStateProvider({
 
   const generateQuizQuestions = useCallback((): AnatomyQuizQuestion[] => {
     const seed = getAnatomyInformationSeed();
-    // Guarantee exactly 5 when >=5 unique canonical are available
     const uniqueByCanonical = new Map<string, (typeof seed)[number]>();
     for (const s of seed) {
       if (!uniqueByCanonical.has(s.canonicalName)) uniqueByCanonical.set(s.canonicalName, s);
     }
     const uniquePool = [...uniqueByCanonical.values()];
     if (uniquePool.length < 5) return [];
-    // Resolve selectedStructure by exact bodyModel + structureKey, independent of canonical dedup
     let ordered: typeof uniquePool = [];
     let selectedEntry: (typeof uniquePool)[number] | null = null;
     if (selectedStructure) {
@@ -455,13 +432,11 @@ export function AnatomyStateProvider({
     } else {
       ordered = shuffled;
     }
-    // Ensure we have at least 5 unique canonical for questions
     if (ordered.length < 5) return [];
     const questions: AnatomyQuizQuestion[] = [];
     for (let i = 0; i < 5; i++) {
       const correct = ordered[i];
       if (!correct) break;
-      // Prefer distractors from different systems
       const sameSystemDistractors: typeof uniquePool = [];
       const diffSystemDistractors: typeof uniquePool = [];
       for (const s of ordered) {
@@ -470,7 +445,6 @@ export function AnatomyStateProvider({
         if (s.systemKey === correct.systemKey) sameSystemDistractors.push(s);
         else diffSystemDistractors.push(s);
       }
-      // Prefer different system, fallback to same system only if needed
       let distractors: typeof uniquePool = [];
       const diffShuffled = [...diffSystemDistractors].sort(() => Math.random() - 0.5);
       distractors = diffShuffled.slice(0, 3);
@@ -479,7 +453,6 @@ export function AnatomyStateProvider({
         distractors = [...distractors, ...sameShuffled].slice(0, 3);
       }
       if (distractors.length < 3) continue;
-      // Ensure distinct function and canonical
       const distinctFunctions = new Set<string>();
       const distinctCanonical = new Set<string>([correct.canonicalName]);
       const finalDistractors: typeof uniquePool = [];
@@ -491,7 +464,6 @@ export function AnatomyStateProvider({
         if (finalDistractors.length >= 3) break;
       }
       if (finalDistractors.length < 3) {
-        // Fallback: take any distinct
         for (const s of ordered) {
           if (s.canonicalName === correct.canonicalName) continue;
           if (finalDistractors.length >= 3) break;
@@ -518,9 +490,7 @@ export function AnatomyStateProvider({
       });
       if (questions.length >= 5) break;
     }
-    // Guarantee exactly 5 when possible
     if (questions.length < 5 && uniquePool.length >= 5) {
-      // Fallback: fill remaining with any valid
       for (const s of shuffled) {
         if (questions.length >= 5) break;
         if (questions.some(q => q.canonicalName === s.canonicalName)) continue;
@@ -630,8 +600,6 @@ export function AnatomyStateProvider({
   const unregisterSystemStructures = useCallback((key: AnatomySystemKey): void => {
     registryRef.current.unregisterSystem(key);
     setRegistryVersion(v => v + 1);
-    // Do NOT clear registry on hide for layer visibility — keep cached data.
-    // Only clear selection if it belonged to the removed system (handled by effect above).
   }, []);
 
   const registerSystemScene = useCallback((key: AnatomySystemKey, scene: THREE.Object3D): void => {
@@ -649,9 +617,7 @@ export function AnatomyStateProvider({
   const getMeshesForStructure = useCallback((selection: SelectedStructure | null): THREE.Mesh[] => {
     if (!selection) return [];
     const scene = systemScenesRef.current.get(selection.systemKey);
-    // If system scene not yet stored (e.g., legacy hide), fall back to empty
     if (!scene) return [];
-    // Do not focus hidden system — caller should check visibility
     const targets: THREE.Mesh[] = [];
     scene.traverse(obj => {
       const mesh = obj as THREE.Mesh;
@@ -667,14 +633,12 @@ export function AnatomyStateProvider({
       if (key === selection.structureKey) {
         targets.push(mesh);
       } else if (selection.ontologyId && ontologyId && ontologyId === selection.ontologyId) {
-        // Multiple meshes sharing same ontologyId within same system — focus all
         if (!targets.includes(mesh)) targets.push(mesh);
       }
     });
     return targets;
   }, []);
 
-  // E2E observability — expose registry/selection for QA (no architecture change)
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__ANATOMIA_REGISTRY = registryRef.current;
     (window as unknown as Record<string, unknown>).__ANATOMIA_SELECTION = selectedStructure;

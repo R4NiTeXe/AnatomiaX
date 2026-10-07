@@ -67,7 +67,6 @@ export default function TeachQuizDetailPage(): JSX.Element {
       .map(o => o.trim())
       .filter(o => o.length > 0);
     await run('add', () =>
-      // UI is 1-based ("Correct option (1-based)"); the API is 0-based.
       addQuestion(id, {
         prompt: prompt.trim(),
         options,

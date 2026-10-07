@@ -24,14 +24,12 @@ describe('dashboardFormat', () => {
         { score: 5, total: 5 },
       ])
     ).toBe('5 / 5');
-    // Same percentage (50%): higher raw score wins.
     expect(
       bestScoreText([
         { score: 1, total: 2 },
         { score: 5, total: 10 },
       ])
     ).toBe('5 / 10');
-    // Zero-total attempts never divide by zero (guarded by Math.max(1, …)).
     expect(bestScoreText([{ score: 0, total: 0 }])).toBe('0 / 0');
   });
 });
@@ -93,7 +91,6 @@ describe('useDashboardAggregates', () => {
     expect(agg.aggregateQuizzes).toBe(3);
     expect(agg.bestOverall).toBe('5 / 5');
     expect(agg.latestOverall).toBe('5 / 5');
-    // Newest first, capped at 5, member identity attached.
     expect(agg.recentAttempts.map(a => a.id)).toEqual(['q2', 'q1', 'q3']);
     expect(agg.recentAttempts[0]).toMatchObject({ userId: 'u1', name: 'Ada' });
   });

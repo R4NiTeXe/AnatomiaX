@@ -10,8 +10,6 @@ describe('HealthController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      // Mirrors HealthModule wiring: the controller's ThrottlerGuard needs
-      // the throttler storage/options providers.
       imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])],
       controllers: [HealthController],
       providers: [HealthService, { provide: PrismaService, useValue: prisma }],
@@ -63,7 +61,6 @@ describe('HealthController', () => {
     const body = await controller.database(degradedRes);
     expect(body).toEqual({ status: 'degraded', database: 'disconnected' });
     expect(degradedRes.status).toHaveBeenCalledWith(503);
-    // Payload never carries raw DB errors.
     expect(JSON.stringify(body)).not.toMatch(/postgres|prisma|Error/i);
   });
 });

@@ -1,19 +1,3 @@
-/**
- * Generates the canonical anatomy asset manifest from the actual optimized
- * production GLBs (byte size + SHA-256 verified at generation time).
- *
- * Usage: node scripts/generate-anatomy-manifest.js
- *
- * Reads:  3d-assets/<bodyModel>/working/optimized/*.glb
- * Writes: frontend/packages/anatomy-core/src/assetManifest.ts
- *
- * Rules:
- * - Production identity is (bodyModel directory + unprefixed filename).
- * - Filenames must match `<system>-meshopt.glb` for a known system key.
- * - Any unexpected file, unknown system, duplicate, or empty file fails loudly.
- * - The manifest carries NO host/base URL: any ordinary HTTPS static host can
- *   serve it later (recommended layout documents host conventions only).
- */
 const fs = require('fs');
 const path = require('path');
 const nodeCrypto = require('node:crypto');

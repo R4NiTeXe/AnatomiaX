@@ -121,7 +121,6 @@ describe('CurrentUser', () => {
     class Target {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- decorator params are metadata carriers; names are required for route-arg indices
       handler(@CurrentUser() _u: unknown, @CurrentUser('id') _id: unknown): void {
-        // Intentionally empty: metadata carrier only.
       }
     }
     const meta = Reflect.getMetadata(ROUTE_ARGS_METADATA, Target, 'handler') as Record<

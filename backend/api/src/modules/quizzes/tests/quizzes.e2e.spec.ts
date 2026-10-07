@@ -8,7 +8,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
 
-// In-memory Prisma stand-in for identity + quiz bank: no database, no network.
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   tokens = new Map<string, Record<string, any>>();
@@ -494,7 +493,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
         ],
       });
     expect(res.status).toBe(201);
-    // q1 correct (Femur=0), q2 wrong (Stapes=0, chose 1).
     expect(res.body).toMatchObject({
       score: 1,
       total: 2,
@@ -692,7 +690,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
       .set(auth('q-teacher@example.com'));
     expect(del.status).toBe(200);
 
-    // Re-add + publish → immutable from here.
     const q2 = await request(app.getHttpServer())
       .post(`/api/v1/quizzes/${quizId}/questions`)
       .set(auth('q-teacher@example.com'))
@@ -756,7 +753,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
       .set(auth('q-teacher@example.com'));
     expect(gone.status).toBe(404);
 
-    // History survives the quiz (SetNull link, scores intact).
     const legacy = await request(app.getHttpServer())
       .get('/api/v1/progress/quiz-attempts')
       .set(student);
@@ -785,7 +781,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
     expect(adminRows.status).toBe(200);
     expect(adminRows.body.length).toBeGreaterThanOrEqual(1);
 
-    // Non-owner teacher without cohort scope → 403 (must name a cohort).
     const scopedDenied = await request(app.getHttpServer())
       .get(`/api/v1/quizzes/${quizId}/attempts`)
       .set(auth('q-teacher2@example.com'));
@@ -812,7 +807,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
       .set(student)
       .send({ answers: [{ questionId: q1, selectedIndex: 0 }] });
 
-    // Teacher2 owns a cohort containing the student.
     const cohort = await request(app.getHttpServer())
       .post('/api/v1/cohorts')
       .set(auth('q-teacher2@example.com'))
@@ -825,7 +819,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
     const scopedEmpty = await request(app.getHttpServer())
       .get(`/api/v1/quizzes/${quizId}/attempts?cohortId=${cohortId}`)
       .set(auth('q-teacher2@example.com'));
-    // Student is not a member yet → empty, but authorized (200, not 403).
     expect(scopedEmpty.status).toBe(200);
     expect(scopedEmpty.body).toEqual([]);
 
@@ -842,7 +835,6 @@ describe('Quizzes (e2e, question bank + server grading)', () => {
     expect(scoped.body).toHaveLength(1);
     expect(scoped.body[0]).toMatchObject({ score: 1, total: 2 });
 
-    // A cohort the teacher does NOT manage → 404 (same convention as cohorts).
     const foreign = await request(app.getHttpServer())
       .get(`/api/v1/quizzes/${quizId}/attempts?cohortId=00000000-0000-0000-0000-000000000000`)
       .set(auth('q-teacher2@example.com'));

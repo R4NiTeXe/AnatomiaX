@@ -1,8 +1,3 @@
-/**
- * Progress API — thin typed wrappers over the authed request helper.
- * Server is authoritative; the client only sends completed attempts and
- * additive studied-key updates.
- */
 import type { AnatomyBodyModelKey } from '@/features/anatomy/components/anatomyTypes';
 import { authedRequest } from '@/lib/auth';
 

@@ -68,8 +68,6 @@ describe('NotificationsService (8.19.24)', () => {
   });
 
   it('survives a concurrent double-register for the same user (P2002 → idempotent)', async () => {
-    // RED: both racers miss findUnique; the loser hits @@unique(endpoint).
-    // The documented idempotent contract must hold, not 500/409.
     prisma.pushSubscription.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
       id: 'sub-1',
       userId: 'user-a',

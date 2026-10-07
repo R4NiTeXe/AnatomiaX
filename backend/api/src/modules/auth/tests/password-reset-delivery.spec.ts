@@ -164,7 +164,6 @@ describe('PasswordResetDelivery (Brevo SMTP)', () => {
         port: 587,
         secure: false,
         auth: { user: 'brevo-login', pass: 'brevo-master-key' },
-        // 8.58: bounded delivery — a dead relay fails fast, never hangs the request.
         connectionTimeout: expect.any(Number),
         greetingTimeout: expect.any(Number),
         socketTimeout: expect.any(Number),
@@ -176,11 +175,9 @@ describe('PasswordResetDelivery (Brevo SMTP)', () => {
     expect(mail.to).toBe(EMAIL);
     expect(mail.subject).toMatch(/reset/i);
     expect(mail.subject).toMatch(/password/i);
-    // Existing ResetPasswordPage contract: /reset-password?email=…&token=….
     expect(mail.text).toContain(
       `https://app.example.com/reset-password?email=${encodeURIComponent(EMAIL)}&token=${encodeURIComponent(TOKEN)}`
     );
-    // No token material or credentials in logs.
     expect(loggedText(delivery)).not.toContain(TOKEN);
     expect(loggedText(delivery)).not.toContain('brevo-master-key');
   });
@@ -196,7 +193,6 @@ describe('PasswordResetDelivery (Brevo SMTP)', () => {
     });
 
     await expect(delivery.dispatch(EMAIL, TOKEN)).resolves.toBeUndefined();
-    // Failure is visible in server logs only, without token material.
     expect(loggedText(delivery)).not.toContain(TOKEN);
     expect(loggedText(delivery)).not.toContain('brevo-master-key');
   });

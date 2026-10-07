@@ -53,14 +53,12 @@ function newInviteCode(): string {
   return randomBytes(16).toString('base64url');
 }
 
-/** Latest attempts returned per member by getProgress (was per-member `take`). */
 const QUIZ_ATTEMPTS_PER_MEMBER = 20;
 
 @Injectable()
 export class CohortsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Teacher/Admin entry: creates the cohort and seats the creator as TEACHER. */
   async create(
     creator: SafeUser,
     input: { name: string; institutionLabel?: string }
@@ -79,8 +77,6 @@ export class CohortsService {
       });
       return cohort;
     });
-    // Invite code is returned only here (and on regeneration): possession of
-    // the code is the join credential, so it is never part of general views.
     return { ...this.toView(created, 'TEACHER', true), inviteCode: created.inviteCode };
   }
 
@@ -159,9 +155,6 @@ export class CohortsService {
       });
       return this.toView(cohort, membership.role, this.isOwner(cohort, user));
     } catch (error) {
-      // Concurrent double-join: both requests miss findFirst, one loses the
-      // @@unique([cohortId, userId]) race. Report the same idempotent
-      // conflict instead of a generic 409.
       if (prismaCodeFrom(error) === 'P2002') {
         throw new ConflictException('Already a member of this cohort');
       }
@@ -170,7 +163,6 @@ export class CohortsService {
   }
 
   async leave(user: SafeUser, cohortId: string): Promise<void> {
-    // Membership (not ownership) ends here; createdById is untouched on purpose.
     const membership = await this.prisma.cohortMember.findFirst({
       where: { cohortId, userId: user.id },
     });
@@ -192,11 +184,6 @@ export class CohortsService {
     await this.prisma.cohortMember.delete({ where: { id: membership.id } });
   }
 
-  /**
-   * Assigns an existing curriculum module to a cohort (STEP 8.52).
-   * Idempotent: re-assigning returns the existing row (no duplicates —
-   * enforced by @@unique plus this read-first check).
-   */
   async assignModule(
     actor: SafeUser,
     cohortId: string,
@@ -214,9 +201,6 @@ export class CohortsService {
       });
       return this.toAssignmentView(created);
     } catch (error) {
-      // Concurrent double-assign: both requests miss findFirst, one loses
-      // the @@unique([cohortId, moduleKey]) race. Re-read and return the
-      // winner to preserve the documented idempotent contract.
       if (prismaCodeFrom(error) === 'P2002') {
         const raced = await this.prisma.cohortAssignment.findFirst({
           where: { cohortId, moduleKey },
@@ -227,7 +211,6 @@ export class CohortsService {
     }
   }
 
-  /** Cohort assignments visible to any member (students included). */
   async listAssignments(viewer: SafeUser, cohortId: string): Promise<CohortAssignmentView[]> {
     await this.requireViewer(viewer, cohortId);
     const rows = await this.prisma.cohortAssignment.findMany({
@@ -237,7 +220,6 @@ export class CohortsService {
     return rows.map(r => this.toAssignmentView(r));
   }
 
-  /** Removes an assignment link (learning data itself is untouched). */
   async unassignModule(actor: SafeUser, cohortId: string, moduleKey: string): Promise<void> {
     const ctx = await this.requireManager(actor, cohortId);
     this.requireActive(ctx.cohort);
@@ -250,7 +232,6 @@ export class CohortsService {
     await this.prisma.cohortAssignment.delete({ where: { id: existing.id } });
   }
 
-  /** Every assignment across the caller's own cohorts, newest first. */
   async listMyAssignments(user: SafeUser): Promise<MyAssignmentView[]> {
     const memberships = await this.prisma.cohortMember.findMany({
       where: { userId: user.id },
@@ -276,7 +257,6 @@ export class CohortsService {
       include: { user: { select: { id: true, name: true } } },
       orderBy: { joinedAt: 'asc' },
     });
-    // Email intentionally excluded: members see names/roles only.
     return members.map(m => ({
       userId: m.userId,
       name: m.user.name,
@@ -305,22 +285,15 @@ export class CohortsService {
     }>
   > {
     const ctx = await this.requireViewer(viewer, cohortId);
-    // Progress is owner/admin only; members without manage rights get 403 (no oracle leak — already viewer-checked).
     if (!ctx.isOwner && !ctx.isAdmin) {
       throw new ForbiddenException('Insufficient permissions');
     }
-    // Archived cohorts remain readable but progress is still owner-gated (consistent with invite regeneration).
     const members = await this.prisma.cohortMember.findMany({
       where: { cohortId },
       include: { user: { select: { id: true, name: true } } },
       orderBy: { joinedAt: 'asc' },
     });
     if (members.length === 0) return [];
-    // 8.20.22: batched fetch — 2 queries total regardless of member count
-    // (was 2 sequential queries per member). Per-member semantics preserved
-    // exactly: latest QUIZ_ATTEMPTS_PER_MEMBER attempts desc + snapshot keys,
-    // members in joinedAt order. `userId` is selected only for in-memory
-    // grouping and never leaves the server beyond the existing DTO.
     const userIds = members.map(m => m.userId);
     const [snapshots, attempts] = await Promise.all([
       this.prisma.progressSnapshot.findMany({ where: { userId: { in: userIds } } }),
@@ -344,8 +317,6 @@ export class CohortsService {
     const attemptsByUser = new Map<string, typeof attempts>();
     for (const a of attempts) {
       const list = attemptsByUser.get(a.userId) ?? [];
-      // Global desc order keeps each member subsequence desc, so the first
-      // QUIZ_ATTEMPTS_PER_MEMBER equal per-member `take` results exactly.
       if (list.length < QUIZ_ATTEMPTS_PER_MEMBER) {
         list.push(a);
         attemptsByUser.set(a.userId, list);
@@ -414,7 +385,6 @@ export class CohortsService {
       where: { cohortId, userId: user.id },
     });
     if (!membership) {
-      // Outsiders get 404 (no existence oracle); members without rights get 403 at manage time.
       throw new NotFoundException('Cohort not found');
     }
     return { cohort, membership, isOwner: false, isAdmin: false };

@@ -7,10 +7,8 @@ import { AppModule } from '../../../app.module';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
-// Sentinel proving server secrets never leak into subscription responses.
 process.env.FCM_SERVER_KEY = 'e2e-sentinel-fcm-key-xyz';
 
-// In-memory Prisma stand-in for identity + push subscriptions: no database, no network.
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   oauth = new Map<string, Record<string, any>>();

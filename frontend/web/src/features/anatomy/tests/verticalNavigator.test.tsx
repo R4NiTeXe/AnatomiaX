@@ -4,7 +4,6 @@ import AnatomyVerticalNavigator from '../components/AnatomyVerticalNavigator';
 
 describe('AnatomyVerticalNavigator slider UI', () => {
   beforeEach(() => {
-    // jsdom lacks pointer capture; the component guards release but not press.
     Object.defineProperty(Element.prototype, 'setPointerCapture', {
       configurable: true,
       value: jest.fn(),

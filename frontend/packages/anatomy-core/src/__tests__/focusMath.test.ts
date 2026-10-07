@@ -6,7 +6,6 @@ describe('computeFocusDistance', () => {
     const dLarge = computeFocusDistance(1.0, 50, 1.35);
     expect(dLarge).toBeGreaterThan(dSmall);
     expect(dSmall).toBeGreaterThanOrEqual(Math.max(0.1 * 3, 0.15));
-    // (1 / sin(25°)) * 1.35 ≈ 3.19
     expect(computeFocusDistance(1, 50, 1.35)).toBeCloseTo(3.194, 2);
   });
 

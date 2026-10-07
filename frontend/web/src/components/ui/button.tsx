@@ -8,8 +8,6 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // STEP 8.23: single premium primary — solid clinical teal, restrained glow.
-        // `primary` kept as a compat alias (identical treatment).
         default:
           'bg-teal-400 text-slate-950 shadow-glow hover:bg-teal-300 hover:shadow-[0_0_28px_-4px_rgb(45_212_191/0.6)]',
         primary:

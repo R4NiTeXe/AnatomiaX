@@ -35,14 +35,11 @@ describe('AuthController.googleCallback (8.20.20 OAuth redirect)', () => {
       controller.googleCallback(reqFor() as never, res as never)
     ).resolves.toBeUndefined();
 
-    // Cookie carries the rotated refresh token (httpOnly, session-scoped path).
     expect(res.cookie).toHaveBeenCalledWith(
       'refresh_token',
       'rt-1',
       expect.objectContaining({ httpOnly: true })
     );
-    // No session JSON leaks into a rendered page — browser returns to the SPA,
-    // which picks the session up from the httpOnly cookie via /auth/callback.
     expect(res.redirect).toHaveBeenCalledWith('http://localhost:5173/auth/callback');
     expect(auth.issueSessionForUser).toHaveBeenCalledWith('u1');
   });
@@ -97,8 +94,6 @@ describe('AuthController session cookie flags', () => {
   });
 
   it('defaults to SameSite=None in production so cross-site refresh works', async () => {
-    // RED: production Google-callback 302 stores the cookie, but a Lax
-    // default is never sent on cross-site fetch — /refresh 401s forever.
     const previous = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
     try {
@@ -136,9 +131,6 @@ describe('AuthController session cookie flags', () => {
   });
 
   it('logout clears the cookie with matching path/sameSite/secure attributes', async () => {
-    // RED: clearCookie sent path-only. A clearing response that does not
-    // mirror the cookie's attributes risks leaving a live session cookie
-    // behind in edge browsers — logout must look exactly like logout.
     const previous = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
     try {
@@ -157,8 +149,6 @@ describe('AuthController session cookie flags', () => {
   });
 
   it('reset-confirm clears the cookie with matching attributes (sessions revoked)', async () => {
-    // RED: confirm used path-only clearCookie while logout/change mirror
-    // the full flags — a stale cookie could survive reset on edge browsers.
     const auth = { confirmPasswordReset: jest.fn().mockResolvedValue(undefined) };
     const controller = new AuthController(auth as never, configFor({}) as never);
     const res = mockRes();

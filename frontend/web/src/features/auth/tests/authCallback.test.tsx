@@ -100,9 +100,6 @@ describe('AuthCallbackPage', () => {
   });
 
   it('shows the redirecting state when already authenticated', async () => {
-    // Child effects run before parent effects: the page's reload (/me #1)
-    // hangs so navigation never fires, while the provider boot (/me #2)
-    // flips status to authenticated and the redirecting state stays put.
     let meCalls = 0;
     renderCallback('/auth/callback', url => {
       if (!url.endsWith('/api/v1/auth/me')) return unauthorized();

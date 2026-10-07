@@ -19,8 +19,6 @@ function UsersPageContent(): JSX.Element {
   const searchParams = useSearchParams();
   const rawRole = searchParams.get('role');
   const [search, setSearch] = useState('');
-  // Teachers/Students nav entries deep-link with ?role= — validated against
-  // the allowlist so a crafted query cannot inject an arbitrary filter.
   const [role, setRole] = useState<string>(
     rawRole && (ROLE_FILTERS as readonly string[]).includes(rawRole) ? rawRole : 'ALL'
   );
@@ -241,10 +239,6 @@ function UsersPageContent(): JSX.Element {
   );
 }
 
-/**
- * Next.js requires useSearchParams() behind a Suspense boundary for static
- * prerendering — without this the production build fails at /users.
- */
 export default function UsersPage(): JSX.Element {
   return (
     <Suspense

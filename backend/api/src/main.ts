@@ -13,35 +13,20 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
-  // 8.19.23: fail fast on unsafe production secrets/config.
   validateProductionEnv(configService);
 
-  // 8.20.16: clean NestJS shutdown lifecycle — stop accepting new traffic,
-  // let active work finish where practical, disconnect Prisma via
-  // PrismaService.onModuleDestroy, close the HTTP server. No custom process
-  // manager; relies on the platform (systemd/container) to SIGTERM/SIGINT.
   app.enableShutdownHooks();
 
-  // 8.20.16: trust a single proxy hop so Secure cookies + x-forwarded-*
-  // behave behind a provider-neutral reverse proxy (nginx/Caddy/cloud LB).
-  // Single hop is the common safe default; direct-connect deployments are
-  // unaffected. No cloud-specific code.
   try {
     const server = app.getHttpAdapter().getInstance();
     if (server && typeof server.set === 'function') {
       server.set('trust proxy', 1);
     }
   } catch {
-    // Trust-proxy is best-effort; boot must never fail because of it.
   }
 
   app.setGlobalPrefix('api');
 
-  // 8.20.16: allow a comma-separated allow-list (e.g. web + admin origins)
-  // while preserving the single-origin default. No wildcard; validated in
-  // production by validateProductionEnv. Shared applyCors (same normalization
-  // as OriginCheckGuard + webAppOrigin) runs before pipes/middleware/routes
-  // so preflight OPTIONS and guard/error responses carry CORS headers.
   applyCors(app, configService, logger);
 
   app.useGlobalPipes(
@@ -55,8 +40,6 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
-  // Convenience non-prefixed health check — same deterministic payload as GET /api/health
-  // Avoids duplicating controller logic; keeps both GET /health and GET /api/health available.
   const httpAdapter = app.getHttpAdapter();
   httpAdapter.get('/health', (_req: unknown, res: { json: (body: unknown) => void }) => {
     res.json({ status: 'ok' });
@@ -65,9 +48,6 @@ async function bootstrap() {
   const rawPort = configService.get<string>('PORT') ?? process.env.PORT ?? '3000';
   const port = Number.parseInt(rawPort, 10) || 3000;
 
-  // 8.20.16: explicit host binding. HOST is optional; defaults to 0.0.0.0 so
-  // container/proxy deployments are reachable, while local dev may set
-  // HOST=127.0.0.1. Documented in docs/deployment/README.md.
   const host =
     (configService.get<string>('HOST') ?? process.env.HOST ?? '0.0.0.0').trim() || '0.0.0.0';
 

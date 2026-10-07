@@ -30,8 +30,6 @@ export default function LoginPage(): JSX.Element {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<FriendlyAuthError | null>(null);
-  // Requested role only: the backend compares it against the database role
-  // and rejects mismatches, so the tabs can never escalate privileges.
   const [role, setRole] = useState<LoginRole>('STUDENT');
 
   const {
@@ -45,7 +43,6 @@ export default function LoginPage(): JSX.Element {
   const fromState = (location.state as { from?: unknown } | null)?.from;
   const fallbackDestination = defaultDestinationForRole(user?.role);
   const rawNext = fromState ?? searchParams.get('next');
-  // Explicit destinations win (validated); otherwise route by role.
   const destination = rawNext
     ? safeAuthDestination(rawNext, fallbackDestination)
     : fallbackDestination;
@@ -62,8 +59,6 @@ export default function LoginPage(): JSX.Element {
   const onSubmit = handleSubmit(async values => {
     setError(null);
     try {
-      // Route by the RETURNED (database) role, never the selected tab: a
-      // mismatched selection is rejected by the backend before any session.
       const next = await login(values.email.trim(), values.password, role);
       const explicit = fromState ?? searchParams.get('next');
       navigate(

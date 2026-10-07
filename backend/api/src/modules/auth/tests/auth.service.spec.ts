@@ -169,7 +169,6 @@ describe('AuthService', () => {
     });
 
     it('accepts a matching requested role and rejects a mismatched one without a session', async () => {
-      // RED: requested role must be advisory only — the DB role decides.
       const hash = await argon2.hash('correct-horse');
       users.findLiveByEmail.mockResolvedValue(makeUser({ passwordHash: hash, role: 'STUDENT' }));
       const session = await service.login('student@example.com', 'correct-horse', 'STUDENT');
@@ -210,8 +209,6 @@ describe('AuthService', () => {
       );
       (tx.refreshToken.updateMany as jest.Mock).mockResolvedValueOnce({ count: 0 });
       await expect(service.refresh('presented')).rejects.toBeInstanceOf(UnauthorizedException);
-      // No family-wide revocation on an ambiguous race — only the atomic
-      // claim was attempted, and no replacement token was minted.
       expect(tx.refreshToken.create).not.toHaveBeenCalled();
       expect(
         (prisma.refreshToken as unknown as { updateMany: jest.Mock }).updateMany
@@ -435,8 +432,6 @@ describe('AuthService', () => {
     });
 
     it('confirm loses a double-submit race instead of resetting twice (atomic single-use)', async () => {
-      // RED: two concurrent confirms both pass findUnique; the unconditional
-      // update lets both reset the password. The claim must be atomic.
       const record = {
         id: 'prt-1',
         tokenHash: 'h',
@@ -446,7 +441,6 @@ describe('AuthService', () => {
         user: makeUser({ email: 'student@example.com' }),
       };
       (prisma.passwordResetToken.findUnique as jest.Mock).mockResolvedValue(record);
-      // Winner already claimed the token: the conditional claim matches nothing.
       tx.passwordResetToken.updateMany.mockResolvedValue({ count: 0 });
       await expect(
         service.confirmPasswordReset(

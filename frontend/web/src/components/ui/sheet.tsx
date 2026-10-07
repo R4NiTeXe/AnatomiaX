@@ -15,7 +15,6 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     className={cn(
-      // STEP 8.23: eased fade via the installed tailwindcss-animate plugin.
       'fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
@@ -26,7 +25,6 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  // STEP 8.23: eased slide open/close per side via tailwindcss-animate.
   'fixed z-50 gap-4 border-slate-800 bg-gradient-to-b from-slate-900 to-slate-900/95 p-6 shadow-lift transition ease-in-out data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out',
   {
     variants: {

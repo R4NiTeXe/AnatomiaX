@@ -7,19 +7,9 @@ import { AppModule } from '../../app.module';
 import { applyCors } from '../../config/cors-origins';
 import { PrismaService } from '../../prisma/prisma.service';
 
-// Production-shaped allow-list (comma-separated, mixed case + slashes to
-// prove normalization), set before module init like other e2e env fixtures.
-// Per-file jest worker isolation keeps this out of other suites.
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
 process.env.CORS_ORIGIN = 'https://AnatomiaX.vercel.app/, https://admin.example.com ';
 
-/**
- * CORS preflight/response contract against the real bootstrap wiring
- * (applyCors — the same function main.ts calls): allowed origins get
- * exact ACAO + credentials on preflights, plain responses, AND guard
- * rejections (guards must never strip CORS); disallowed origins get
- * nothing. Regression cover for production "No ACAO header" incidents.
- */
 describe('CORS (e2e, production-shaped allow-list)', () => {
   let app: INestApplication;
   const WEB = 'https://anatomiax.vercel.app';

@@ -5,7 +5,6 @@ import type { Transporter } from 'nodemailer';
 import { webAppOrigin } from './web-app-url';
 
 export interface SmtpResetConfig {
-  /** True only when SMTP_HOST is set — otherwise the safe stub applies. */
   configured: boolean;
   host: string;
   port: number;
@@ -15,16 +14,6 @@ export interface SmtpResetConfig {
   secure: boolean;
 }
 
-/**
- * 8.20.22 pure SMTP configuration resolution (no I/O, no secrets in output).
- * Rules mirror validate-env.ts so boot validation and runtime agree:
- * - no SMTP_HOST → unconfigured (existing safe stub behavior everywhere);
- * - SMTP_HOST set → SMTP_FROM required; SMTP_USER/SMTP_PASSWORD must be set
- *   together (both absent = unauthenticated relay-friendly hosts only);
- * - SMTP_PORT defaults to 587, must be 1–65535 when set;
- * - SMTP_SECURE must be true/false when set (default false; STARTTLS upgrade
- *   on 587 is nodemailer's default with secure:false).
- */
 export function resolveSmtpConfig(values: Record<string, string | undefined>): {
   config: SmtpResetConfig;
   failures: string[];
@@ -70,20 +59,6 @@ export function resolveSmtpConfig(values: Record<string, string | undefined>): {
   return { config: { configured: true, host, port, user, pass, from, secure }, failures };
 }
 
-/**
- * Transactional email delivery (Brevo SMTP).
- *
- * - No SMTP_HOST → the safe stub (logs the request, never the token;
- *   resolves). Development/test work without any mail infrastructure.
- * - SMTP_HOST set (e.g. smtp-relay.brevo.com:587) → transactional email via
- *   Brevo SMTP relay. The reset link reuses the existing web flow:
- *   <web-origin>/reset-password?email=…&token=….
- * - dispatch() NEVER throws and NEVER logs tokens, reset URLs, or SMTP
- *   secrets: AuthService always resolves reset requests (no account-enumeration
- *   oracle), so a mail outage must be indistinguishable from success.
- * - Single-use/expiry/session-revocation semantics live in AuthService and are
- *   unchanged by the transport used here.
- */
 @Injectable()
 export class PasswordResetDelivery {
   private readonly logger = new Logger(PasswordResetDelivery.name);
@@ -116,10 +91,6 @@ export class PasswordResetDelivery {
         port: cfg.port,
         secure: cfg.secure,
         auth: cfg.user && cfg.pass ? { user: cfg.user, pass: cfg.pass } : undefined,
-        // 8.58 bounded delivery: a dead relay must fail fast instead of
-        // holding the reset request (and its worker) for nodemailer's
-        // multi-minute defaults. Values are conservative for port-587
-        // STARTTLS relays, which normally answer in well under a second.
         connectionTimeout: 10_000,
         greetingTimeout: 10_000,
         socketTimeout: 20_000,
@@ -135,14 +106,10 @@ export class PasswordResetDelivery {
         this.logger.log(`Password reset requested for ${email} (delivery stubbed)`);
         return;
       }
-      // Development/test visibility without API exposure. Token stays out of responses.
       this.logger.debug(`Password reset stub for ${email}: token length ${token.length}`);
       return;
     }
     if (failures.length > 0) {
-      // Partial SMTP config must fail clearly (validate-env also rejects it at
-      // boot in production) — but still resolve so reset requests never become
-      // an account-enumeration oracle. Token/URL never logged.
       this.logger.error(`Password reset not sent: ${failures.join('; ')}`);
       return;
     }
@@ -160,7 +127,6 @@ export class PasswordResetDelivery {
       });
       this.logger.log(`Password reset email sent for ${email}`);
     } catch (err) {
-      // Mail outage must look identical to success (anti-enumeration).
       this.logger.warn(
         `Password reset delivery failed for ${email}: ${err instanceof Error ? err.message : 'unknown error'}`
       );

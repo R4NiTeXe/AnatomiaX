@@ -21,7 +21,6 @@ function toView(sub: PushSubscription): SubscriptionView {
   };
 }
 
-/** Stores only the allowlisted minimum inside the existing keys Json column. */
 function cleanKeys(dto: RegisterSubscriptionDto): Prisma.InputJsonValue {
   const keys: PushKeysDto = dto.keys ?? {};
   const out: Record<string, string | number> = {};
@@ -31,20 +30,10 @@ function cleanKeys(dto: RegisterSubscriptionDto): Prisma.InputJsonValue {
   return out as Prisma.InputJsonValue;
 }
 
-/**
- * 8.19.24 push subscriptions on the existing PushSubscription model.
- * Every operation is strictly scoped to the authenticated user id —
- * there is no admin override and no cross-user access path.
- */
 @Injectable()
 export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Idempotent register: same user + same endpoint returns the existing row
-   * (keys refreshed); an endpoint owned by another user is a 409 so one
-   * user can never adopt or observe another's subscription.
-   */
   async register(user: SafeUser, dto: RegisterSubscriptionDto): Promise<SubscriptionView> {
     const existing = await this.prisma.pushSubscription.findUnique({
       where: { endpoint: dto.endpoint },
@@ -65,10 +54,6 @@ export class NotificationsService {
       });
       return toView(created);
     } catch (error) {
-      // Concurrent double-register: both racers miss findUnique, one loses
-      // the @@unique(endpoint) race. Re-read to decide: same user →
-      // idempotent update-and-return (contract preserved); another user's
-      // row → 409 without adopting or observing it. Non-P2002 rethrows.
       if (prismaCodeFrom(error) !== 'P2002') throw error;
       const winner = await this.prisma.pushSubscription.findUnique({
         where: { endpoint: dto.endpoint },
@@ -92,10 +77,6 @@ export class NotificationsService {
     return rows.map(toView);
   }
 
-  /**
-   * Removes only the caller's own subscription. Unknown ids and other users'
-   * ids both yield 404 (no existence oracle — same convention as cohorts).
-   */
   async remove(user: SafeUser, id: string): Promise<void> {
     const existing = await this.prisma.pushSubscription.findUnique({ where: { id } });
     if (!existing || existing.userId !== user.id) {

@@ -2,13 +2,6 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 import { ConfigService } from '@nestjs/config';
 import { resolveAllowedOrigins } from '../../config/cors-origins';
 
-/**
- * Normalizes an Origin/Referer header value to `scheme://host[:port]`.
- * The literal `null` (sandboxed / opaque-origin frames) is a browser-sent
- * value, not an absent header: it is returned as a non-empty sentinel that
- * can never equal an allow-list entry, so opaque origins fail closed.
- * Malformed values are treated as absent (non-browser tolerance).
- */
 function originOf(value: string | string[] | undefined): string | null {
   const first = Array.isArray(value) ? value[0] : value;
   if (!first) return null;
@@ -21,15 +14,6 @@ function originOf(value: string | string[] | undefined): string | null {
   }
 }
 
-/**
- * Cookie-CSRF guard for cookie-credentialed mutations (`refresh`, `logout`).
- *
- * Browsers always send `Origin` on fetch POSTs; when it is absent (older
- * clients, same-document navigations) `Referer` is checked instead. Native
- * and server-side clients send neither header and pass through — CSRF is a
- * browser-only threat. Exact-match only (no prefix/suffix matching), generic
- * 403 with no oracle detail, fail-closed when no allow-list is configured.
- */
 @Injectable()
 export class OriginCheckGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}

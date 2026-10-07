@@ -12,13 +12,6 @@ import { OriginCheckGuard } from './origin-check.guard';
 import { PasswordResetDelivery } from './password-reset-delivery';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
-/**
- * Google login is optional: the strategy is registered only when both
- * GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are present, so the API still
- * boots normally without Google credentials. Nothing injects GoogleStrategy
- * directly (routes go through AuthGuard('google')), so an unregistered
- * strategy only affects the Google routes themselves.
- */
 function googleStrategyProvider(): Provider {
   return {
     provide: GoogleStrategy,
@@ -57,9 +50,6 @@ function googleStrategyProvider(): Provider {
     RolesGuard,
     OriginCheckGuard,
   ],
-  // JwtModule re-exported so feature modules using JwtAuthGuard resolve JwtService.
-  // ThrottlerModule re-exported so feature modules can guard their
-  // controllers with ThrottlerGuard against the shared storage/options.
   exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule, ThrottlerModule],
 })
 export class AuthModule {}

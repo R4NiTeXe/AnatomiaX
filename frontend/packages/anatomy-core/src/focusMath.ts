@@ -1,8 +1,3 @@
-/**
- * Platform-neutral camera-focus math on plain vectors — no Three.js, no DOM.
- * Web (`anatomyFocus.ts`) wraps these with its own scene/camera types;
- * the formulas here are the single implementation.
- */
 
 export interface FocusVec3 {
   x: number;
@@ -10,12 +5,6 @@ export interface FocusVec3 {
   z: number;
 }
 
-/**
- * Calculates suitable camera distance from a bounding sphere radius + camera FOV.
- * Uses perspective geometry: distance = (radius / sin(fov/2)) * padding.
- * Adds sensible padding so structure is clearly visible with margin.
- * Handles small/large bounds, finite outputs, and degenerate FOV.
- */
 export function computeFocusDistance(radius: number, fovDegrees: number, padding = 1.35): number {
   if (!Number.isFinite(radius) || radius <= 0) return 0;
   if (!Number.isFinite(padding) || padding <= 0) padding = 1.35;
@@ -32,17 +21,10 @@ export function computeFocusDistance(radius: number, fovDegrees: number, padding
   if (!Number.isFinite(distance) || distance <= 0) {
     return radius * 2 * padding;
   }
-  // Ensure tiny structures remain visible and avoid camera clipping inside mesh.
   const minDistance = Math.max(radius * 3, 0.15);
   return Math.max(distance, minDistance);
 }
 
-/**
- * Calculates new camera position given a target center, current camera/target,
- * and desired distance along the existing view direction.
- * Preserves direction; falls back to +Z when direction is degenerate.
- * No hardcoded anatomy coordinates — direction derived from current view.
- */
 export function computeCameraPosition(
   targetCenter: FocusVec3,
   currentCameraPosition: FocusVec3,

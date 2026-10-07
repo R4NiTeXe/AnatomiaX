@@ -70,7 +70,6 @@ describe('AnatomyQuiz', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('anatomy-quiz-start'));
     expect(screen.getByTestId('anatomy-quiz-progress')).toHaveTextContent('1 / 5');
-    // Answer and go through all 5
     for (let i = 0; i < 5; i++) {
       const choices = screen.getAllByTestId(/anatomy-quiz-choice-/);
       expect(choices.length).toBe(4);
@@ -110,7 +109,6 @@ describe('AnatomyQuiz', () => {
     const choices = screen.getAllByTestId(/anatomy-quiz-choice-/);
     fireEvent.click(choices[0]);
     const afterScore = screen.getByTestId('anatomy-quiz-score').textContent;
-    // Score should be 0 or 1 depending on if first choice was correct
     expect(afterScore).toMatch(/Score: [01] \/ 5/);
   });
 
@@ -118,7 +116,6 @@ describe('AnatomyQuiz', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('anatomy-quiz-start'));
     const choices = screen.getAllByTestId(/anatomy-quiz-choice-/);
-    // Click the second choice (likely wrong, but even if correct, feedback will be Correct/Incorrect)
     fireEvent.click(choices[1]);
     const feedback = screen.getByTestId('anatomy-quiz-feedback').textContent || '';
     expect(feedback === 'Correct!' || feedback.includes('Incorrect')).toBe(true);
@@ -149,7 +146,6 @@ describe('AnatomyQuiz', () => {
   it('retry/reset', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('anatomy-quiz-start'));
-    // Answer all 5 to get to final
     for (let i = 0; i < 5; i++) {
       const choices = screen.getAllByTestId(/anatomy-quiz-choice-/);
       fireEvent.click(choices[0]);
@@ -166,7 +162,6 @@ describe('AnatomyQuiz', () => {
     fireEvent.click(screen.getByTestId('select-brain'));
     fireEvent.click(screen.getByTestId('anatomy-quiz-start'));
     const question = screen.getByTestId('anatomy-quiz-question').textContent || '';
-    // Should be Brain or another verified, but at least contains a known canonical
     const all = getAnatomyInformationSeed();
     const hasKnown = all.some(s => question.includes(s.canonicalName));
     expect(hasKnown).toBe(true);

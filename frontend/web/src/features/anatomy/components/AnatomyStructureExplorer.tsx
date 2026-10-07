@@ -5,7 +5,6 @@ import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 import type { AnatomyStructure, AnatomySystemKey } from './anatomyTypes';
 
 function humanizeParentName(raw: string): string {
-  // Remove VH_M_ / VH_F_ prefix and underscores, keep readable
   const withoutPrefix = raw.replace(/^VH_[MF]_/, '');
   return withoutPrefix.replace(/_/g, ' ');
 }
@@ -13,19 +12,13 @@ function humanizeParentName(raw: string): string {
 function getDisplayName(structure: AnatomyStructure): string {
   const canonical = getAnatomyInformationByStructureKey(structure.structureKey)?.canonicalName;
   if (canonical) return canonical;
-  // Fallback to humanized objectName without VH_ prefix
   return humanizeParentName(structure.name);
 }
 
 function getParentDisplayName(parentRaw: string, systemKey: AnatomySystemKey): string {
-  // Try to find verified canonicalName for a structure that has this parentRaw in its lineage
-  // Fallback to humanized parentRaw
-  // For system-level fallback, use system label
   if (!parentRaw || parentRaw === 'VH_M' || parentRaw === 'VH_F') {
     return getAnatomySystem(systemKey as never).label;
   }
-  // Try to find any information record that matches parentRaw as objectName (without prefix)
-  // We don't have direct parent structure, so humanize
   return humanizeParentName(parentRaw);
 }
 
@@ -89,12 +82,10 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     return [...list].sort((a, b) => a.structureKey.localeCompare(b.structureKey));
   }, [allLoaded, filter, systemFilter]);
 
-  // Hierarchy: System -> Parent (lineage[1]) -> Structures
   const hierarchy = useMemo(() => {
     const bySystem = new Map<AnatomySystemKey, Map<string, AnatomyStructure[]>>();
     for (const s of filtered) {
       const parentRaw = s.lineage[1] ?? s.systemKey;
-      // Fallback to systemKey if parent is VH_M / VH_F or empty
       const parentKey =
         !parentRaw || parentRaw === 'VH_M' || parentRaw === 'VH_F' ? s.systemKey : parentRaw;
       if (!bySystem.has(s.systemKey)) bySystem.set(s.systemKey, new Map());
@@ -102,7 +93,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
       if (!byParent.has(parentKey)) byParent.set(parentKey, []);
       byParent.get(parentKey)!.push(s);
     }
-    // Sort systems, parents, and structures deterministically
     const sortedSystems = [...bySystem.entries()].sort(([a], [b]) => a.localeCompare(b));
     for (const [, byParent] of sortedSystems) {
       for (const [parent, list] of byParent.entries()) {
@@ -110,7 +100,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
         byParent.set(parent, list);
       }
     }
-    // Also sort parents within each system
     for (const [sys, byParent] of sortedSystems) {
       const sortedParents = [...byParent.entries()].sort(([a], [b]) => a.localeCompare(b));
       bySystem.set(sys, new Map(sortedParents));
@@ -124,10 +113,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     setActiveIndex(flatFiltered.length > 0 ? 0 : -1);
   }, [flatFiltered]);
 
-  // STEP 8.36: reveal selection in the tree. Selecting via canvas, search,
-  // related links, or quiz review otherwise leaves the explorer collapsed
-  // with no visible context. Only expands (never collapses, never focuses);
-  // the existing activeIndex scroll reveals the row.
   const selectedKey = selectedStructure?.structureKey ?? null;
   useEffect(() => {
     if (!selectedKey) return;
@@ -146,10 +131,8 @@ export default function AnatomyStructureExplorer(): JSX.Element {
       return prev.has(key) ? prev : new Set(prev).add(key);
     });
   }, [selectedKey, flatFiltered]);
-  // Auto-expand systems/parents when filtering or initial load
   useEffect(() => {
     if (filtered.length > 0 && filtered.length <= 20) {
-      // Small result set: expand all
       setExpandedSystems(new Set([...hierarchy.keys()]));
       const allParents = new Set<string>();
       for (const [sys, byParent] of hierarchy.entries()) {
@@ -159,7 +142,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
       }
       setExpandedParents(allParents);
     } else if (filter.trim()) {
-      // When filtering, expand all matching branches
       setExpandedSystems(new Set([...hierarchy.keys()]));
       const allParents = new Set<string>();
       for (const [sys, byParent] of hierarchy.entries()) {
@@ -172,7 +154,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- derived filtered/hierarchy already encode filter
   }, [filtered, hierarchy]);
 
-  // Expand all systems by default when first loaded
   useEffect(() => {
     if (allLoaded.length > 0 && allLoaded.length <= 10) {
       setExpandedSystems(new Set([...hierarchy.keys()]));
@@ -209,7 +190,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        // Guard: x % 0 is NaN and would poison activeIndex on an empty list.
         if (flatFiltered.length === 0) return;
         setActiveIndex(prev => (prev + 1) % flatFiltered.length);
       } else if (e.key === 'ArrowUp') {
@@ -257,7 +237,6 @@ export default function AnatomyStructureExplorer(): JSX.Element {
     });
   }, []);
 
-  // Scroll active into view
   useEffect(() => {
     if (activeIndex >= 0 && listRef.current) {
       const el = listRef.current.querySelector(

@@ -54,7 +54,6 @@ export default function AnatomySessionPanel(): JSX.Element {
         </span>
       </div>
 
-      {/* Studied */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
           Studied{' '}
@@ -86,7 +85,6 @@ export default function AnatomySessionPanel(): JSX.Element {
         )}
       </div>
 
-      {/* Quiz */}
       <div className="border-t border-slate-800 pt-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Quiz</p>
         {!hasQuiz ? (
@@ -119,7 +117,6 @@ export default function AnatomySessionPanel(): JSX.Element {
         )}
       </div>
 
-      {/* Comparison */}
       <div className="border-t border-slate-800 pt-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Comparison</p>
         {!hasCompare || !selectedStructure || !compareStructure ? (

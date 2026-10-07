@@ -1,34 +1,3 @@
-/**
- * Populates the gitignored local dev GLB subset consumed by the web E2E suite.
- *
- * Playwright serves the Vite dev server, which serves `public/` statically:
- * a missing `/models-dev/*.glb` falls through to the SPA `index.html`
- * fallback, and the model loader fails with "Unexpected token '<' ... is not
- * valid JSON". Fresh clones (and CI runners) lack these files, so the
- * human-model-switch suite fails without this step.
- *
- * Two modes (auto-selected, always logged):
- * - REAL: all pipeline sources present (the gitignored male/female
- *   `working/optimized` build output of download → split → optimize).
- *   Copies the documented 13-file dev subset (see
- *   docs/architecture/asset-hosting.md): all 9 male systems unprefixed + 4
- *   female systems with the `female-` prefix.
- * - SYNTHETIC: no sources present (fresh clone / CI). Writes a minimal
- *   *valid* GLB (single triangle + normals, parseable by three.js
- *   GLTFLoader) under each of the 13 expected names. The viewer E2E suite
- *   asserts only state-machine behavior (loading visibility, canvas
- *   presence, honest errors, retry recovery, aria state — no geometry, no
- *   screenshots), so fixtures exercise the full fetch → parse → render →
- *   switch pipeline deterministically with zero network and no 350 MB
- *   download. Real-mesh decode stays a local-dev concern.
- * - A PARTIAL source set is a broken pipeline, not a fresh clone: fail
- *   clearly instead of silently mixing real and synthetic meshes.
- *
- * Idempotent — safe to re-run.
- *
- * Usage: node scripts/populate-dev-assets.js
- * Exit codes: 0 populated/verified, 1 partial/broken source set.
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -38,7 +7,6 @@ const MALE_SRC = path.join(ROOT, '3d-assets', 'male', 'working', 'optimized');
 const FEMALE_SRC = path.join(ROOT, '3d-assets', 'female', 'working', 'optimized');
 const DEST = path.join(ROOT, 'frontend', 'web', 'public', 'models-dev');
 
-// Representative subset (mirrors every developer's local layout).
 const MALE_FILES = [
   'cardiovascular-meshopt.glb',
   'digestive-meshopt.glb',
@@ -57,11 +25,6 @@ const FEMALE_FILES = [
   'skin-meshopt.glb',
 ];
 
-/**
- * Minimal valid GLB: one triangle (positions + normals), default material.
- * Layout: 12-byte header, JSON chunk (4-byte aligned, space-padded),
- * 72-byte BIN chunk (36 positions + 36 normals, float32LE).
- */
 function syntheticGlb() {
   const positions = [0, 0, 0, 1, 0, 0, 0, 1, 0];
   const normals = [0, 0, 1, 0, 0, 1, 0, 0, 1];
@@ -98,21 +61,21 @@ function syntheticGlb() {
   const total = 12 + 8 + jsonPadded.length + 8 + bin.length;
   const out = Buffer.alloc(total);
   let o = 0;
-  out.writeUInt32LE(0x46546c67, o); // 'glTF'
+  out.writeUInt32LE(0x46546c67, o);
   o += 4;
-  out.writeUInt32LE(2, o); // version
+  out.writeUInt32LE(2, o);
   o += 4;
   out.writeUInt32LE(total, o);
   o += 4;
   out.writeUInt32LE(jsonPadded.length, o);
   o += 4;
-  out.writeUInt32LE(0x4e4f534a, o); // 'JSON'
+  out.writeUInt32LE(0x4e4f534a, o);
   o += 4;
   jsonPadded.copy(out, o);
   o += jsonPadded.length;
   out.writeUInt32LE(bin.length, o);
   o += 4;
-  out.writeUInt32LE(0x004e4942, o); // 'BIN\0'
+  out.writeUInt32LE(0x004e4942, o);
   o += 4;
   bin.copy(out, o);
   return out;

@@ -57,16 +57,6 @@ export interface QuizView {
 
 type QuizRow = Quiz & { questions?: QuizQuestion[] };
 
-/**
- * Authoritative question bank + server-side grading (approved product scope).
- *
- * Visibility contract (no existence oracles for students):
- * - unknown id → 404 for everyone;
- * - non-published quiz → 404 unless the caller manages it;
- * - question payloads carry `correctIndex` ONLY for managers
- *   (owner or ADMIN) — student read/submit paths never see the key;
- * - legacy free-form attempts (no quizId) are untouched by this service.
- */
 @Injectable()
 export class QuizzesService {
   constructor(
@@ -75,7 +65,6 @@ export class QuizzesService {
     private readonly cohorts: CohortsService
   ) {}
 
-  /** Owner (createdById) or ADMIN. Archived state does not grant or remove. */
   private canManage(user: SafeUser, quiz: { createdById: string | null }): boolean {
     return user.role === 'ADMIN' || quiz.createdById === user.id;
   }
@@ -140,7 +129,6 @@ export class QuizzesService {
     if (!quiz) throw new NotFoundException('Quiz not found');
     const manager = this.canManage(actor, quiz);
     if (quiz.status !== 'PUBLISHED' && !manager) {
-      // No existence oracle: non-managers cannot tell draft from missing.
       throw new NotFoundException('Quiz not found');
     }
     const questions = await this.prisma.quizQuestion.findMany({
@@ -165,8 +153,6 @@ export class QuizzesService {
       where,
       orderBy: { createdAt: 'desc' },
     });
-    // Per-quiz counts (N+1 on small author lists — documented; avoids
-    // include-_count shapes the in-memory fakes cannot honor).
     return Promise.all(
       quizzes.map(async q => {
         const view = await this.toView(q, this.canManage(actor, q));
@@ -177,7 +163,6 @@ export class QuizzesService {
     );
   }
 
-  /** Throws 404 (unknown or hidden) or 403 (known but unmanaged). Shared by mutating paths. */
   protected async requireManagedQuiz(
     actor: SafeUser,
     id: string
@@ -249,9 +234,6 @@ export class QuizzesService {
     const { quiz } = await this.requireManagedQuiz(actor, quizId);
     await this.failArchived(quiz);
     if (quiz.status !== 'DRAFT') {
-      // Published questions are immutable: attempts snapshot them, and
-      // silent edits would change what a recorded score meant. Add a new
-      // question instead; delete only in draft.
       throw new ConflictException('Questions of a published quiz are immutable');
     }
     const question = await this.prisma.quizQuestion.findFirst({
@@ -301,19 +283,10 @@ export class QuizzesService {
 
   async deleteQuiz(actor: SafeUser, quizId: string): Promise<void> {
     const { quiz } = await this.requireManagedQuiz(actor, quizId);
-    // Questions cascade; attempts survive with quizId nulled (history kept,
-    // still visible via the legacy progress listing).
     await this.prisma.quiz.delete({ where: { id: quiz.id } });
     await this.auditRecord(actor, 'quiz.deleted', quiz.id, { title: quiz.title });
   }
 
-  /**
-   * Attempt visibility (documented): ADMIN and quiz owner see all rows;
-   * non-owner teachers see members of cohorts they manage (cohortId required
-   * — without it there is nothing they are authorized to see → 403);
-   * students see only their own rows (cohortId ignored). Rows carry
-   * counts, never per-question answer flags (aggregates live in stats).
-   */
   async listAttempts(
     actor: SafeUser,
     quizId: string,
@@ -369,7 +342,6 @@ export class QuizzesService {
     return this.toAttemptResult(attempt);
   }
 
-  /** User ids of members in cohorts the teacher manages (owns). Empty for others. */
   private async teacherVisibleUserIds(actor: SafeUser): Promise<Set<string>> {
     const ids = new Set<string>();
     if (actor.role !== 'TEACHER') return ids;
@@ -386,7 +358,6 @@ export class QuizzesService {
     try {
       view = await this.cohorts.get(actor, cohortId);
     } catch {
-      // Same convention as cohorts: unresolvable cohort reads as not found.
       throw new NotFoundException('Cohort not found');
     }
     if (view.myRole !== 'OWNER' && actor.role !== 'ADMIN') {
@@ -402,14 +373,11 @@ export class QuizzesService {
     if (actor.role === 'STUDENT') {
       throw new ForbiddenException('Insufficient permissions');
     }
-    // Reuse list visibility (uncapped fetch below is bounded for stats).
     const rows = (await this.listAttempts(actor, quizId, cohortId, 1000)) as Array<{
       userId: string;
       score: number;
       total: number;
     }>;
-    // History-safe aggregates: per-question correctness comes from stored
-    // attempt data, never the live bank (edits cannot rewrite the past).
     const detailed = await this.prisma.quizAttempt.findMany({
       where:
         rows.length > 0
@@ -478,15 +446,6 @@ export class QuizzesService {
     return this.getQuiz(actor, updated.id);
   }
 
-  /**
-   * Server-side grading. The request carries ONLY selected option indexes —
-   * score/total/correctness are computed here from the stored bank, so forged
-   * scores are structurally impossible (no such DTO fields exist).
-   * Unanswered questions count as incorrect (documented product rule).
-   * Every submit creates a new attempt row (repeats allowed by design);
-   * the attempt carries an immutable question snapshot so later quiz edits
-   * never rewrite history.
-   */
   async submitAttempt(
     actor: SafeUser,
     quizId: string,
@@ -569,7 +528,6 @@ export class QuizzesService {
     };
   }
 
-  /** Own attempts only — cross-student rows 404 (no oracle). */
   async listOwnAttempts(actor: SafeUser, quizId: string, limit?: number) {
     const quiz = await this.prisma.quiz.findUnique({ where: { id: quizId } });
     if (!quiz) throw new NotFoundException('Quiz not found');

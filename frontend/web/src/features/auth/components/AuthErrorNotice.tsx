@@ -11,8 +11,6 @@ export default function AuthErrorNotice({
   testId?: string;
 }): JSX.Element | null {
   if (!error) return null;
-  // Enter-only feedback motion — subtle horizontal settle draws the eye
-  // without shaking the layout. Same testids/contract, no exit delay.
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}

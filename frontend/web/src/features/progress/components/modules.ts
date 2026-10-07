@@ -5,16 +5,9 @@ import {
   getAnatomySystem,
 } from '@/features/anatomy/components/anatomyAssetConfig';
 
-/**
- * Static study-module registry (STEP 8.49).
- * One module per anatomy system — the only grouping the verified data
- * supports (systems are the canonical catalog; no invented groupings).
- * All progress/continue math derives transparently from studied keys.
- */
 export interface LearningModule {
   key: AnatomySystemKey;
   title: string;
-  /** Verified record keys, deterministic structureKey order (explorer convention). */
   structureKeys: string[];
   totalStructures: number;
 }
@@ -76,13 +69,7 @@ export function moduleProgress(
   return { studied, total, percent, status };
 }
 
-/**
- * Curriculum Continue priority (STEP 8.49):
- * 1. first unstudied structure of the most-progressed unfinished module
- * 2. most recent valid studied key (revisit)
- * 3. first unstudied record overall
- * Returns null only when no target exists at all.
- */ export function findContinueTarget(
+ export function findContinueTarget(
   modules: readonly LearningModule[],
   studiedKeys: readonly string[]
 ): ContinueTarget | null {
@@ -112,20 +99,11 @@ export function moduleProgress(
   return null;
 }
 
-/**
- * Derived study-session position (STEP 8.50). Pure function of the current
- * selection plus studied keys — no stored session, so refresh, back/forward,
- * and deep-links all resolve the same position. Order is navigational only,
- * never a claim of medical importance.
- */
 export interface SessionPosition {
   module: LearningModule;
-  /** Zero-based position of structureKey in module order. */
   index: number;
   total: number;
-  /** Previous structure for review, or null at the start. */
   previousKey: string | null;
-  /** First unstudied structure after the current one, or null at the end. */
   nextKey: string | null;
 }
 

@@ -196,7 +196,6 @@ describe('compare', () => {
 
   it('hiding a visible system clears its selection and comparison', () => {
     renderWithProvider();
-    // Nervous starts hidden: show it first so selection persists.
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('select-brain'));
     fireEvent.click(screen.getByTestId('compare-spinal'));

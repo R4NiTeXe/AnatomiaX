@@ -40,10 +40,6 @@ function sessionBody(session: AuthSession) {
   };
 }
 
-/**
- * 8.20.20: the web app origin for completing the full-page Google OAuth flow
- * (shared helper — first CORS_ORIGIN entry, operator allow-list only).
- */
 function webAppCallbackUrl(config: ConfigService): string {
   return `${webAppOrigin(config)}/auth/callback`;
 }
@@ -66,26 +62,12 @@ export class AuthController {
   } {
     const isProduction = process.env.NODE_ENV === 'production';
     const secure = isProduction ? true : this.config.get<string>('COOKIE_SECURE') === 'true';
-    // Production is always cross-site (Vercel frontend ↔ Render API, ports
-    // differ so even localhost dev is same-site but prod never is): a Lax
-    // default stores the cookie on the OAuth 302 yet the browser never sends
-    // it on cross-site fetch — /refresh 401s forever and the Google callback
-    // reports "No Google session found". SameSite=None (with forced Secure)
-    // is the correct attribute for this architecture; the CSRF residual is
-    // covered by OriginCheckGuard on the cookie-credentialed routes
-    // (ADR-001). Explicit COOKIE_SAMESITE still wins for operator intent;
-    // non-production default stays lax.
     const sameSite = (this.config.get<string>('COOKIE_SAMESITE') ??
       (isProduction ? 'none' : 'lax')) as 'lax' | 'strict' | 'none';
     const days = Number(this.config.get<string>('REFRESH_TTL_DAYS') ?? '30') || 30;
     return { httpOnly: true, secure, sameSite, path: '/api/v1/auth', maxAge: days * 86400000 };
   }
 
-  /**
-   * Clears the session cookie with attributes mirroring issuance (minus
-   * maxAge): a clearing response must match the cookie or edge browsers
-   * keep a live session cookie behind after logout.
-   */
   private clearSession(res: CookieResponse): void {
     const { path, sameSite, secure } = this.cookieOptions();
     res.clearCookie(REFRESH_COOKIE, { path, sameSite, secure });
@@ -97,11 +79,6 @@ export class AuthController {
   }
 
   private presentedToken(req: AuthRequest, body?: RefreshDto): string | undefined {
-    // Prefer the cookie: the browser jar always holds the latest rotated
-    // value, while a JSON body token can be stale (e.g. a second tab that
-    // has not refreshed since another tab rotated). A stale body token
-    // would trip reuse detection and revoke the whole family — killing live
-    // sessions. Body-only callers (mobile, tests) fall through unchanged.
     return req.cookies?.[REFRESH_COOKIE] ?? body?.refreshToken;
   }
 
@@ -121,26 +98,19 @@ export class AuthController {
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   googleLogin(): void {
-    // Handled by the Google guard (redirects to Google).
   }
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleCallback(@Req() req: AuthRequest, @Res() res: RedirectResponse): Promise<void> {
-    // Guard guarantees req.user; verified through Google's identity response.
     const user = req.user as SafeUser;
     const session = await this.auth.issueSessionForUser(user.id);
-    // 8.20.20: full-page OAuth flow left the SPA, so 302 back to the web app
-    // (which picks the session up from the httpOnly cookie via /auth/callback)
-    // instead of stranding the user on raw session JSON with tokens rendered
-    // in the page. Cookie is set on the same redirect response.
     res.cookie(REFRESH_COOKIE, session.refreshToken, this.cookieOptions());
     res.redirect(webAppCallbackUrl(this.config));
   }
 
   @Post('refresh')
   @HttpCode(200)
-  // Cookie-CSRF: the refresh credential travels in a cross-site cookie.
   @UseGuards(OriginCheckGuard)
   async refresh(
     @Body() dto: RefreshDto,
@@ -155,7 +125,6 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  // Cookie-CSRF: logout revokes the cookie-presented token.
   @UseGuards(OriginCheckGuard)
   async logout(
     @Body() dto: RefreshDto,
@@ -183,7 +152,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: CookieResponse
   ) {
     await this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);
-    // All sessions revoked: drop the refresh cookie so the client re-authenticates.
     this.clearSession(res);
     return { status: 'ok' as const };
   }
@@ -192,7 +160,6 @@ export class AuthController {
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
-    // Generic response always: no enumeration, never exposes the token.
     await this.auth.requestPasswordReset(dto.email);
     return { status: 'ok' as const };
   }
@@ -205,7 +172,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: CookieResponse
   ) {
     await this.auth.confirmPasswordReset(dto.email, dto.token, dto.newPassword);
-    // All sessions revoked: mirror issuance flags so no live cookie survives.
     this.clearSession(res);
     return { status: 'ok' as const };
   }
@@ -223,7 +189,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: CookieResponse
   ) {
     await this.auth.deleteAccount(user.id);
-    // Account gone with all sessions: mirror issuance flags on clear.
     this.clearSession(res);
     return { status: 'ok' as const };
   }

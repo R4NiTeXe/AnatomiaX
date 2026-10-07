@@ -1,6 +1,5 @@
 import tailwindcssAnimate from 'tailwindcss-animate';
 
-/** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ['class'],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -47,14 +46,12 @@ export default {
           600: '#0d9488',
           900: '#134e4a',
         },
-        // STEP 8.23 premium surface scale — semantic layer over slate literals.
         surface: {
           DEFAULT: 'hsl(var(--surface))',
           raised: 'hsl(var(--surface-raised))',
           overlay: 'hsl(var(--surface-overlay))',
         },
       },
-      // STEP 8.23 restrained elevation — soft depth, single subtle glow.
       boxShadow: {
         soft: '0 8px 30px -12px rgb(0 0 0 / 0.7)',
         lift: '0 16px 48px -16px rgb(0 0 0 / 0.75)',

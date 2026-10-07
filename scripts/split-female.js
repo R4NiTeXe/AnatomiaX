@@ -21,8 +21,6 @@ async function main() {
 
   fs.mkdirSync(workingDir, { recursive: true });
 
-  // Mapping verified via inspection of VH_F children (10 direct children)
-  // VH_F children: integumentary, nervous, muscular, reproductive, digestive, urinary, circulatory, respiratory, lymphatic, skeletal
   const assets = [
     {
       name: 'skin',

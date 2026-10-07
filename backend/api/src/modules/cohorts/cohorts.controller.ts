@@ -12,8 +12,6 @@ import { JoinCohortDto } from './dto/join-cohort.dto';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
 
 @Controller('v1/cohorts')
-// ThrottlerGuard shares AuthModule's storage/options (100/min default):
-// invite-code brute force and write endpoints stay bounded.
 @UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class CohortsController {
   constructor(private readonly cohorts: CohortsService) {}
@@ -35,8 +33,6 @@ export class CohortsController {
     return this.cohorts.join(user, dto.inviteCode);
   }
 
-  // NOTE: declared before ':id' — Express matches in registration order and
-  // 'assignments/mine' would otherwise be captured as an :id value.
   @Get('assignments/mine')
   listMyAssignments(@CurrentUser() user: SafeUser) {
     return this.cohorts.listMyAssignments(user);

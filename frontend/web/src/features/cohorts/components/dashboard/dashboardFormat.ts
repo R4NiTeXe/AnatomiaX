@@ -1,7 +1,3 @@
-/**
- * Cohort dashboard formatting + aggregate item shape.
- * Pure helpers extracted verbatim from CohortDashboardPage (STEP 8.53).
- */
 
 export interface DashboardRecentAttempt {
   id: string;

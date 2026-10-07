@@ -1,4 +1,3 @@
--- 8.19.23: single-use expiring password-reset tokens (hashed at rest, cascade on user delete).
 CREATE TABLE "password_reset_tokens" (
     "id" TEXT NOT NULL,
     "tokenHash" TEXT NOT NULL,

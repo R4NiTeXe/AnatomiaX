@@ -134,7 +134,6 @@ describe('student quizzes UI', () => {
       ['/quizzes/q1']
     );
     expect(await screen.findByTestId('quiz-take-title', {}, { timeout: 4000 })).toBeInTheDocument();
-    // Answer key is never rendered (no correctIndex in the payload).
     expect(screen.queryByText(/correct answer/i)).not.toBeInTheDocument();
     const options = screen.getAllByTestId('quiz-take-option');
     fireEvent.click(options[0]);
@@ -144,7 +143,6 @@ describe('student quizzes UI', () => {
     expect(await screen.findByTestId('quiz-take-result', {}, { timeout: 4000 })).toHaveTextContent(
       '1 / 2'
     );
-    // Only selected indexes travel — never scores.
     expect(posted).toHaveLength(1);
     expect(posted[0]).toEqual({
       answers: [
@@ -351,7 +349,6 @@ describe('teacher quiz management UI', () => {
     fireEvent.change(screen.getByTestId('teach-question-correct'), { target: { value: '2' } });
     fireEvent.click(screen.getByTestId('teach-question-add'));
     await waitFor(() => expect(posted).toHaveLength(1));
-    // UI is 1-based ("2") → API is 0-based (1).
     expect(posted[0]).toMatchObject({ correctIndex: 1 });
   });
 

@@ -159,7 +159,6 @@ describe('api client', () => {
     it('does not throw uncaught — caller can catch', async () => {
       process.env.VITE_API_BASE_URL = 'http://localhost:3000';
       global.fetch = jest.fn().mockRejectedValue(new Error('offline'));
-      // Should not throw unhandled, just reject
       const promise = getHealth();
       await expect(promise).rejects.toBeInstanceOf(Error);
     });

@@ -1,19 +1,3 @@
-/**
- * 8.19.25 canonical API error contract.
- *
- * Every non-health `/api/v1/*` error responds with this shape:
- *
- *   { code, message, details?, requestId }
- *
- * - `code` is a stable machine-readable string (see ERROR_CODE_BY_STATUS).
- * - `message` is human-readable and safe to display (never a stack trace,
- *   Prisma/SQL internals, token, hash, or secret).
- * - `details` appears only for validation failures (the class-validator
- *   messages array).
- * - `requestId` matches the `x-request-id` response header for log correlation.
- *
- * Success responses are unchanged by this contract.
- */
 
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
@@ -49,12 +33,9 @@ const CODE_BY_STATUS: Record<number, ApiErrorCode> = {
 };
 
 export function codeForStatus(status: number): ApiErrorCode {
-  // NOTE: no 400 special-case here — CODE_BY_STATUS[400] is BAD_REQUEST and
-  // validation failures are mapped to VALIDATION_ERROR by ApiExceptionFilter.
   return CODE_BY_STATUS[status] ?? 'INTERNAL_ERROR';
 }
 
-/** Health routes keep their legacy payloads and bypass normalization. */
 export function isHealthPath(url: string): boolean {
   const path = url.split('?')[0];
   if (path === '/health' || path.startsWith('/health/')) return true;
@@ -74,10 +55,6 @@ function prismaCodeOf(exception: unknown): string | null {
   return null;
 }
 
-/**
- * Maps Prisma/database errors to safe HTTP semantics without leaking
- * internals. Returns null when the exception is not Prisma-shaped.
- */
 export function prismaToHttp(prismaCode: string): { status: number; message: string } | null {
   switch (prismaCode) {
     case 'P2002':

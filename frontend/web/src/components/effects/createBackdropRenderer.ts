@@ -1,9 +1,7 @@
 import { BACKDROP_FRAGMENT, BACKDROP_VERTEX } from './atmosphereShader';
 
 export interface BackdropOptions {
-  /** Frozen composed frame, no loop — for prefers-reduced-motion. */
   reducedMotion: boolean;
-  /** 0..1 master scale for every effect term (mobile/weak-device scaling). */
   intensity: number;
 }
 
@@ -26,14 +24,6 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string):
   return shader;
 }
 
-/**
- * Minimal raw-WebGL backdrop renderer (STEP 8.30).
- * One fullscreen triangle, three uniforms, zero per-frame allocations.
- * Any failure (no context, compile error, missing entry points such as the
- * jsdom test stub) throws — the React wrapper catches it and renders the
- * static CSS fallback instead. Returns null only for a missing context so
- * call sites can distinguish "unsupported" from "broken".
- */
 export function createBackdropRenderer(
   canvas: HTMLCanvasElement,
   options: BackdropOptions
@@ -79,7 +69,6 @@ export function createBackdropRenderer(
 
   const buffer = context.createBuffer();
   context.bindBuffer(context.ARRAY_BUFFER, buffer);
-  // Single fullscreen triangle — covers the viewport in 3 vertices.
   context.bufferData(
     context.ARRAY_BUFFER,
     new Float32Array([-1, -1, 3, -1, -1, 3]),
@@ -97,7 +86,6 @@ export function createBackdropRenderer(
   const resize = (): void => {
     if (disposed || !parent) return;
     const rect = parent.getBoundingClientRect();
-    // Cap pixel ratio: 1 on small screens, 1.5 max elsewhere.
     const dpr = Math.min(window.devicePixelRatio || 1, rect.width < 640 ? 1 : 1.5);
     const width = Math.max(1, Math.floor(rect.width * dpr));
     const height = Math.max(1, Math.floor(rect.height * dpr));
@@ -142,7 +130,6 @@ export function createBackdropRenderer(
   document.addEventListener('visibilitychange', onVisibility);
 
   if (options.reducedMotion) {
-    // One composed static frame, then the GPU idles — no loop is scheduled.
     render(STATIC_TIME);
   } else {
     rafId = window.requestAnimationFrame(loop);
@@ -168,7 +155,6 @@ export function createBackdropRenderer(
         const lose = context.getExtension('WEBGL_lose_context');
         lose?.loseContext();
       } catch {
-        // Context release is best-effort only.
       }
     },
   };

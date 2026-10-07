@@ -143,8 +143,6 @@ function PublicHome(): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
       <Card className="relative overflow-hidden p-6">
-        {/* STEP 8.30: ambient shader sits above the card wash, below the
-            copy — decorative only, headline/CTA hierarchy unchanged. */}
         <ShaderBackdrop testId="home-hero-atmosphere" />
         <div className="relative">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl" data-testid="home-title">
@@ -176,8 +174,6 @@ function PublicHome(): JSX.Element {
 
       <div className="grid gap-4 lg:grid-cols-5">
         <Card className="overflow-hidden lg:col-span-3">
-          {/* STEP 8.29: single deliberate play — the 3D viewer stays the
-              primary anatomy experience; this is supporting story only. */}
           <LottieVisual
             asset="body-scan"
             label="Body scan animation — secondary to 3D viewer"
@@ -192,7 +188,6 @@ function PublicHome(): JSX.Element {
           </div>
         </Card>
         <Card className="overflow-hidden lg:col-span-2">
-          {/* STEP 8.29: restrained loop in the smaller panel; text primary. */}
           <LottieVisual
             asset="medical-technology"
             label="Medical technology animation"
@@ -292,8 +287,6 @@ function Dashboard(): JSX.Element {
 export default function HomePage(): JSX.Element {
   const { status } = useAuth();
 
-  // Rendered inside AppShell which already provides SiteNav + min-h-screen.
-  // Keep main#main-content for skip-link target; AppShell's Outlet renders this.
   return (
     <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
       {status === 'loading' ? (

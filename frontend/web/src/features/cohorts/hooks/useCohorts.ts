@@ -34,11 +34,6 @@ export function cohortProgressKey(userId: string | undefined, id: string): reado
   return ['cohorts', 'progress', userId ?? 'anonymous', id] as const;
 }
 
-/**
- * Managers are cohort owners plus global admins (the backend reports
- * myRole OWNER for both). Everyone else — including TEACHER members of
- * someone else's cohort — is read-only here; the backend enforces 403.
- */
 export function canManageCohort(myRole: string | null, globalRole: string | undefined): boolean {
   return myRole === 'OWNER' || globalRole === 'ADMIN';
 }

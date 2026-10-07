@@ -33,9 +33,6 @@ import { UsersModule } from './modules/users/users.module';
     QuizzesModule,
   ],
   providers: [
-    // 8.19.25 canonical contract: request ids on every response, normalized
-    // error bodies on every non-health API error. Registered here so the
-    // real app and every e2e module using AppModule behave identically.
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

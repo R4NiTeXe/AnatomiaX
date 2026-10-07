@@ -12,9 +12,6 @@ export default function AccountPanel(): JSX.Element {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<FriendlyAuthError | null>(null);
-  // Ref (not state) so the clicked button's onClick — which runs before
-  // onSubmit — is visible synchronously. Both buttons stay type=submit so
-  // native required/minLength validation applies to login AND register.
   const modeRef = useRef<'login' | 'register'>('login');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

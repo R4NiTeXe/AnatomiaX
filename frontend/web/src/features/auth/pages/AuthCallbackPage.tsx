@@ -14,8 +14,6 @@ export default function AuthCallbackPage(): JSX.Element {
   const [searchParams] = useSearchParams();
   const [notice, setNotice] = useState<string | null>(null);
 
-  // OAuth carries no requested role: the database role is authoritative.
-  // Route by the restored session's role, explicit ?next= first.
   const rawNext = searchParams.get('next');
   const urlError = searchParams.get('error');
   const urlAccess = searchParams.get('accessToken');
@@ -26,12 +24,10 @@ export default function AuthCallbackPage(): JSX.Element {
       setNotice(searchParams.get('error_description') ?? 'Google sign-in was cancelled or failed.');
       return;
     }
-    // Future-proof: backend may one day redirect with tokens in the query.
     if (urlAccess && urlRefresh) {
       try {
         const rawUser = searchParams.get('user');
         if (!rawUser) {
-          // No user payload — fall through to the cookie/session recovery below.
           throw new Error('missing user');
         }
         const user = JSON.parse(rawUser) as {
@@ -48,8 +44,6 @@ export default function AuthCallbackPage(): JSX.Element {
       }
     }
     let alive = true;
-    // The backend sets an httpOnly refresh cookie on the Google callback path;
-    // re-fetching /me (with cookie refresh) picks the session up in this app.
     reload().then(found => {
       if (!alive) return;
       if (found)
@@ -65,7 +59,6 @@ export default function AuthCallbackPage(): JSX.Element {
     return () => {
       alive = false;
     };
-    // Run once on mount — reload/navigate are stable enough for this flow.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

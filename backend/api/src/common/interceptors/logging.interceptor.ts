@@ -23,13 +23,11 @@ export class LoggingInterceptor implements NestInterceptor {
     if (isHealthPath(url)) {
       return next.handle();
     }
-    // Never log authorization, cookie, or other secrets
     const start = Date.now();
     return next.handle().pipe(
       tap({
         next: () => {
           const duration = Date.now() - start;
-          // Only log at debug level for success to avoid noise; errors are logged by ApiExceptionFilter
           if (duration > 1000) {
             this.logger.warn(`[${requestId}] ${method} ${url} -> 2xx ${duration}ms`);
           }

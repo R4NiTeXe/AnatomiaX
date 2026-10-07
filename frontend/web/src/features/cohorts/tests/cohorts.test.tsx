@@ -115,7 +115,6 @@ function viewOf(c: FakeCohort, userId: string, globalRole: string) {
   };
 }
 
-/** Backend-faithful fake: roles, 404-no-oracle, archived guards, invite secrecy. */
 function mockBackend(me: typeof TEACHER_A) {
   const session = { user: me, accessToken: `access-${me.id}`, refreshToken: `refresh-${me.id}` };
   (global.fetch as jest.Mock).mockImplementation((url: string, init?: RequestInit) => {

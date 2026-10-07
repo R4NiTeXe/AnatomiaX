@@ -27,7 +27,6 @@ describe('Health (e2e)', () => {
     );
     app.use(helmet());
     const httpAdapter = app.getHttpAdapter();
-    // Mirror main.ts convenience route
     httpAdapter.get('/health', (_req: unknown, res: { json: (b: unknown) => void }) => {
       res.json({ status: 'ok' });
     });
@@ -62,9 +61,7 @@ describe('Health (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/api/health/db');
     expect(['connected', 'disconnected']).toContain(res.body.database);
     expect(res.body.status).toBe(res.body.database === 'connected' ? 'ok' : 'degraded');
-    // Readiness contract: 200 when connected, 503 when unavailable.
     expect(res.status).toBe(res.body.database === 'connected' ? 200 : 503);
-    // Never leaks raw DB internals.
     expect(JSON.stringify(res.body)).not.toMatch(/postgres|prisma|ECONN/i);
   });
 
@@ -86,7 +83,6 @@ describe('Health (e2e)', () => {
   });
 
   it('ValidationPipe is enabled (whitelist)', () => {
-    // App has ValidationPipe – check via internal check
     const pipes = (app as unknown as { get: (t: unknown) => unknown }).get;
     expect(pipes).toBeDefined();
   });

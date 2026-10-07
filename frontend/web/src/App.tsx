@@ -46,7 +46,6 @@ export default function App(): JSX.Element {
       </a>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          {/* Public shell — Home, Learn, Anatomy share consistent nav; auth pages keep AuthLayout */}
           <Route element={<AppShell />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/learn" element={<LearnPage />} />
@@ -117,11 +116,7 @@ export default function App(): JSX.Element {
             />
           </Route>
 
-          {/* Standalone — preserve viewer header, no shell duplication */}
           <Route path="/human" element={<HumanPage />} />
-          {/* Dev-only asset browser: excluded from production bundles
-              (process.env.NODE_ENV is statically replaced, so the dead
-              branch — and its three.js chunk — is eliminated in prod). */}
           {process.env.NODE_ENV !== 'production' && (
             <Route path="/human-test" element={<HumanTestPage />} />
           )}
@@ -134,10 +129,6 @@ export default function App(): JSX.Element {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          {/* Canonical aliases: the anatomy viewer lives at /human and
-              learning progress at /learn (matching nav labels). These
-              redirects keep bookmarked/guessed URLs working without
-              duplicating pages. */}
           <Route path="/anatomy" element={<Navigate to="/human" replace />} />
           <Route path="/progress" element={<Navigate to="/learn" replace />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -7,11 +7,6 @@ interface SectionHeaderProps {
   action?: ReactNode;
 }
 
-/**
- * Shared section heading for student surfaces: kicker + h2 + optional
- * description and trailing action. Keeps heading hierarchy flat (h2 under
- * the page h1) across Home and Learn.
- */
 export default function SectionHeader({
   kicker,
   title,

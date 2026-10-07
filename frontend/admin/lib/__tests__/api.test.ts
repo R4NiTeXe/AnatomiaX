@@ -40,9 +40,6 @@ describe('admin api client', () => {
     });
 
     it('throws a clear error in production builds when env missing', () => {
-      // NODE_ENV is a declared read-only prop on this @types/node ProcessEnv
-      // (index-signature keys like NEXT_PUBLIC_* are still mutable), so all
-      // writes go through a mutable record view.
       const env = process.env as Record<string, string | undefined>;
       const originalNodeEnv = env.NODE_ENV;
       env.NODE_ENV = 'production';

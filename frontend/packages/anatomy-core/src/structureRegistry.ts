@@ -7,16 +7,6 @@ import type {
 } from '@anatomiax/shared-types';
 import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 
-/**
- * Stable key for a structure.
- * - Preferred: `${bodyModel}:${systemKey}:${ontologyId}` when a verified ontologyId exists.
- * - Fallback: `${bodyModel}:${systemKey}:object:${sanitizedObjectName}` when ontology is absent.
- *
- * Body model prefix ensures male and female structures with the same ontology do not collide,
- * while keeping ontologyId globally searchable via `byOntology`.
- * Sanitization: trim and replace whitespace runs with single underscore,
- * keep original casing (HRA names are already stable like `VH_M_heart`).
- */
 export function createStructureKey(
   systemKey: AnatomySystemKey,
   ontologyId: string | null,
@@ -31,7 +21,6 @@ export function createStructureKey(
   return `${bodyModel}:${systemKey}:object:${fallback}`;
 }
 
-/** Legacy overload — bodyModel defaults to male for backward compat */
 export function createStructureKeyForBody(
   bodyModel: AnatomyBodyModelKey,
   systemKey: AnatomySystemKey,
@@ -41,16 +30,9 @@ export function createStructureKeyForBody(
   return createStructureKey(systemKey, ontologyId, objectName, bodyModel);
 }
 
-/**
- * Reads a verified ontologyId candidate from loader `extras`-style data.
- * Pure over unknown input: handles case variations seen in HRA extras and
- * nested `extras` containers. Scene-graph walking stays platform-specific
- * (see web `extractOntologyId`).
- */
 export function readOntologyCandidate(data: unknown): string | null {
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
-  // Direct fields — handle case variations seen in HRA extras.
   const candidates = [
     record['ontologyId'],
     record['ontologyid'],
@@ -61,23 +43,14 @@ export function readOntologyCandidate(data: unknown): string | null {
   ];
   for (const c of candidates) {
     if (typeof c === 'string' && c.trim()) {
-      // For IRIs like http://purl.org/sig/ont/fma/fma123 -> keep as-is for lookup helper,
-      // but prefer prefixed form when both exist. Trim only here; caller normalizes.
       return c.trim();
     }
   }
-  // Nested extras container (some loaders nest original extras under `extras`).
   if (record['extras'] && typeof record['extras'] === 'object') {
     return readOntologyCandidate(record['extras']);
   }
   return null;
 }
-
-// ---------------------------------------------------------------------------
-// Registry — pure data index over AnatomyStructure records.
-// Scene loading (GLB traversal) stays in the web viewer; platforms register
-// plain records here via register()/registerStructures().
-// ---------------------------------------------------------------------------
 
 export class AnatomyStructureRegistry {
   private byKey = new Map<string, AnatomyStructure>();
@@ -165,7 +138,6 @@ export class AnatomyStructureRegistry {
     return this.byKey.get(key);
   }
 
-  /** Exact ontologyId match (case-sensitive, as stored from GLB). */
   findStructureByOntologyId(ontologyId: string): AnatomyStructure | undefined {
     const keys = this.byOntology.get(ontologyId);
     if (!keys || keys.size === 0) return undefined;
@@ -192,7 +164,6 @@ export class AnatomyStructureRegistry {
     return [...keys].map(k => this.byKey.get(k) as AnatomyStructure);
   }
 
-  /** Exact name match — wrapper for object-name lookup; kept for future search. */
   findStructuresByName(name: string): AnatomyStructure[] {
     return this.findStructuresByObjectName(name);
   }
@@ -211,10 +182,6 @@ export class AnatomyStructureRegistry {
     return this.byKey.size;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Search helpers (future)
-// ---------------------------------------------------------------------------
 
 export function findStructureByOntologyId(
   registry: AnatomyStructureRegistry,
@@ -236,10 +203,6 @@ export function findStructuresByName(
 ): AnatomyStructure[] {
   return registry.findStructuresByName(name);
 }
-
-// ---------------------------------------------------------------------------
-// Search index — loaded-only, deterministic, no duplication
-// ---------------------------------------------------------------------------
 
 export function normalizeQuery(query: string): string {
   if (!query) return '';
@@ -347,9 +310,6 @@ export function searchStructures(
     consider(s.systemKey);
     consider(s.bodyModel);
     consider(getSystemLabel(s.systemKey));
-    // Also consider verified canonicalName from information repository
-    // so "lung" matches hilum of lung (canonical "Hilum of lung") even though
-    // objectName is VH_M_hilum_L, and "kidney" matches capsule etc.
     const info = getAnatomyInformationByStructureKey(s.structureKey);
     if (info?.canonicalName) consider(info.canonicalName);
     if (best !== null) {

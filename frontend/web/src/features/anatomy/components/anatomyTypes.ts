@@ -1,5 +1,3 @@
-// Canonical serializable types — single source in @anatomiax/shared-types.
-// This file re-exports for backward compatibility so existing `from './anatomyTypes'` imports keep working.
 export type {
   AnatomySystemKey,
   AnatomySystemType,
@@ -11,8 +9,6 @@ export type {
   AnatomySearchOptions,
 } from '@anatomiax/shared-types';
 
-// Frontend asset definitions moved to @anatomiax/anatomy-core (single source).
-// Re-exported here so existing imports keep working.
 export type {
   AnatomySystemAsset,
   AnatomySystemDefinition,

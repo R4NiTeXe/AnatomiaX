@@ -90,8 +90,6 @@ export class AuthService {
       this.logger.warn('JWT_SECRET is not set — using an insecure development secret');
     }
     this.accessTtl = this.config.get<string>('JWT_ACCESS_TTL') ?? '15m';
-    // Fail fast on boot: an invalid TTL would otherwise pass the type-cast
-    // at signAsync and surface as a 500 on every register/login/refresh.
     if (!/^\d+[smhd]$/.test(this.accessTtl)) {
       throw new Error(
         `JWT_ACCESS_TTL has an invalid format: ${JSON.stringify(this.accessTtl)} (expected e.g. 15m, 1h, 7d)`
@@ -105,7 +103,6 @@ export class AuthService {
   async register(email: string, password: string, name?: string): Promise<AuthSession> {
     const existing = await this.users.findLiveByEmail(email);
     if (existing) {
-      // Truthful duplicate error (minor enumeration trade-off, required for usable signup).
       throw new ConflictException('Email already registered');
     }
     const user = await this.users.create({
@@ -132,14 +129,11 @@ export class AuthService {
       throw new UnauthorizedException(GENERIC_CREDENTIALS_ERROR);
     }
     if (requestedRole !== undefined && user.role !== requestedRole) {
-      // Requested role is advisory: mismatch rejects identically to bad
-      // credentials (no oracle) and issues nothing.
       throw new UnauthorizedException(GENERIC_CREDENTIALS_ERROR);
     }
     return this.issueSession(user);
   }
 
-  /** Issues a fresh session for an already-authenticated (live) user id. */
   async issueSessionForUser(userId: string): Promise<AuthSession> {
     const user = await this.users.findLiveById(userId);
     if (!user) {
@@ -159,7 +153,6 @@ export class AuthService {
     const expired = !!record && record.expiresAt.getTime() <= Date.now();
     if (!record || record.revokedAt !== null || expired || record.user.deletedAt !== null) {
       if (record) {
-        // Possible theft/reuse: invalidate the whole token family.
         await this.prisma.refreshToken.updateMany({
           where: { userId: record.userId, revokedAt: null },
           data: { revokedAt: new Date() },
@@ -168,14 +161,6 @@ export class AuthService {
       throw new UnauthorizedException(GENERIC_CREDENTIALS_ERROR);
     }
     const rotated = await this.prisma.$transaction(async tx => {
-      // 8.57 atomic claim: exactly one concurrent rotation of this token can
-      // proceed. The pre-check above is read-then-act, so two simultaneous
-      // refreshes with the same valid token would otherwise both pass it and
-      // mint two live sessions (defeating reuse detection for that window).
-      // A zero count means the token was rotated (or removed) concurrently —
-      // fail closed WITHOUT burning the family: a benign double-submit is
-      // indistinguishable from theft here, and genuine reuse of a revoked
-      // token is still caught above and revokes the family there.
       const claimed = await tx.refreshToken.updateMany({
         where: { id: record.id, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -197,9 +182,6 @@ export class AuthService {
         data: { revokedAt: new Date() },
       })
       .catch(error => {
-        // Revocation stays best-effort (logout must not oracle DB state),
-        // but a failure means the token may still be live — log it
-        // server-side instead of silently resolving success.
         this.logger.warn(`logout: refresh-token revocation failed: ${String(error)}`);
       });
   }
@@ -212,11 +194,6 @@ export class AuthService {
     return user;
   }
 
-  /**
-   * 8.19.23 change-password: authenticated, verifies current password when the
-   * account has one (OAuth-only accounts may set an initial password),
-   * stores Argon2id hash, revokes the full refresh-token family.
-   */
   async changePassword(
     userId: string,
     currentPassword: string | undefined,
@@ -247,16 +224,10 @@ export class AuthService {
         where: { userId, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-      // Password change invalidates pending resets issued before the change.
       await tx.passwordResetToken.deleteMany({ where: { userId } });
     });
   }
 
-  /**
-   * 8.19.23 reset request: always resolves (no enumeration oracle). Creates a
-   * single-use, expiring, hashed-at-rest token only for live email accounts
-   * and hands the raw value to the delivery stub (never an API response).
-   */
   async requestPasswordReset(email: string): Promise<void> {
     const normalized = email.toLowerCase();
     const user = await this.users.findLiveByEmail(normalized);
@@ -269,20 +240,11 @@ export class AuthService {
     await this.prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash: hashToken(token), expiresAt },
     });
-    // Fire-and-forget: mail I/O (timeouts, dead relays) must never hold the
-    // HTTP response. Deferred past the current tick so even a synchronously
-    // throwing transport cannot fail the request; rejections are swallowed
-    // (dispatch() already resolves on failure) to keep the reset flow a
-    // non-oracle and the response latency DB-bound only.
     void Promise.resolve()
       .then(() => this.resetDelivery.dispatch(normalized, token))
       .catch(() => undefined);
   }
 
-  /**
-   * 8.19.23 reset confirm: email+token must match the same live account.
-   * Single-use (usedAt), expiring, revoked after use; all sessions revoked.
-   */
   async confirmPasswordReset(email: string, token: string, newPassword: string): Promise<void> {
     const record = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash: hashToken(token) },
@@ -302,10 +264,6 @@ export class AuthService {
     }
     const passwordHash = await argon2.hash(newPassword);
     await this.prisma.$transaction(async tx => {
-      // Atomic single-use claim (mirrors the refresh rotation claim): two
-      // concurrent confirms both pass the findUnique check above, but only
-      // one wins the conditional update. The loser rolls back with a generic
-      // error — no second password reset, no oracle.
       const claimed = await tx.passwordResetToken.updateMany({
         where: { id: record.id, usedAt: null },
         data: { usedAt: new Date() },
@@ -324,10 +282,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * 8.19.23 export: only the caller's own account/cohort/progress data.
-   * Never includes passwordHash, refresh-token hashes, OAuth/Google tokens.
-   */
   async exportUserData(userId: string): Promise<AccountExport> {
     const user = await this.users.findLiveById(userId);
     if (!user) {
@@ -396,12 +350,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * 8.19.23 deletion: authenticated hard delete. Prisma relations define the
-   * purge policy — Cascade purges oauth/refresh/resets/memberships/attempts/
-   * snapshot/push; cohortsCreated uses SetNull so cohorts survive. Sessions
-   * are revoked first so in-flight refresh fails even before cascade.
-   */
   async deleteAccount(userId: string): Promise<void> {
     const user = await this.users.findLiveById(userId);
     if (!user) {
@@ -417,10 +365,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Validates a Google identity response. Google access/refresh tokens are
-   * received by the strategy but intentionally never persisted.
-   */
   async validateGoogleUser(profile: GoogleProfile): Promise<SafeUser> {
     const emailEntry = profile.emails?.[0];
     if (!profile.id || !emailEntry?.value || emailEntry.verified !== true) {

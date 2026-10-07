@@ -1,9 +1,3 @@
-/**
- * Authentication client — session tokens live in module memory only.
- * The refresh token additionally travels in an httpOnly cookie managed by
- * the backend; application code never reads it and nothing is persisted
- * to localStorage.
- */
 import { ApiError, apiRequest, buildApiUrl } from './api';
 
 export interface AuthUser {
@@ -23,8 +17,6 @@ export interface SessionBody {
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let refreshInflight: Promise<boolean> | null = null;
-// Set when a shared refresh cycle starts: concurrent 401 waiters must notify
-// listeners exactly once when that cycle fails (not once per waiter).
 let refreshCycleNotified = false;
 
 type UnauthListener = () => void;
@@ -44,7 +36,6 @@ function emitUnauthenticated(): void {
     try {
       listener();
     } catch {
-      // Listener failures must never break request handling.
     }
   });
 }
@@ -53,7 +44,6 @@ export function hasSession(): boolean {
   return accessToken !== null;
 }
 
-/** For tests only — resets module state. */
 export function __resetAuthForTests(): void {
   accessToken = null;
   refreshToken = null;
@@ -72,9 +62,6 @@ async function doRefresh(): Promise<boolean> {
     refreshToken = body.refreshToken;
     return true;
   } catch (error) {
-    // Only 401/403 means the session is dead. Network failures, timeouts,
-    // and 5xx are transient — rethrow so the caller surfaces a retry instead
-    // of clearing tokens and logging the user out on a blip.
     if (error instanceof ApiError && error.status !== 401 && error.status !== 403) {
       throw error;
     }
@@ -82,11 +69,6 @@ async function doRefresh(): Promise<boolean> {
   }
 }
 
-/**
- * Authenticated request. Attaches the Bearer token when present and retries
- * once after a refresh on 401. Emits unauthenticated when the session dies.
- */
-/** Copies caller headers without losing Headers instances or entry arrays. */
 function mergeAuthHeaders(headers: HeadersInit | undefined): Record<string, string> {
   if (headers instanceof Headers) {
     const out: Record<string, string> = {};
@@ -103,8 +85,6 @@ export async function authedRequest<T>(path: string, init?: RequestInit): Promis
   const attempt = (token: string | null): Promise<T> => {
     const headers = mergeAuthHeaders(init?.headers);
     if (token) headers.Authorization = `Bearer ${token}`;
-    // credentials: include must win — callers must not downgrade the cookie
-    // flow by overriding it through init.
     return apiRequest<T>(path, { ...init, credentials: 'include', headers });
   };
 
@@ -126,10 +106,6 @@ export async function authedRequest<T>(path: string, init?: RequestInit): Promis
       }
       throw error;
     }
-    // A 401 after a successful refresh is a domain rejection (e.g. wrong
-    // current password), not a dead session — the refresh itself proved the
-    // session is alive, so never log out here. Logout happens only when the
-    // refresh itself fails (above).
     return await attempt(accessToken);
   }
 }
@@ -166,14 +142,12 @@ export async function logout(): Promise<void> {
       body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
     });
   } catch {
-    // Logout is best-effort; local session always clears.
   } finally {
     accessToken = null;
     refreshToken = null;
   }
 }
 
-/** Returns the current user, or null when anonymous. Never throws. */
 export async function fetchMe(): Promise<AuthUser | null> {
   try {
     return await authedRequest<AuthUser>('/api/v1/auth/me');
@@ -182,15 +156,10 @@ export async function fetchMe(): Promise<AuthUser | null> {
   }
 }
 
-/** Backend Google entrypoint — full-page navigation (sets httpOnly cookie). */
 export function googleLoginUrl(): string {
   return buildApiUrl('/api/v1/auth/google');
 }
 
-/**
- * Stores a session delivered via the OAuth callback (future-proof query-param
- * flow). Tokens stay in module memory only — never persisted to storage.
- */
 export function acceptCallbackSession(body: SessionBody): AuthUser {
   return storeSession(body);
 }
@@ -225,7 +194,6 @@ export async function confirmPasswordReset(
   });
 }
 
-/** Fetches the caller's own export payload (JSON-serializable). */
 export async function exportAccountData(): Promise<unknown> {
   return authedRequest<unknown>('/api/v1/auth/account/export');
 }

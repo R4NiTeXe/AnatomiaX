@@ -21,7 +21,6 @@ describe('anatomy information repository', () => {
     expect(getAnatomyInformationByOntologyId('UBERON:0002097', 'female')).toMatchObject({
       structureKey: 'female:skin:UBERON:0002097',
     });
-    // Ambiguous across bodies without a bodyModel -> undefined (no collision).
     expect(getAnatomyInformationByOntologyId('UBERON:0002097')).toBeUndefined();
     expect(getAnatomyInformationByOntologyId('missing')).toBeUndefined();
   });

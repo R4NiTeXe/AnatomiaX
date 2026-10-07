@@ -3,16 +3,8 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useBounds } from '@react-three/drei';
 
-// ---------------------------------------------------------------------------
-// Vertical camera handler — lives INSIDE <Canvas> + <Bounds>.
-// Kept in its own module (separate from the DOM slider UI in
-// AnatomyVerticalNavigator) because it requires a live R3F Canvas: it is
-// covered by Playwright in a real browser (human-model-switch spec), not by
-// jsdom unit tests.
-// ---------------------------------------------------------------------------
-
 type VerticalCameraHandlerProps = {
-  normalized: number; // 0 = top, 0.5 = center, 1 = bottom
+  normalized: number;
 };
 
 export function VerticalCameraHandler({ normalized }: VerticalCameraHandlerProps): null {
@@ -29,7 +21,6 @@ export function VerticalCameraHandler({ normalized }: VerticalCameraHandlerProps
   const basePositionRef = useRef<THREE.Vector3 | null>(null);
   const rangeRef = useRef<number>(1.5);
 
-  // Capture base center/position and range once after initial fit
   useEffect(() => {
     const init = () => {
       try {
@@ -49,7 +40,6 @@ export function VerticalCameraHandler({ normalized }: VerticalCameraHandlerProps
             centerY = b.getCenter(new THREE.Vector3()).y;
           }
         }
-        // Reasonable vertical range: ~70% of body height, enough to bring head/feet to center when zoomed
         rangeRef.current = Math.max(0.8, height * 0.7);
         if (!baseCenterRef.current) {
           baseCenterRef.current = new THREE.Vector3(0, centerY, 0);
@@ -63,7 +53,6 @@ export function VerticalCameraHandler({ normalized }: VerticalCameraHandlerProps
         rangeRef.current = 1.5;
       }
     };
-    // Delay to allow Bounds fit to complete
     const t = setTimeout(init, 800);
     return () => clearTimeout(t);
   }, [api, camera, controls]);

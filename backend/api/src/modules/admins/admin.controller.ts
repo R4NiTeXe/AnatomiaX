@@ -23,8 +23,6 @@ import { AuditLogsQueryDto } from './dto/audit-logs-query.dto';
 import { PatchUserRoleDto } from './dto/patch-user-role.dto';
 
 @Controller('v1/admin')
-// Shared throttler storage (100/min default) — admin list/count endpoints
-// stay bounded per client.
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @Roles('ADMIN')
 export class AdminController {

@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-// Model-switch lifecycle regression coverage (STEP 8.45/8.46):
-// cached transitions must never strand the viewer in Loading anatomy,
-// rapid switches resolve to the latest model, and failed loads recover
-// honestly via retry. Generous timeouts: the female GLB is ~8 MB and
-// software WebGL decodes it slowly.
 test.describe.serial('human model switching', () => {
   test.setTimeout(240000);
   const STUDENT = {

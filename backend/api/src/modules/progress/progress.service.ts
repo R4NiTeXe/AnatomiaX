@@ -4,7 +4,6 @@ import type { SafeUser } from '../users/users.service';
 import type { MergeStudiedDto } from './dto/merge-studied.dto';
 import type { SubmitQuizAttemptDto } from './dto/submit-quiz-attempt.dto';
 
-/** Stored studied-key ceiling: newest-first, hard cap against unbounded growth. */
 export const MAX_STUDIED_KEYS = 500;
 
 const DEFAULT_ATTEMPT_LIMIT = 20;
@@ -13,7 +12,6 @@ const DEFAULT_ATTEMPT_LIMIT = 20;
 export class ProgressService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Completed attempts are write-once: no update/delete path exists by design. */
   async submitAttempt(user: SafeUser, dto: SubmitQuizAttemptDto) {
     if (dto.score > dto.total) {
       throw new BadRequestException('Score cannot exceed total');
@@ -28,7 +26,6 @@ export class ProgressService {
         throw new BadRequestException('Invalid startedAt timestamp');
       }
     }
-    // Plain objects only: DTO class instances are not valid Prisma Json input.
     const answers = dto.answers.map(a => ({
       structureKey: a.structureKey ?? null,
       canonicalName: a.canonicalName ?? null,
@@ -70,10 +67,6 @@ export class ProgressService {
     );
   }
 
-  /**
-   * Additive merge: new keys first (newest-first order), deduplicated,
-   * capped at MAX_STUDIED_KEYS. Never destructive, server timestamp wins.
-   */
   async mergeStudied(user: SafeUser, dto: MergeStudiedDto) {
     const incoming = [...new Set(dto.keys.map(k => k.trim()).filter(k => k.length > 0))];
     const existing = await this.prisma.progressSnapshot.findUnique({

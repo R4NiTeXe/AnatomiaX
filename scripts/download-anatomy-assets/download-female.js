@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-/**
- * Download NIH/HRA female whole-body GLB from official source.
- * - Uses only the official HRA CDN URL (no mirrors)
- * - Preserves original filename
- * - Creates destination directory if needed
- * - Verifies SHA-256 after download
- * - Skips download if existing file already matches checksum
- * - Fails on checksum mismatch
- * - Never silently accepts HTML
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -78,7 +68,6 @@ async function download() {
       });
   });
 
-  // Quick magic check before hash
   const header = Buffer.alloc(4);
   const fd = fs.openSync(DEST, 'r');
   fs.readSync(fd, header, 0, 4, 0);

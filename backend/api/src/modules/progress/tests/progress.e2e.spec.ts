@@ -8,7 +8,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
 
-// In-memory Prisma stand-in for identity + progress: no database, no network.
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   oauth = new Map<string, Record<string, any>>();
@@ -241,12 +240,10 @@ describe('Progress (e2e, no database)', () => {
     const b = await request(app.getHttpServer())
       .get('/api/v1/progress/quiz-attempts')
       .set('Authorization', `Bearer ${tokens['learner-b@example.com']}`);
-    // A submitted exactly 1 attempt (previous test); B submitted exactly 1 here.
     expect(a.body).toHaveLength(1);
     expect(a.body[0]).toMatchObject({ score: 4, total: 5 });
     expect(b.body).toHaveLength(1);
     expect(b.body[0]).toMatchObject({ score: 1, total: 5 });
-    // No userId substitution vector: response carries only the caller's records.
     for (const row of [...a.body, ...b.body]) {
       expect(row).not.toHaveProperty('passwordHash');
     }
@@ -307,7 +304,6 @@ describe('Progress (e2e, no database)', () => {
     expect(second.body.bodyModel).toBe('male');
     const read = await request(app.getHttpServer()).get('/api/v1/progress/snapshot').set(auth);
     expect(read.body.studiedKeys).toEqual(['c', 'a', 'b']);
-    // Learner B's snapshot is untouched.
     const other = await request(app.getHttpServer())
       .get('/api/v1/progress/snapshot')
       .set('Authorization', `Bearer ${tokens['learner-b@example.com']}`);

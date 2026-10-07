@@ -2,13 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
-/**
- * Privileged-action ledger writer. Domain vocabulary (action/targetType) is
- * owned by callers; this service owns the safety contract:
- * - actor identity snapshotted (id + role survive account deletion — no FK),
- * - metadata is scrubbed for authentication material before persistence,
- * - auxiliary-write failures never break the primary mutation (warn-logged).
- */
 export const AUDIT_ACTIONS = [
   'quiz.created',
   'quiz.updated',
@@ -70,8 +63,6 @@ export class AuditService {
         },
       });
     } catch (err) {
-      // The mutation already succeeded — an audit write failure must not
-      // turn it into a 500. Server-side warn keeps the gap diagnosable.
       this.logger.warn(
         `Audit record failed (${action}): ${err instanceof Error ? err.message : 'unknown error'}`
       );

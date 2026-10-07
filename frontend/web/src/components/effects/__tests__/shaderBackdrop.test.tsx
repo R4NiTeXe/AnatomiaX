@@ -23,8 +23,6 @@ describe('ShaderBackdrop (8.30)', () => {
   });
 
   it('falls back to the static CSS layer when WebGL setup fails', async () => {
-    // jsdom canvas has no real GL entry points, so the renderer throws and
-    // the wrapper must degrade to the static fallback instead of crashing.
     mockReducedMotion(true);
     render(<ShaderBackdrop testId="fx" />);
     expect(await screen.findByTestId('fx-fallback')).toBeInTheDocument();
@@ -44,8 +42,6 @@ describe('ShaderBackdrop (8.30)', () => {
 
   it('marks the reduced-motion frame as static for QA probing', async () => {
     mockReducedMotion(true);
-    // Force the failure path off: patch the prototype with a minimal working
-    // GL surface so the static-frame branch is what renders the canvas.
     const proto = HTMLCanvasElement.prototype as unknown as {
       getContext: (...args: unknown[]) => unknown;
     };
@@ -97,8 +93,6 @@ describe('ShaderBackdrop (8.30)', () => {
   it('mounts through IntersectionObserver when visible and cleans up on unmount', async () => {
     mockReducedMotion(false);
     type Entry = { isIntersecting: boolean };
-    // Non-null stub: keeps the callable type (a null initializer would narrow
-    // to `never` after the guard below) and fails loudly if never replaced.
     let ioCallback: (entries: Entry[]) => void = () => {
       throw new Error('expected IntersectionObserver callback');
     };
@@ -167,7 +161,6 @@ describe('ShaderBackdrop (8.30)', () => {
     expect(BACKDROP_FRAGMENT).toMatch(/u_resolution/);
     expect(BACKDROP_FRAGMENT).toMatch(/u_time/);
     expect(BACKDROP_FRAGMENT).toMatch(/u_intensity/);
-    // No textures, no postprocessing-style kernels — procedural only.
     expect(BACKDROP_FRAGMENT).not.toMatch(/sampler|texture2D|bloom/i);
   });
 });

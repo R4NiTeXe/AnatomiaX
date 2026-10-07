@@ -124,7 +124,6 @@ describe('admin quizzes', () => {
     expect(
       await screen.findByTestId('admin-quiz-title', {}, { timeout: 4000 })
     ).toBeInTheDocument();
-    // Admin sees the answer key (correctIndex) — never shown to students.
     expect(screen.getByText(/key #1/)).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('admin-quiz-publish'));
     await waitFor(() =>

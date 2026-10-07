@@ -59,7 +59,6 @@ describe('learning modules (8.49)', () => {
       percent: 100,
       status: 'complete',
     });
-    // Unknown keys never inflate counts.
     expect(moduleProgress(nervous, ['bogus']).studied).toBe(0);
   });
 
@@ -68,7 +67,6 @@ describe('learning modules (8.49)', () => {
     const nervous = getLearningModule('nervous') as NonNullable<
       ReturnType<typeof getLearningModule>
     >;
-    // One nervous structure studied: continue stays inside nervous.
     const target = findContinueTarget(modules, [nervous.structureKeys[0]]);
     expect(target?.reason).toBe('unfinished-module');
     expect(target?.moduleKey).toBe('nervous');
@@ -77,13 +75,11 @@ describe('learning modules (8.49)', () => {
 
   it('falls back to recent, then next unstudied, then null', () => {
     const modules = buildLearningModules();
-    // Fully studied nervous: most recent valid key wins (revisit).
     const nervous = getLearningModule('nervous') as NonNullable<
       ReturnType<typeof getLearningModule>
     >;
     const recent = findContinueTarget(modules, [...nervous.structureKeys].reverse());
     expect(recent?.reason).toBe('recent');
-    // Nothing studied: first record of the first module.
     const fresh = findContinueTarget(modules, []);
     expect(fresh?.reason).toBe('next-unstudied');
     expect(fresh?.structureKey).toBe(modules[0].structureKeys[0]);
@@ -96,7 +92,6 @@ describe('learning modules (8.49)', () => {
       ReturnType<typeof getLearningModule>
     >;
     const [first, second, third] = nervous.structureKeys;
-    // Mid-list: previous is positional, next skips studied records.
     const mid = sessionPositionFor(modules, second, [second]);
     expect(mid).toMatchObject({
       index: 1,
@@ -105,16 +100,13 @@ describe('learning modules (8.49)', () => {
       nextKey: third,
     });
     expect(mid?.module.key).toBe('nervous');
-    // Start: no previous.
     expect(sessionPositionFor(modules, first, [])).toMatchObject({
       index: 0,
       previousKey: null,
       nextKey: second,
     });
-    // End with everything studied: no next.
     const last = nervous.structureKeys[nervous.structureKeys.length - 1];
     expect(sessionPositionFor(modules, last, nervous.structureKeys)?.nextKey).toBeNull();
-    // Unknown keys resolve to no session.
     expect(sessionPositionFor(modules, 'bogus', [])).toBeNull();
     expect(sessionPositionFor([], first, [])).toBeNull();
   });

@@ -52,8 +52,6 @@ function HumanViewer({
   onVerticalChange: (value: number) => void;
 }): JSX.Element {
   const { status, selectedBodyModel } = useAnatomyState();
-  // STEP 8.55: honest loading copy — the model identity is known, so name it.
-  // No percentages (never measured), no server claims.
   const loadingCopy = `Preparing ${selectedBodyModel} anatomy…`;
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
@@ -94,8 +92,6 @@ function HumanViewer({
   );
 }
 
-// STEP 8.33: Body model + skin tone grouped as one Appearance card — same
-// controls, testids, labels, and session behavior, clearer visual hierarchy.
 function AppearanceSelector({
   onVerticalChange,
   onResetCamera,
@@ -109,11 +105,6 @@ function AppearanceSelector({
   const handleBodyModelChange = useCallback(
     (model: 'male' | 'female') => {
       if (model === selectedBodyModel) return;
-      // Reset synchronously BEFORE the model flips so the fresh slot mount
-      // reports 'loaded' after the reset commits (STEP 8.45: otherwise the
-      // parent reset effect clobbers it back to IDLE and cached scenes hang
-      // in 'loading'). The provider effect re-runs idempotently for
-      // programmatic switches (deep-link).
       resetModelState(model);
       setSelectedBodyModel(model);
       onVerticalChange(0.5);
@@ -194,8 +185,6 @@ function AppearanceSelector({
   );
 }
 
-// STEP 8.33: read-only viewer context — model, tone, selection at a glance.
-// Presentation only; all state and behavior live in existing architecture.
 function ViewerStatus(): JSX.Element {
   const { selectedBodyModel, skinTone, selectedStructure } = useAnatomyState();
   const toneLabel = SKIN_TONES.find(preset => preset.id === skinTone)?.label ?? skinTone;
@@ -276,12 +265,6 @@ export default function HumanPage(): JSX.Element {
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden sm:p-6">
-          {/* STEP 8.32: the section must never collapse to 0 height. In the
-              scrollable mobile/tablet column, `flex-1 + min-h-0` shrank it to
-              zero next to the tall sidebar, so the min-h-[55vh] viewer box
-              overflowed visibly over the sidebar — and the positioned R3F
-              canvas wrapper then won hit-testing over static sidebar buttons.
-              `lg:min-h-0` preserves the original desktop row behavior. */}
           <section
             data-testid="human-viewer-section"
             className="order-1 flex min-h-[55vh] flex-1 flex-col lg:order-2 lg:min-h-0"

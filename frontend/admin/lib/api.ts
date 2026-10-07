@@ -12,8 +12,6 @@ function getRawBaseUrl(): string | undefined {
 export function getApiBaseUrl(): string {
   const raw = getRawBaseUrl();
   if (raw) return raw.replace(/\/+$/, '');
-  // A production bundle without an API origin must fail loudly instead of
-  // silently calling localhost (mirrors the web client's guard).
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
       'NEXT_PUBLIC_API_BASE_URL is not set. Set it to the API origin (e.g. https://api.example.com) and rebuild.'
@@ -25,9 +23,6 @@ export function getApiBaseUrl(): string {
 export function buildApiUrl(path: string): string {
   const base = getApiBaseUrl();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  // Tolerate a base that already ends with the API prefix (e.g. an operator
-  // sets .../api/v1): strip it so versioned paths never double to
-  // /api/v1/api/v1/... The documented contract is still origin-only.
   let dedupedBase = base;
   for (const prefix of ['/api/v1', '/api']) {
     if (normalizedPath.startsWith(`${prefix}/`) && dedupedBase.endsWith(prefix)) {
@@ -101,8 +96,6 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     response = await fetch(url, {
       ...init,
       headers: {
-        // JSON content type only when a body is actually sent: a non-simple
-        // Content-Type on bodyless GETs forces a CORS preflight on every read.
         ...(init?.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(init?.headers ?? {}),
       },
@@ -117,7 +110,6 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     try {
       detail = await response.text();
     } catch {
-      // ignore
     }
     const contract = parseErrorBody(detail);
     const headerRequestId = response.headers?.get?.('x-request-id') ?? undefined;

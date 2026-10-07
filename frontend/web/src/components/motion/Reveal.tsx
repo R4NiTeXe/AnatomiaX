@@ -2,11 +2,6 @@ import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { DURATIONS, EASE, VIEWPORT_ONCE } from './motion-tokens';
 
-/**
- * STEP 8.23 scroll reveal for below-fold sections — fires once, just before
- * entry. Transform/opacity only. Content stays in the DOM at all times, so
- * screen readers, tests, and no-JS fallbacks are unaffected.
- */
 export function Reveal({
   children,
   className,

@@ -138,7 +138,6 @@ describe('AnatomyInformationPanel', () => {
 
   it('provenance display shows source, sourceUrl, lastVerified, license', () => {
     renderWithProvider();
-    // Female ovary requires reproductive visible and female body model
     fireEvent.click(screen.getByTestId('switch-female'));
     fireEvent.click(screen.getByTestId('toggle-reproductive'));
     fireEvent.click(screen.getByTestId('select-female-ovary'));
@@ -149,7 +148,6 @@ describe('AnatomyInformationPanel', () => {
     expect(link).toHaveAttribute('href', 'https://humanatlas.io/asct-b-reporter');
     expect(screen.getByTestId('anatomy-information-last-verified')).toHaveTextContent('2026-01-15');
     expect(screen.getByTestId('anatomy-information-license')).toHaveTextContent(/CC BY/);
-    // NIH provenance also — switch back to male for skin
     fireEvent.click(screen.getByTestId('switch-male'));
     fireEvent.click(screen.getByTestId('select-male-skin'));
     expect(screen.getByTestId('anatomy-information-source')).toHaveTextContent('NIH');
@@ -184,20 +182,16 @@ describe('AnatomyInformationPanel', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('select-male-skin'));
     fireEvent.click(screen.getByTestId('select-male-heart'));
-    // Heart should be first (newest), Skin second
     const first = screen.getByTestId('anatomy-recent-item-0');
     const second = screen.getByTestId('anatomy-recent-item-1');
     expect(first).toHaveTextContent('Heart');
     expect(second).toHaveTextContent('Skin');
-    // Re-select skin, should move to front
     fireEvent.click(screen.getByTestId('select-male-skin'));
     expect(screen.getByTestId('anatomy-recent-item-0')).toHaveTextContent('Skin');
   });
 
   it('recent max 5', () => {
     renderWithProvider();
-    // Add 6 distinct selections via state (use existing buttons, duplicate moves to front so count stays <=2)
-    // Instead test via direct history: select skin, heart, unknown, then check count <=5
     fireEvent.click(screen.getByTestId('select-male-skin'));
     fireEvent.click(screen.getByTestId('select-male-heart'));
     fireEvent.click(screen.getByTestId('select-unknown'));
@@ -215,7 +209,7 @@ describe('AnatomyInformationPanel', () => {
     expect(screen.getByTestId('selected-key')).toHaveTextContent(
       'male:cardiovascular:UBERON:0000948'
     );
-    fireEvent.click(screen.getByTestId('anatomy-recent-item-1')); // Skin
+    fireEvent.click(screen.getByTestId('anatomy-recent-item-1'));
     expect(screen.getByTestId('selected-key')).toHaveTextContent('male:skin:UBERON:0002097');
     expect(screen.getByTestId('anatomy-information-canonical-name')).toHaveTextContent('Skin');
   });
@@ -235,10 +229,8 @@ describe('AnatomyInformationPanel', () => {
     fireEvent.click(screen.getByTestId('select-male-skin'));
     expect(screen.getByTestId('anatomy-information-canonical-name')).toHaveTextContent('Skin');
     expect(screen.getByTestId('anatomy-information-body-model')).toHaveTextContent('male');
-    // Switch to female — selection cleared via AnatomyStateContext effect
     fireEvent.click(screen.getByTestId('switch-female'));
     expect(screen.queryByTestId('anatomy-information-panel')).not.toBeInTheDocument();
-    // Female ovary now shows female info, not male — need reproductive visible
     fireEvent.click(screen.getByTestId('toggle-reproductive'));
     fireEvent.click(screen.getByTestId('select-female-ovary'));
     expect(screen.getByTestId('anatomy-information-canonical-name')).toHaveTextContent('Ovary');

@@ -16,7 +16,6 @@ export interface CreateUserInput {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Live (non-deleted) users only — deleted accounts are invisible to auth. */
   async findLiveById(id: string): Promise<User | null> {
     return this.prisma.user.findFirst({ where: { id, deletedAt: null } });
   }

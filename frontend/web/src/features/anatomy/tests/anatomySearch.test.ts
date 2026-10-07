@@ -220,7 +220,6 @@ describe('Anatomy Search', () => {
 
   it('loaded structures only', () => {
     const registry = new AnatomyStructureRegistry();
-    // Only load skin system
     const skinScene = new THREE.Group();
     const skinMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
     skinMesh.name = 'VH_M_skin';
@@ -228,7 +227,6 @@ describe('Anatomy Search', () => {
     skinScene.add(skinMesh);
     const skinStructs = collectStructuresFromScene(skinScene, 'skin', 'male');
     skinStructs.forEach(s => registry.register(s));
-    // Don't load any other system
     const results = searchStructures(registry, 'skin', { bodyModel: 'all', systemKey: 'all' });
     expect(results.length).toBe(1);
     expect(results[0].bodyModel).toBe('male');
@@ -260,7 +258,6 @@ describe('Anatomy Search', () => {
       structs.forEach(s => registry.register(s));
       const results = searchStructures(registry, 'heart', { bodyModel: 'male', systemKey: 'all' });
       expect(results.length).toBeGreaterThanOrEqual(2);
-      // Heart (shorter, exact canonical) should be first
       expect(results[0].objectName).toBe('VH_M_heart');
     });
 
@@ -316,7 +313,6 @@ describe('Anatomy Search', () => {
         systemKey: 'all',
       });
       expect(results[0].ontologyId).toBe('UBERON:0002080');
-      // Verify information lookup would work (structureKey matches seed)
       expect(results[0].structureKey).toBe('male:cardiovascular:UBERON:0002080');
     });
 

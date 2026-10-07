@@ -19,7 +19,6 @@ describe('AdminService', () => {
         findUnique: jest.fn(),
       },
     } as unknown as Record<string, Record<string, jest.Mock>>;
-    // nest as prisma.user etc.
     const prismaMock = {
       user: prisma.user,
       cohort: prisma.cohort,
@@ -31,13 +30,13 @@ describe('AdminService', () => {
   describe('getOverview', () => {
     it('returns counts and recent items without sensitive fields', async () => {
       prisma.user.count
-        .mockResolvedValueOnce(10) // total
-        .mockResolvedValueOnce(6) // student
-        .mockResolvedValueOnce(3) // teacher
-        .mockResolvedValueOnce(1); // admin
+        .mockResolvedValueOnce(10)
+        .mockResolvedValueOnce(6)
+        .mockResolvedValueOnce(3)
+        .mockResolvedValueOnce(1);
       prisma.cohort.count
-        .mockResolvedValueOnce(4) // cohortCount
-        .mockResolvedValueOnce(1); // archived
+        .mockResolvedValueOnce(4)
+        .mockResolvedValueOnce(1);
       prisma.user.findMany.mockResolvedValue([
         {
           id: 'u1',
@@ -66,7 +65,6 @@ describe('AdminService', () => {
       expect(overview.recentUsers[0]).not.toHaveProperty('passwordHash');
       expect(overview.recentUsers[0]).toHaveProperty('email');
       expect(overview.recentCohorts[0].memberCount).toBe(2);
-      // Column narrowing: secrets never leave the driver in list paths.
       const overviewUserArgs = prisma.user.findMany.mock.calls[0][0] as {
         select?: Record<string, boolean>;
       };
@@ -116,7 +114,6 @@ describe('AdminService', () => {
     it('ignores roles outside the allowlist instead of reaching Prisma untyped', async () => {
       prisma.user.count.mockResolvedValue(0);
       prisma.user.findMany.mockResolvedValue([]);
-      // Bypasses the DTO (which constrains role at the HTTP boundary).
       await service.listUsers({ role: 'SUPERADMIN' });
       expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { deletedAt: null } })

@@ -128,21 +128,18 @@ describe('layer state', () => {
 
   it('isolate hides others and can be restored via reset view', () => {
     renderWithProvider();
-    // make musculoskeletal visible first
     fireEvent.click(screen.getByTestId('toggle-musculoskeletal'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     let visible = JSON.parse(screen.getByTestId('visible').textContent || '{}');
     expect(visible.musculoskeletal).toBe(true);
     expect(visible.nervous).toBe(true);
     expect(visible.skin).toBe(true);
-    // isolate cardiovascular
     fireEvent.click(screen.getByTestId('isolate-cardio'));
     visible = JSON.parse(screen.getByTestId('visible').textContent || '{}');
     expect(visible.cardiovascular).toBe(true);
     expect(visible.skin).toBe(false);
     expect(visible.musculoskeletal).toBe(false);
     expect(screen.getByTestId('isolated').textContent).toBe('cardiovascular');
-    // reset view restores
     fireEvent.click(screen.getByTestId('reset-view'));
     visible = JSON.parse(screen.getByTestId('visible').textContent || '{}');
     expect(visible.skin).toBe(true);
@@ -165,13 +162,9 @@ describe('layer state', () => {
   it('hiding selected system clears selection (via toggle)', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('toggle-musculoskeletal'));
-    // select brain is nervous, not musculoskeletal — select a structure that belongs to musculoskeletal
-    // Our harness only has select-heart/brain; so select heart belongs to cardiovascular which is not visible yet.
-    // Let's test with brain on nervous
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('select-brain'));
     expect(screen.getByTestId('selected').textContent).toContain('VH_M_brain');
-    // hide nervous -> selection cleared
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     expect(screen.getByTestId('selected').textContent).toBe('null');
   });

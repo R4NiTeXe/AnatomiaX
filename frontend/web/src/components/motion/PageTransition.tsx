@@ -3,12 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { DURATIONS, EASE } from './motion-tokens';
 
-/**
- * STEP 8.23 route entrance — replays a short fade/rise on every pathname
- * change. Enter-only by design: no exit unmount delay, so router timing,
- * tests, and Playwright assertions are unaffected. Renders a plain div
- * (never <main>) so page landmarks stay valid.
- */
 export function PageTransition({
   children,
   className,

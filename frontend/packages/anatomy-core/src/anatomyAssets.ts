@@ -5,7 +5,6 @@ export interface AnatomyAsset {
   label: string;
   path: string;
   type: AnatomyAssetType;
-  /** false until a real optimized GLB is committed and verified */
   available: boolean;
 }
 
@@ -15,7 +14,6 @@ export const anatomyAssets: Record<AnatomyModelKey, AnatomyAsset> = {
   male: {
     key: 'male',
     label: 'Male',
-    // placeholder — file does not exist yet
     path: '/models/male-body.glb',
     type: 'body',
     available: false,
@@ -23,7 +21,6 @@ export const anatomyAssets: Record<AnatomyModelKey, AnatomyAsset> = {
   female: {
     key: 'female',
     label: 'Female',
-    // placeholder — file does not exist yet
     path: '/models/female-body.glb',
     type: 'body',
     available: false,

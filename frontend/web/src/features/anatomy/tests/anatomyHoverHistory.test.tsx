@@ -158,7 +158,6 @@ describe('hover and history', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('load-nervous'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
-    // Just check that history never exceeds 5 after multiple selects
     fireEvent.click(screen.getByTestId('select-brain'));
     fireEvent.click(screen.getByTestId('select-spinal'));
     fireEvent.click(screen.getByTestId('select-brain'));
@@ -173,11 +172,8 @@ describe('hover and history', () => {
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('select-brain'));
     fireEvent.click(screen.getByTestId('select-spinal'));
-    // Now history has spinal, brain
     const firstHistory = screen.getByTestId('history').textContent?.split(',')[0];
     expect(firstHistory).toBe('male:nervous:UBERON:0002240');
-    // Click recent item (should be brain at index 1)
-    // Our Harness doesn't have recent UI, but we test via history state
     expect(screen.getByTestId('history')).toHaveTextContent('male:nervous:UBERON:0000955');
   });
 

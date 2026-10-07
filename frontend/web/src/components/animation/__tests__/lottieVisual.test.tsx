@@ -42,7 +42,6 @@ describe('LottieVisual (8.29)', () => {
     mockReducedMotion(false);
     render(<LottieVisual asset="body-scan" decorative testId="story" />);
     expect(screen.getByTestId('story')).toHaveAttribute('aria-hidden', 'true');
-    // Runtime still lazy-loads for non-reduced users.
     await screen.findByTestId('dotlottie-mock');
   });
 });

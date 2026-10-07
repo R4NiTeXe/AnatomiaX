@@ -217,7 +217,6 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
           </p>
         )}
 
-        {/* Recent history section — always visible when history exists, not hidden by hover */}
         {recentHistory.length > 0 && (
           <div className="border-t border-slate-800 pt-3 mt-3">
             <h4
@@ -229,9 +228,6 @@ export default function AnatomyInformationPanel(): JSX.Element | null {
             <ul className="flex flex-col gap-2" data-testid="anatomy-recent-list">
               {recentHistory.map((item, index) => {
                 const handleSelect = () => {
-                  // STEP 8.36: history outlives visibility — a recent item may
-                  // belong to a now-hidden system. Reveal it so resuming is
-                  // visible instead of silently clearing.
                   if (!visibleSystems[item.systemKey]) toggleSystem(item.systemKey);
                   selectStructure({
                     structureKey: item.structureKey,

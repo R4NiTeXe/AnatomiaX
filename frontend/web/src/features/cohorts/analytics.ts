@@ -6,17 +6,6 @@ import {
 } from '@/features/progress/components/modules';
 import type { CohortMemberProgress } from './api';
 
-/**
- * Cohort assignment analytics (STEP 8.53).
- *
- * Minimal derived model — every value is mathematically derivable from the two
- * teacher-authorized queries (`GET :id/assignments` + `GET :id/progress`) and
- * the static module registry. No new endpoint, no new table, no invented
- * metrics. Completion follows the single canonical rule in
- * `moduleProgress`: a member is complete when EVERY structure of the module
- * is in their studiedKeys.
- */
-
 export type AssignmentMemberStatus = 'complete' | 'in-progress' | 'not-started';
 
 export type AssignmentSort = 'completion' | 'name';
@@ -57,10 +46,6 @@ function statusOf(
   return { status: progress.status, studied: progress.studied, percent: progress.percent };
 }
 
-/**
- * Summary counts for one assignment. Returns null when the moduleKey is not
- * in the static registry (honest unknown — callers render "unavailable").
- */
 export function summarizeAssignment(
   moduleKey: string,
   members: readonly CohortMemberProgress[]
@@ -85,12 +70,6 @@ export function summarizeAssignment(
   };
 }
 
-/**
- * Per-student rows for one assignment. Unknown modules yield [] (nothing to
- * derive). Sorting is total and deterministic: completion ranks
- * complete → in-progress → not-started, ties broken by percent desc, name,
- * userId; name sort is alphabetical with nulls last, ties by userId.
- */
 export function assignmentStudentRows(
   moduleKey: string,
   members: readonly CohortMemberProgress[],

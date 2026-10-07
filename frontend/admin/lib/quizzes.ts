@@ -1,8 +1,3 @@
-/**
- * Bank quiz admin client. Local contract copies (the admin app does not
- * depend on @anatomiax/shared-types — see ADR-008); shapes mirror the
- * backend views exactly.
- */
 import { apiRequest } from './api';
 
 export type QuizStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';

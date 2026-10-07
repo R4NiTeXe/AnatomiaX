@@ -24,10 +24,8 @@ export type AuthStatus = 'loading' | 'anonymous' | 'authenticated';
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
-  /** True when a previously-authenticated session died (refresh failed). */
   sessionExpired: boolean;
   dismissSessionNotice: () => void;
-  /** Re-fetches /me (used by the OAuth callback page). Never throws. */
   reload: () => Promise<AuthUser | null>;
   login: (email: string, password: string, role?: LoginRole) => Promise<AuthUser>;
   register: (email: string, password: string, name?: string) => Promise<AuthUser>;
@@ -36,7 +34,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Drops all user-scoped caches so accounts can never leak into each other. */
 function clearUserCache(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.removeQueries({ queryKey: ['progress'] });
   queryClient.removeQueries({ queryKey: ['cohorts'] });
@@ -68,8 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         if (found) setSessionExpired(false);
       })
       .catch(() => {
-        // Defensive: fetchMe is documented never to reject, but a future
-        // change must not crash every app boot with an unhandled rejection.
         if (!alive) return;
         setUser(null);
         setStatus('anonymous');

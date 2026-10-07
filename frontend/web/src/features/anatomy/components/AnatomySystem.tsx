@@ -16,11 +16,6 @@ const HOVER_INTENSITY = 0.35;
 const COMPARE_EMISSIVE = new THREE.Color('#a78bfa');
 const COMPARE_INTENSITY = 0.55;
 
-/**
- * Resolves a user-facing structure name from a clicked object by walking up
- * the scene graph to the nearest named ancestor. GLB node names are the only
- * verified identifiers at this stage — no medical labels are invented here.
- */
 export function resolveStructureName(object: THREE.Object3D): string {
   let current: THREE.Object3D | null = object;
   while (current) {
@@ -32,9 +27,7 @@ export function resolveStructureName(object: THREE.Object3D): string {
 
 interface MeshMaterialEntry {
   mesh: THREE.Mesh;
-  /** Per-mesh clone created on mount — the "normal" material for this mesh. */
   base: THREE.Material | THREE.Material[];
-  /** STEP 8.31: verified skin material (name rule cross-checked with GLBs). */
   skin: boolean;
 }
 
@@ -45,11 +38,9 @@ function cloneSceneMaterials(scene: THREE.Object3D): MeshMaterialEntry[] {
     if (!(mesh as unknown as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
     const shared = mesh.material;
     const sharedList = Array.isArray(shared) ? shared : [shared];
-    // Clone so opacity/highlight never mutate materials shared across meshes.
     const cloned = Array.isArray(shared)
       ? shared.map(m => m.clone())
       : (shared as THREE.Material).clone();
-    // Preserve original transparency/depthWrite for soft-transparency restore.
     const clonedList = Array.isArray(cloned) ? cloned : [cloned];
     clonedList.forEach((c, i) => {
       const orig = sharedList[i] as THREE.MeshStandardMaterial;
@@ -77,15 +68,10 @@ function disposeMaterial(material: THREE.Material | THREE.Material[]): void {
     try {
       m.dispose?.();
     } catch {
-      // ignore dispose errors — restore still proceeds
     }
   }
 }
 
-// STEP 8.20.9: O(1) restore + highlight-clone disposal. Previously each
-// highlight pass did scene.traverse + linear entries.find per mesh (O(n^2)
-// on large systems) and discarded highlight clones without dispose.
-// Behavior preserved: same emissive/opacity, same matching.
 function restoreMeshToBase(mesh: THREE.Mesh, entryMap: Map<THREE.Mesh, MeshMaterialEntry>): void {
   const entry = entryMap.get(mesh);
   if (!entry) return;
@@ -93,7 +79,6 @@ function restoreMeshToBase(mesh: THREE.Mesh, entryMap: Map<THREE.Mesh, MeshMater
   if (current === entry.base) return;
   const baseList = Array.isArray(entry.base) ? entry.base : [entry.base];
   const currentList = Array.isArray(current) ? current : [current];
-  // Dispose only highlight clones (materials not part of base).
   const toDispose = currentList.filter(m => !baseList.includes(m as THREE.Material));
   if (toDispose.length > 0) {
     disposeMaterial(toDispose as THREE.Material[]);
@@ -118,7 +103,6 @@ function applySystemOpacity(entries: MeshMaterialEntry[], opacity: number): void
         std.transparent = originalTransparent ?? false;
         std.depthWrite = originalDepthWrite ?? true;
       } else if (opacity <= 0.001) {
-        // Fully transparent — keep transparent true but allow depth sorting to avoid artifacts.
         std.transparent = true;
         std.depthWrite = false;
       } else {
@@ -176,9 +160,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     selectedBodyModel,
     skinTone,
   } = useAnatomyState();
-  // STEP 8.54: single resolver contract for the loader cache key. Memoized so
-  // rerenders (tone, sidebar, resize) reuse the identical string and never
-  // refetch; model switches change the key exactly once.
   const modelUrl = useMemo(
     () => resolveAnatomyAssetUrl(selectedBodyModel, asset.key),
     [selectedBodyModel, asset.key]
@@ -187,8 +168,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   const entriesRef = useRef<MeshMaterialEntry[]>([]);
   const entryMapRef = useRef<Map<THREE.Mesh, MeshMaterialEntry>>(new Map());
   const keyCacheRef = useRef<Map<THREE.Mesh, CachedMeshKey>>(new Map());
-  // STEP 8.31: mount effect keeps [scene, asset.key] deps; tone is read via
-  // ref so selecting a tone never re-runs enhancement (see tone effect).
   const skinToneRef = useRef<SkinToneId>(skinTone);
   skinToneRef.current = skinTone;
   const highlightedRef = useRef<THREE.Mesh[]>([]);
@@ -198,9 +177,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   useEffect(() => {
     const entries = cloneSceneMaterials(scene);
     entriesRef.current = entries;
-    // STEP 8.20.9: build O(1) lookup + per-mesh key cache once per mount.
-    // Highlight passes previously re-traversed the full scene and recomputed
-    // names/ontology/keys on every selection/hover/compare change.
     const entryMap = new Map<THREE.Mesh, MeshMaterialEntry>();
     const keyCache = new Map<THREE.Mesh, CachedMeshKey>();
     for (const entry of entries) {
@@ -214,23 +190,15 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
     }
     entryMapRef.current = entryMap;
     keyCacheRef.current = keyCache;
-    // STEP 8.31: skin system only — upgrade skin clones to physical realism
-    // + apply the current tone before opacity runs (enhancement re-stamps
-    // the transparency originals that applySystemOpacity reads).
     if (asset.key === 'skin') {
       enhanceSkinEntries(entries, skinToneRef.current);
     }
     applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
     registerSystemStructures(asset.key, scene);
     registerSystemScene(asset.key, scene);
-    // Also register with body-model-qualified key for future female coexistence
-    // (registry now stores bodyModel in structureKey, default male)
     setSystemStatus(asset.key, 'loaded');
     return () => {
       unregisterSystemScene(asset.key);
-      // STEP 8.45: release per-mesh material clones on unmount (model switch
-      // or hide). Covers base clones and any mounted highlight clones.
-      // Geometries stay cached — they are owned by the GLTF loader cache.
       const seen = new Set<THREE.Material>();
       for (const entry of entries) {
         const baseList = Array.isArray(entry.base) ? entry.base : [entry.base];
@@ -243,18 +211,14 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
             try {
               m.dispose?.();
             } catch {
-              // ignore dispose errors
             }
           }
         }
       }
     };
-    // Keep registry cached on hide — do not unregister here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, asset.key]);
 
-  // STEP 8.31: cheap in-place tone switch — recolors skin materials only,
-  // no refetch, no remount, no new materials (highlight clones included).
   useEffect(() => {
     if (asset.key !== 'skin' || entriesRef.current.length === 0) return;
     applySkinToneToEntries(entriesRef.current, skinTone);
@@ -262,7 +226,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
 
   useEffect(() => {
     applySystemOpacity(entriesRef.current, systemOpacity[asset.key] ?? 1);
-    // Also update any currently highlighted meshes in this system.
     for (const mesh of highlightedRef.current) {
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       for (const m of mats) {
@@ -276,7 +239,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   }, [asset.key, systemOpacity]);
 
   useEffect(() => {
-    // Restore any previously highlighted meshes in this system.
     for (const mesh of highlightedRef.current) {
       restoreMeshToBase(mesh, entryMapRef.current);
     }
@@ -288,8 +250,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       selectedStructure.bodyModel === selectedBodyModel
     ) {
       const targets: THREE.Mesh[] = [];
-      // STEP 8.20.9: iterate cached mesh entries (meshes only) with
-      // precomputed keys — same matching as previous scene.traverse.
       for (const { mesh } of entriesRef.current) {
         const cached = keyCacheRef.current.get(mesh);
         const key =
@@ -308,7 +268,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
           ontologyId === selectedStructure.ontologyId &&
           selectedStructure.bodyModel === selectedBodyModel
         ) {
-          // Multiple meshes sharing the same ontologyId — highlight all.
           targets.push(mesh);
         }
       }
@@ -327,9 +286,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   }, [scene, asset.key, selectedStructure, selectedBodyModel]);
 
   useEffect(() => {
-    // Hover preview — temporary, distinct from selection
     for (const mesh of hoveredRef.current) {
-      // Don't restore if mesh is currently selected (selected highlight takes precedence)
       const isSelected = highlightedRef.current.includes(mesh);
       if (!isSelected) {
         restoreMeshToBase(mesh, entryMapRef.current);
@@ -341,7 +298,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
       hoveredStructure &&
       hoveredStructure.systemKey === asset.key &&
       hoveredStructure.bodyModel === selectedBodyModel &&
-      // Don't hover the already selected structure
       hoveredStructure.structureKey !== selectedStructure?.structureKey
     ) {
       const targets: THREE.Mesh[] = [];
@@ -363,7 +319,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
         }
       }
       for (const mesh of targets) {
-        // Skip if already highlighted as selected
         if (highlightedRef.current.includes(mesh)) continue;
         applyHighlight(mesh, 'hover');
         hoveredRef.current.push(mesh);
@@ -382,7 +337,6 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
   }, [scene, asset.key, hoveredStructure, selectedStructure, selectedBodyModel]);
 
   useEffect(() => {
-    // Compare highlight — distinct from selected and hover
     for (const mesh of compareRef.current) {
       const isSelected = highlightedRef.current.includes(mesh);
       const isHovered = hoveredRef.current.includes(mesh);
@@ -458,13 +412,11 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>): void => {
     event.stopPropagation();
-    // Don't hover on touch devices - pointerType will be touch
     if ((event as unknown as { pointerType?: string }).pointerType === 'touch') return;
     const objectName = resolveStructureName(event.object);
     const ontologyId = extractOntologyId(event.object);
     const structureKey = createStructureKey(asset.key, ontologyId, objectName, selectedBodyModel);
     const registered = registry.findByStructureKey(structureKey);
-    // Don't hover the already selected structure
     if (registered?.structureKey === selectedStructure?.structureKey) return;
     if (structureKey === selectedStructure?.structureKey) return;
     setHoveredStructure({
@@ -519,18 +471,10 @@ type AnatomySystemSlotProps = {
   asset: AnatomySystemAsset;
 };
 
-/**
- * Mounts one anatomy system: marks it loading, loads lazily via useGLTF
- * (Meshopt decoder), and isolates failures so one broken GLB cannot crash
- * the rest of the viewer.
- */
 export default function AnatomySystemSlot({ asset }: AnatomySystemSlotProps): JSX.Element {
   const { setSystemStatus, setSystemError, attempts } = useAnatomyState();
 
   return (
-    // STEP 8.46: the boundary resets with attempts so Retry remounts into a
-    // fresh boundary — a latched error boundary would otherwise render null
-    // forever while status idles back into a stuck 'loading'.
     <AnatomySystemErrorBoundary
       key={`${asset.key}:${attempts[asset.key] ?? 0}`}
       onError={message => {

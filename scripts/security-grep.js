@@ -1,23 +1,3 @@
-/**
- * Secret-scan gate (verification-loop Phase 5, security-review skill).
- * Scans git-tracked files for high-confidence secret material and fails
- * closed (exit 1) on any hit. Illustrative placeholders are allowlisted by
- * content, not by file, so real leaks are caught even inside docs — except
- * DB-URL fixtures inside vendored skills/ playbooks (third-party docs we
- * never edit; key-shape patterns still scan them, deviation recorded in
- * skills/README.md).
- *
- * What it checks:
- *   1. No .env / .env.local / private-key files are tracked by git.
- *   2. No cloud/API key formats (AWS, OpenAI live/project, Anthropic,
- *      GitHub incl. newer prefixes, npm, Google, Slack, Google OAuth
- *      client secrets, PEM/PGP private keys).
- *   3. No database connection strings with real (non-local, non-placeholder)
- *      credentials.
- *
- * Usage: node scripts/security-grep.js
- * Exit codes: 0 pass, 1 failure.
- */
 
 const { execFileSync } = require('child_process');
 const fs = require('fs');
@@ -28,11 +8,6 @@ const ROOT = path.resolve(__dirname, '..');
 const FORBIDDEN_TRACKED = [/\.env(\..+)?$/, /\.pem$/, /\.key$/, /\.p12$/, /\.pfx$/];
 const FORBIDDEN_TRACKED_ALLOW = [/\.env\.example$/];
 
-// Vendored third-party playbooks: never edited (see skills/README.md
-// deviations), so their DB-URL *documentation fixtures* cannot be rewritten
-// to our placeholder conventions. Exempt from the database-credentials
-// check ONLY — key-shape patterns above and tracked-file rules still scan
-// them, so a real key pasted into a playbook still fails the gate.
 const VENDORED_DOC_PATHS = [/^skills\//];
 
 const SECRET_PATTERNS = [
@@ -50,16 +25,9 @@ const SECRET_PATTERNS = [
   { name: 'Slack token', re: /\bxox[baprsdoe]-[A-Za-z0-9-]+\b/ },
   { name: 'Google OAuth client secret', re: /\bGOCSPX-[A-Za-z0-9_-]+\b/ },
   { name: 'PEM private key', re: /-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----/ },
-  // Built from parts: the contiguous literal must never appear in this
-  // file's own source, or the pattern self-matches once tracked by git.
   { name: 'PGP private key', re: new RegExp('-----BEGIN PGP ' + 'PRIVATE KEY BLOCK-----') },
 ];
 
-// Structural placeholders that must never fail the gate. Matched against
-// the full offending line. Deliberately narrow: generic words (example,
-// test, sample, fake, real-looking fixtures) do NOT skip a line — a real
-// secret next to the word "example" still fails. Write fixtures with `...`,
-// `xxx`, `<PLACEHOLDER>`, `YOUR_*`, or `change-me` markers.
 const PLACEHOLDER_ALLOW = /xxx|\.\.\.|<[A-Za-z_]+>|YOUR_[A-Z_]+|change-me|abcdef|1234567890/;
 
 function listTracked() {
@@ -79,7 +47,6 @@ function main() {
   }
 
   for (const rel of files) {
-    // Skip known-binary and generated bulk files (hashes, not secrets).
     if (/\.(glb|png|jpg|jpeg|webp|avif|svg|ico|woff2?|ttf|eot|mp4|webm|pdf|zip)$/i.test(rel)) {
       continue;
     }
@@ -98,13 +65,9 @@ function main() {
         if (PLACEHOLDER_ALLOW.test(line)) continue;
         failures.push(`${name} shape in ${rel}:${i + 1}`);
       }
-      // Database URLs with real credentials (localhost/example/test dummies allowed).
       const db = line.match(/(?:postgres(?:ql)?|mongodb(?:\+srv)?|mysql|redis):\/\/([^/\s@]+)@/i);
       if (db) {
         if (VENDORED_DOC_PATHS.some(re => re.test(rel))) continue;
-        // Template conventions (USER:PASSWORD@HOST, <placeholders>) are
-        // documentation, not credentials — matched case-sensitively so real
-        // lowercase secrets can never hide behind them.
         if (/USER|PASSWORD|HOST|<[^>]+>/.test(line)) continue;
         const creds = db[1].toLowerCase();
         const host = (line.split('@')[1] || '').toLowerCase();

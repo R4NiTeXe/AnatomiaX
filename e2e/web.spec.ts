@@ -59,7 +59,6 @@ test.describe('public home', () => {
     await expect(page.getByTestId('home-title')).toContainText(/Learn human anatomy/i);
     await expect(page.getByTestId('site-nav')).toBeVisible();
     await expect(page.getByTestId('home-cta-explore')).toBeVisible();
-    // no horizontal overflow
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 5);
@@ -74,11 +73,8 @@ test.describe('login', () => {
     await expect(page.getByTestId('login-email')).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByTestId('login-password')).toBeVisible();
-    // native required validation — try submit empty
     await page.getByTestId('login-submit').click();
-    // browser will block submit, still on login
     await expect(page).toHaveURL(/\/login/);
-    // fill and submit with mocked success
     await page.route('**/api/v1/auth/login', route =>
       route.fulfill({
         status: 200,
@@ -134,7 +130,6 @@ test.describe('admin route protection (via web admin API mock)', () => {
     await mockAuth(page, STUDENT);
     await page.route('**/api/v1/cohorts/**', async route => {
       const url = route.request().url();
-      // console.log('cohort route', url);
       if (url.includes('/progress')) {
         await route.fulfill({
           status: 403,

@@ -1,20 +1,3 @@
-/**
- * Production readiness check for the 18 anatomy GLBs.
- * Provider-neutral — works with any static HTTPS host or local /models-dev/.
- * No upload, no paid service, no NestJS proxy.
- *
- * Usage:
- *   node scripts/check-anatomy-assets.js --base https://assets.example/anatomy/
- *   node scripts/check-anatomy-assets.js --base https://assets.example/anatomy/ --verify
- *   node scripts/check-anatomy-assets.js --base /models-dev/
- *   node scripts/check-anatomy-assets.js  # defaults to VITE_ANATOMY_ASSET_BASE_URL or /models-dev/
- *
- * Flags:
- *   --base <url>   Base URL (VITE_ANATOMY_ASSET_BASE_URL). Trailing slash optional.
- *   --verify       Also GET each GLB and verify SHA-256 + bytes (slow, ~20-50 MB total).
- *   --origin <o>   Origin to test CORS (e.g. https://anatomiax.example). Sends Origin header.
- *   --timeout <ms> Per-request timeout (default 10000).
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -48,7 +31,6 @@ function parseArgs() {
     }
   }
   if (!out.base) {
-    // Try env then fallback to /models-dev/ (local dev). Mirrors anatomySystems.ts default.
     try {
       const envPath = path.join(ROOT, 'frontend', 'web', '.env');
       if (fs.existsSync(envPath)) {
@@ -57,7 +39,6 @@ function parseArgs() {
         if (m) out.base = m[1].trim().replace(/^["']|["']$/g, '');
       }
     } catch {
-      // .env is optional; the env-var/file fallback below applies.
     }
     if (!out.base) out.base = process.env.VITE_ANATOMY_ASSET_BASE_URL || '/models-dev/';
   }
@@ -97,7 +78,6 @@ function loadManifest() {
     console.error(`Expected 18 manifest entries, got ${entries.length}`);
     process.exit(2);
   }
-  // Deterministic order already, but ensure
   return entries;
 }
 
@@ -124,7 +104,6 @@ async function checkLocalDev(entries, base) {
     const full = path.join(PUBLIC_DEV, localFile);
     const exists = fs.existsSync(full);
     if (!exists) {
-      // Dev subset may be 13, not 18 — missing female/male files are expected on fresh clone without copied GLBs.
       console.log(
         `  MISSING (dev subset, expected on fresh clone): ${url} -> ${full}  [${e.bodyModel}/${e.system} ${e.bytes}B ${e.sha256.slice(0, 8)}]`
       );
@@ -152,7 +131,6 @@ async function checkLocalDev(entries, base) {
   console.log(
     `  To populate dev: cp 3d-assets/male/working/optimized/*.glb ${PUBLIC_DEV}/ && for f in 3d-assets/female/working/optimized/*.glb; do cp "$f" "${PUBLIC_DEV}/female-$(basename "$f")"; done`
   );
-  // Local dev missing is not fatal — fresh clone is expected to lack GLBs. Exit 0 unless you want strict.
   return missing === 0 ? 0 : 0;
 }
 
@@ -166,15 +144,12 @@ async function checkHttp(entries, base, verify, origin, timeout) {
     const url = buildAssetUrl(base, e.bodyModel, e.file);
     const headers = {};
     if (origin) headers.Origin = origin;
-    // Use HEAD unless --verify (then GET to hash). HEAD is cheaper.
     const method = verify ? 'GET' : 'HEAD';
     if (verify) headers.Range = undefined;
     else if (!verify) {
-      // Some hosts may not support HEAD; fallback to GET if HEAD fails.
     }
     try {
       let res = await fetchWithTimeout(url, { method, headers }, timeout);
-      // Fallback: if HEAD 403/405, try GET
       if (!res.ok && method === 'HEAD' && (res.status === 403 || res.status === 405)) {
         res = await fetchWithTimeout(url, { method: 'GET', headers }, timeout);
       }
@@ -222,7 +197,6 @@ async function checkHttp(entries, base, verify, origin, timeout) {
       if (!ctOk || !clOk) failures++;
 
       if (verify) {
-        // Already did GET, verify hash
         const buf = Buffer.from(await res.arrayBuffer());
         if (buf.byteLength !== e.bytes) {
           console.log(`    VERIFY FAIL: bytes ${buf.byteLength} != ${e.bytes}`);
@@ -236,7 +210,6 @@ async function checkHttp(entries, base, verify, origin, timeout) {
           if (!ok) failures++;
         }
       } else if (verify === false) {
-        // For HEAD, optionally warn about missing bytes check
       }
     } catch (err) {
       console.log(`  ERROR ${e.bodyModel}/${e.system}: ${url} -> ${err.message}`);
@@ -259,7 +232,6 @@ async function main() {
   const { base, verify, origin, timeout } = parseArgs();
   const entries = loadManifest();
   console.log(`[check-anatomy-assets] 18 manifest entries (bytes+sha256) loaded.`);
-  // Also print production URLs for documentation verification
   if (normalizeBase(base) !== '/models-dev/') {
     console.log(`[check-anatomy-assets] production layout: <base>/<bodyModel>/<file>`);
     for (const e of entries) {

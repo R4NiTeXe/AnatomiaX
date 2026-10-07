@@ -61,13 +61,11 @@ describe('StudiedStructures keyboard (8.20.6.1, 8.20.18)', () => {
   it('exposes studied items as plain links with no nested interactives', async () => {
     renderStudied();
     const item = await screen.findByTestId('studied-item', {}, { timeout: 4000 });
-    // 8.20.18: the card is a plain container — no role=button wrapping a link.
     expect(within(item).queryByRole('button')).not.toBeInTheDocument();
     const labelLink = within(item).getByTestId('studied-open-label');
     expect(labelLink.tagName).toBe('A');
     expect(labelLink).toHaveAttribute('href', `/human?focus=${encodeURIComponent(KEY)}`);
     expect(labelLink).toHaveAttribute('aria-label', expect.stringContaining('Open'));
-    // natively keyboard-focusable links: Tab reaches them without custom handlers
     labelLink.focus();
     expect(document.activeElement).toBe(labelLink);
     const openLink = within(item).getByTestId('studied-open');

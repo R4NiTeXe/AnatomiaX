@@ -78,7 +78,6 @@ function seedDb() {
   assigned = new Map([['c-A', []]]);
 }
 
-/** Backend-faithful assignment fake: manager-gated writes, viewer reads. */
 function mockBackend(me: typeof TEACHER_A) {
   const session = { user: me, accessToken: `a-${me.id}`, refreshToken: `r-${me.id}` };
   (global.fetch as jest.Mock).mockImplementation((url: string, init?: RequestInit) => {
@@ -216,7 +215,6 @@ describe('cohort assignments (8.52)', () => {
       await screen.findByTestId('assignments-list', {}, { timeout: 4000 })
     ).toBeInTheDocument();
     expect(screen.getAllByTestId('assignment-item')).toHaveLength(1);
-    // Duplicate assignment resolves to the same single row.
     fireEvent.change(screen.getByTestId('assign-module-select'), {
       target: { value: 'nervous' },
     });
@@ -247,7 +245,6 @@ describe('cohort assignments (8.52)', () => {
     renderDetail();
     await screen.findByTestId('assignments-list', {}, { timeout: 4000 });
     fireEvent.click(screen.getByTestId('assignment-unassign'));
-    // First click only arms; row stays.
     expect(screen.getByTestId('assignment-unassign')).toHaveTextContent('Confirm?');
     expect(screen.getByTestId('assignments-list')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('assignment-unassign'));
@@ -284,7 +281,6 @@ describe('cohort assignments (8.52)', () => {
     expect(await screen.findByTestId('learn-assigned', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByTestId('learn-assigned-item')).toBeInTheDocument();
     expect(screen.getByTestId('learn-assigned-open')).toHaveAttribute('href', '/learn/nervous');
-    // Self-directed curriculum stays visible alongside assignments.
     expect(screen.getByTestId('learn-modules')).toBeInTheDocument();
   });
 

@@ -1,7 +1,3 @@
-/**
- * STEP 8.23 motion foundation barrel — the only sanctioned Motion entry
- * points for web. Import from '@/components/motion', never ad-hoc presets.
- */
 export {
   DURATIONS,
   EASE,

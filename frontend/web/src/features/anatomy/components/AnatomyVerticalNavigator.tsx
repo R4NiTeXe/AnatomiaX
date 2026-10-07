@@ -1,12 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
-// ---------------------------------------------------------------------------
-// Vertical navigator UI — DOM overlay for the viewer (fully jsdom-testable).
-// The R3F Canvas-bound VerticalCameraHandler lives in VerticalCameraHandler.tsx.
-// ---------------------------------------------------------------------------
-
 type AnatomyVerticalNavigatorProps = {
-  value: number; // 0..1
+  value: number;
   onChange: (value: number) => void;
   onReset?: () => void;
 };
@@ -62,7 +57,6 @@ export default function AnatomyVerticalNavigator({
     try {
       (e.currentTarget as Element).releasePointerCapture(e.pointerId);
     } catch {
-      // Pointer capture may already be released; dragging state below is authoritative.
     }
     draggingRef.current = false;
     setIsDragging(false);
@@ -74,7 +68,6 @@ export default function AnatomyVerticalNavigator({
     try {
       (e.currentTarget as Element).releasePointerCapture(e.pointerId);
     } catch {
-      // Pointer capture may already be released; dragging state below is authoritative.
     }
     draggingRef.current = false;
     setIsDragging(false);
@@ -137,15 +130,12 @@ export default function AnatomyVerticalNavigator({
       style={{ touchAction: 'none' }}
       title="Move through anatomy vertically"
     >
-      {/* Track line */}
       <div className="pointer-events-none absolute inset-1 rounded-full bg-slate-700/40" />
-      {/* Thumb */}
       <div
         className={`pointer-events-none absolute left-1/2 h-10 w-2 -translate-x-1/2 rounded-full transition-colors ${isDragging ? 'bg-teal-300' : 'bg-slate-400 hover:bg-slate-300'} `}
         style={{ top: `calc(${thumbPosition} - 20px)` }}
         aria-hidden
       />
-      {/* Screen-reader value */}
       <span className="sr-only">{Math.round(clamped * 100)} percent</span>
     </div>
   );

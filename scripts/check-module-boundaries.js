@@ -1,30 +1,3 @@
-/**
- * Module boundary gate (Phase 5 architecture migration).
- * Enforces the allowed dependency edges between backend/api/src areas by
- * statically analyzing VALUE imports (type-only imports are erased at
- * runtime and cannot form cycles, so they are exempt by design).
- * Test files (*.spec.ts) are exempt — tests may wire anything.
- *
- * Allowed value-import edges (source -> targets):
- * - common/**, config/**, database(prisma/**): infrastructure only —
- *   must not import from modules/** or each other (except config<-common
- *   types? no: nothing outside their own area).
- * - modules/auth: users, common, config, database.
- * - modules/users: common, config, database (leaf domain).
- * - modules/cohorts: auth, users, common, config, database.
- * - modules/progress: auth, users, common, config, database.
- * - modules/quizzes: auth, users, cohorts, audit, common, config, database.
- * - modules/notifications: auth, users, common, config, database.
- * - modules/health: common, config, database, plus modules/auth SOLELY for
- *   the shared ThrottlerModule instance (re-importing it would fork
- *   rate-limit storage and change behavior — see health.module.ts).
- * - modules/audit: common, config, database.
- * - modules/admins: auth, users, audit, common, config, database.
- * - app.module.ts / main.ts: anything (composition roots).
- *
- * Usage: node scripts/check-module-boundaries.js
- * Exit codes: 0 boundaries hold, 1 violation.
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -67,11 +40,11 @@ function areaOf(relPath) {
   if (parts[0] === 'common') return 'common';
   if (parts[0] === 'config') return 'config';
   if (parts[0] === 'prisma') return 'database';
-  return null; // app.module.ts, main.ts: composition roots, unrestricted.
+  return null;
 }
 
 function targetArea(fromFile, importPath) {
-  if (!importPath.startsWith('.')) return null; // packages only.
+  if (!importPath.startsWith('.')) return null;
   const resolved = path.normalize(path.join(path.dirname(fromFile), importPath));
   const rel = path.relative(SRC, resolved);
   if (rel.startsWith('..')) return null;

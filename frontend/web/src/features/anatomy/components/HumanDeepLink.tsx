@@ -3,19 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { parseStudiedKey } from '@anatomiax/anatomy-core';
 import { useAnatomyState } from './AnatomyStateContext';
 
-/**
- * Applies `?focus=<structureKey>` deep links from dashboard/history.
- * Parsing needs no loaded meshes; camera focus follows via the existing
- * focus controller when meshes are available. Invalid keys are ignored.
- *
- * Commit protocol: the provider's body-model switch effect wipes the
- * selection in the same commit where the new model first matches, and
- * child effects always run before it — so a select issued in that commit
- * never survives. `awaitingModel` therefore swallows exactly one
- * model-match commit (queuing a follow-up) and selects in the next one,
- * which the provider leaves untouched. Later user deselections are
- * respected (applied key + settled flag ⇒ return).
- */
 export default function HumanDeepLink(): null {
   const [searchParams] = useSearchParams();
   const {
@@ -48,11 +35,6 @@ export default function HumanDeepLink(): null {
       return;
     }
     if (parsed.bodyModel !== selectedBodyModel) {
-      // STEP 8.55: after the focus was applied once, the user owns model
-      // selection — never yank them back to the focus model. Without this
-      // guard, any manual switch away from the focus model is reverted on the
-      // next effect run (deep-link + switch race: focus=male + switch female
-      // snaps back to male). A *new* focus param still takes control.
       if (appliedRef.current === focusRaw) return;
       setSelectedBodyModel(parsed.bodyModel);
       if (!awaitingModel) setAwaitingModel(true);
@@ -65,15 +47,10 @@ export default function HumanDeepLink(): null {
     }
     if (appliedRef.current === focusRaw && !awaitingModel) return;
     if (awaitingModel) {
-      // First model-match commit: the provider wipe runs after this commit,
-      // so only settle the flag here and select in the follow-up commit.
       setAwaitingModel(false);
       return;
     }
     appliedRef.current = focusRaw;
-    // STEP 8.39: deep links usually target non-skin systems, which start
-    // hidden — reveal first (same batch) or the hidden-system invariant
-    // clears the selection and the landing shows nothing.
     if (!visibleSystems[parsed.systemKey]) toggleSystem(parsed.systemKey);
     selectStructure(parsed);
   }, [

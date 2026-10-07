@@ -1,34 +1,23 @@
-/**
- * Approved animation asset registry (STEP 8.27)
- * Single source of truth for all integrated animation files.
- * Only approved assets are listed; unverified files remain on disk
- * but are never imported or rendered.
- *
- * For CC BY assets, attribution lives in attribution.md — never invented here.
- */
 
 export type AnimationType = 'rive' | 'lottie';
 
 export interface AnimationAsset {
   id: string;
-  file: string; // under /animations/
+  file: string;
   type: AnimationType;
   intendedUsage: string;
   loading: 'eager' | 'lazy';
   sizeKB: number;
   notes?: string;
-  /** For Rive: known artboard / state machine hints (discovered via viewer). */
   rive?: {
     artboard?: string;
     stateMachines?: string[];
     inputs?: string[];
   };
-  /** License / attribution is tracked in attribution.md, referenced here. */
   requiresAttribution?: boolean;
 }
 
 export const ANIMATION_REGISTRY = {
-  // Lottie — approved
   'body-scan': {
     id: 'body-scan',
     file: 'body-scan.lottie',
@@ -46,7 +35,6 @@ export const ANIMATION_REGISTRY = {
     sizeKB: 93.3,
   },
 
-  // Rive — approved
   'medical-data-graph': {
     id: 'medical-data-graph',
     file: 'medical-data-graph.riv',
@@ -142,7 +130,6 @@ export function animationSrc(id: AnimationId): string {
   return `/animations/${encodeURIComponent(ANIMATION_REGISTRY[id].file)}`;
 }
 
-// Unverified — must stay unused until explicitly approved.
 export const UNVERIFIED_LOTTIE = [
   'medical loading.lottie',
   'medical success.lottie',

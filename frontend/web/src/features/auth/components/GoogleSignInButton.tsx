@@ -1,7 +1,6 @@
 import { googleLoginUrl } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 
-/** Full-page navigation to the existing backend Google entrypoint. */
 export default function GoogleSignInButton({
   testId = 'google-signin',
 }: {

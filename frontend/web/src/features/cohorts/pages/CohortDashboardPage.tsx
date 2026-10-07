@@ -52,10 +52,6 @@ export default function CohortDashboardPage(): JSX.Element {
   const isStudent = user?.role === 'STUDENT';
   const canManage = cohort ? canManageCohort(cohort.myRole, user?.role) : false;
 
-  // Assignment analytics (STEP 8.53) — summaries + per-student rows derived
-  // from the same two authorized queries via the centralized
-  // `lib/cohortAnalytics` model (canonical moduleProgress rule).
-  // NOTE: must stay above the early returns (hooks order).
   const [selectedModuleKey, setSelectedModuleKey] = useState<string | null>(null);
   const [assignmentSort, setAssignmentSort] = useState<AssignmentSort>('completion');
   const assignmentSummaries = useMemo(() => {
@@ -79,7 +75,6 @@ export default function CohortDashboardPage(): JSX.Element {
   }, [effectiveSelectedKey, progressQuery.data, assignmentSort]);
   const isAssignmentsLoading = assignmentsQuery.isLoading && !assignmentsQuery.data;
 
-  // Client-side aggregates from server-authorized member progress.
   const progress = progressQuery.data ?? null;
   const {
     totalMembers,

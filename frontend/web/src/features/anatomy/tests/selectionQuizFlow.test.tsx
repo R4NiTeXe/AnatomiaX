@@ -25,7 +25,6 @@ function SelectSkinButton() {
 
 describe('selection to quiz flow (8.37)', () => {
   beforeEach(() => {
-    // jsdom has no layout engine — stub the scroll helper.
     Element.prototype.scrollIntoView = jest.fn();
   });
 
@@ -42,10 +41,8 @@ describe('selection to quiz flow (8.37)', () => {
     fireEvent.click(screen.getByTestId('select-skin'));
     expect(screen.getByTestId('selection-panel')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('quiz-this-structure'));
-    // Quiz started, first question targets the selected structure.
     expect(screen.getByTestId('anatomy-quiz-question')).toHaveTextContent(/skin/i);
     expect(screen.getByTestId('anatomy-quiz-progress')).toHaveTextContent('1 / 5');
-    // Focus lands in the quiz for keyboard/screen-reader users.
     expect(document.activeElement?.getAttribute('data-testid')).toBe('anatomy-quiz');
   });
 
@@ -97,7 +94,6 @@ describe('selection to quiz flow (8.37)', () => {
     );
     fireEvent.click(screen.getByTestId('select-unknown'));
     expect(screen.getByTestId('selection-panel')).toBeInTheDocument();
-    // No verified record: no misleading targeted-quiz promise, honest note.
     expect(screen.queryByTestId('quiz-this-structure')).not.toBeInTheDocument();
     expect(screen.getByTestId('quiz-unavailable-note')).toHaveTextContent(/isn.*t available/i);
     expect(screen.getByTestId('clear-selection')).toBeInTheDocument();

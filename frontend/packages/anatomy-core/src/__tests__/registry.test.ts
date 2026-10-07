@@ -127,7 +127,6 @@ describe('AnatomyStructureRegistry', () => {
       registry.register(entryFor(name, tag));
       return registry;
     };
-    // Tier 0 exact, 1 prefix, 2 substring each match only through their tier.
     expect(searchStructures(withEntry('alpha', 'q0'), 'alpha', { bodyModel: 'male' })).toHaveLength(
       1
     );

@@ -26,7 +26,6 @@ export default function AnatomyFocusController(): null {
   const animationRef = useRef<number | null>(null);
   const lastFocusedKeyRef = useRef<string | null>(null);
 
-  // Expose camera/controls for real-browser E2E validation (no architecture change)
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__ANATOMIA_CAMERA = camera;
     (window as unknown as Record<string, unknown>).__ANATOMIA_CONTROLS = controls;
@@ -42,13 +41,11 @@ export default function AnatomyFocusController(): null {
   }, []);
 
   useEffect(() => {
-    // No selection — clear last key so next selection can refocus
     if (!selectedStructure) {
       lastFocusedKeyRef.current = null;
       return;
     }
 
-    // Do not focus hidden system
     if (!visibleSystems[selectedStructure.systemKey]) {
       return;
     }
@@ -59,7 +56,6 @@ export default function AnatomyFocusController(): null {
     const meshes = getMeshesForStructure(selectedStructure);
     if (!meshes || meshes.length === 0) return;
 
-    // Compute combined world-space bounds
     const box = getWorldBoundingBox(meshes);
     if (box.isEmpty()) return;
 
@@ -90,7 +86,6 @@ export default function AnatomyFocusController(): null {
     )
       return;
 
-    // Cancel any in-flight animation
     if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -104,10 +99,8 @@ export default function AnatomyFocusController(): null {
     const animate = (now: number): void => {
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / duration);
-      // easeInOutQuad
       const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
-      // Interpolate target and camera position
       (controls as OrbitControlsLike).target.lerpVectors(startTarget, endTarget, eased);
       camera.position.lerpVectors(startPosition, endPosition, eased);
       (controls as OrbitControlsLike).update();

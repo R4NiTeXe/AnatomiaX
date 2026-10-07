@@ -61,8 +61,6 @@ describe('asset manifest', () => {
   });
 });
 
-// Recomputes size + SHA-256 of every optimized GLB and compares to the
-// committed manifest. Skips cleanly where the gitignored asset dirs are absent.
 const OPTIMIZED_ROOT = path.join(__dirname, '..', '..', '..', '..', '..', '3d-assets');
 
 describe('asset manifest file verification', () => {

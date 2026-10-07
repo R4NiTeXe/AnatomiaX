@@ -6,7 +6,6 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={cn(
-        // STEP 8.23: top-lit clinical surface — hairline border, soft depth.
         'rounded-xl border border-slate-800/70 bg-gradient-to-b from-slate-900/80 to-slate-900/40 text-slate-100 shadow-soft',
         className
       )}

@@ -107,7 +107,6 @@ describe('AnatomyQuiz persistence', () => {
   it('submits a completed attempt exactly once despite rerenders', async () => {
     renderQuiz();
     await completeQuiz();
-    // Allow the persistence effect to flush.
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(submitted).toHaveLength(1);
     const payload = JSON.parse(submitted[0].body);
@@ -144,7 +143,6 @@ describe('AnatomyQuiz persistence', () => {
     renderQuiz();
     await completeQuiz();
     await screen.findByTestId('anatomy-quiz-sync-note', {}, { timeout: 4000 });
-    // Quiz review still works despite the failure.
     expect(screen.getByTestId('anatomy-quiz-review')).toBeInTheDocument();
   });
 
@@ -186,11 +184,9 @@ describe('AnatomyQuiz persistence', () => {
         <AccountPanel />
       </AnatomyStateProvider>
     );
-    // Complete the quiz while anonymous: nothing may be submitted.
     await completeQuiz();
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(submitted).toHaveLength(0);
-    // Register afterwards: the anonymous quiz must stay local-only.
     fireEvent.change(screen.getByTestId('anatomy-account-email'), { target: { value: 'a@b.c' } });
     fireEvent.change(screen.getByTestId('anatomy-account-password'), {
       target: { value: 'password123' },

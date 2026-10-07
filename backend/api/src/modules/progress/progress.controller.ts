@@ -9,8 +9,6 @@ import { ProgressService } from './progress.service';
 import { SubmitQuizAttemptDto } from './dto/submit-quiz-attempt.dto';
 
 @Controller('v1/progress')
-// Shared throttler storage (100/min default) — quiz-attempt and snapshot
-// writes stay bounded per client.
 @UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class ProgressController {
   constructor(private readonly progress: ProgressService) {}

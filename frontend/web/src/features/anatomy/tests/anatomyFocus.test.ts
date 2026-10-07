@@ -32,7 +32,6 @@ describe('anatomyFocus — pure focus calculation', () => {
       parent.updateWorldMatrix(true, true);
       const box = getWorldBoundingBox([mesh]);
       const center = getWorldBoundingBoxCenter(box);
-      // Mesh world position = parent 5 + local 1 = 6
       expect(center.x).toBeCloseTo(6, 5);
       expect(center.y).toBeCloseTo(0, 5);
     });
@@ -49,7 +48,6 @@ describe('anatomyFocus — pure focus calculation', () => {
       const radius = getBoundingSphereRadius(box);
       expect(center.x).toBeCloseTo(0, 5);
       expect(radius).toBeGreaterThan(2);
-      // Box should span at least 4 units + half extents
       const size = box.getSize(new THREE.Vector3());
       expect(size.x).toBeGreaterThan(4);
     });
@@ -103,7 +101,6 @@ describe('anatomyFocus — pure focus calculation', () => {
 
     it('padding increases distance — more padding = further', () => {
       const radius = 0.5;
-      // Use narrow FOV so minDistance does not clamp and ratio stays linear
       const d1 = computeFocusDistance(radius, 20, 1.0);
       const d2 = computeFocusDistance(radius, 20, 2.0);
       expect(d2).toBeGreaterThan(d1);
@@ -111,23 +108,19 @@ describe('anatomyFocus — pure focus calculation', () => {
     });
 
     it('handles small bounds — finite and above minimum', () => {
-      // Very small structure like cervix fragment
       const radius = 0.02;
       const d = computeFocusDistance(radius, 50, 1.35);
       expect(Number.isFinite(d)).toBe(true);
       expect(d).toBeGreaterThan(0);
-      // Minimum clamp ensures visibility
       expect(d).toBeGreaterThanOrEqual(0.15);
       expect(d).toBeGreaterThan(radius * 2);
     });
 
     it('handles large bounds — full body', () => {
-      // Large structure like skin full body
       const radius = 1.0;
       const d = computeFocusDistance(radius, 50, 1.35);
       expect(Number.isFinite(d)).toBe(true);
       expect(d).toBeGreaterThan(2);
-      // Should be similar to initial camera distance ~3.5 with padding
       expect(d).toBeLessThan(6);
     });
 
@@ -158,7 +151,6 @@ describe('anatomyFocus — pure focus calculation', () => {
       const camPos = new THREE.Vector3(1, 0, 5);
       const controlsTarget = new THREE.Vector3(1, 0, 0);
       const newPos = computeCameraPosition(target, camPos, controlsTarget, 2);
-      // Direction was +Z, so newPos = target + (0,0,1)*2
       expect(newPos.x).toBeCloseTo(1, 5);
       expect(newPos.y).toBeCloseTo(0, 5);
       expect(newPos.z).toBeCloseTo(2, 5);
@@ -224,8 +216,6 @@ describe('anatomyFocus — pure focus calculation', () => {
 
   describe('no hardcoded anatomy coordinates', () => {
     it('source does not contain hardcoded heart/ovary coordinates', () => {
-      // This test ensures the implementation uses world-space bounds, not literals.
-      // We check that the pure function works for arbitrary inputs, not specific anatomy.
       const arbitraryBox1 = new THREE.Box3(
         new THREE.Vector3(10, 20, 30),
         new THREE.Vector3(11, 21, 31)
@@ -239,30 +229,24 @@ describe('anatomyFocus — pure focus calculation', () => {
       expect(m1.center.x).not.toBeCloseTo(m2.center.x, 2);
       expect(Number.isFinite(m1.distance)).toBe(true);
       expect(Number.isFinite(m2.distance)).toBe(true);
-      // Ensure padding and FOV affect output, not hardcoded values
       const mNoPad = computeFocusMetrics(arbitraryBox1, 50, 1.0);
       const mPad = computeFocusMetrics(arbitraryBox1, 50, 2.0);
       expect(mPad.distance).toBeGreaterThan(mNoPad.distance);
     });
 
     it('anatomyFocus source contains no literal heart/ovary positions', () => {
-      // Resolve via __dirname relative to test file location
       let src = '';
       try {
         const p = path.join(__dirname, '../components/anatomyFocus.ts');
         src = fs.readFileSync(p, 'utf8');
       } catch {
-        // Fallback to require.resolve
         src = fs.readFileSync(require.resolve('../anatomyFocus'), 'utf8');
       }
-      // Check for suspicious hardcoded vectors that would imply anatomy coordinates
-      // We allow generic constants like 0,1,1.35 etc but not specific anatomy coords
       expect(src).not.toMatch(/heart/i);
       expect(src).not.toMatch(/ovary/i);
       expect(src).not.toMatch(/cervix/i);
       expect(src).not.toMatch(/VH_M_heart/);
       expect(src).not.toMatch(/VH_F_ovary/);
-      // Ensure it uses Box3 / bounding sphere / FOV — not literals
       expect(src).toMatch(/Box3/);
       expect(src).toMatch(/getBoundingSphere|computeFocusDistance/);
       expect(src).toMatch(/fov/i);

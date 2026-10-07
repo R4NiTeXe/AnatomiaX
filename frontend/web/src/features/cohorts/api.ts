@@ -1,8 +1,3 @@
-/**
- * Cohorts API — thin typed wrappers over the authed request helper.
- * Mirrors GET/POST/PATCH/DELETE /api/v1/cohorts* exactly; the backend
- * stays authoritative on roles, invite codes, and archived-state rules.
- */
 import { authedRequest } from '@/lib/auth';
 
 export type CohortRole = 'OWNER' | 'TEACHER' | 'STUDENT';

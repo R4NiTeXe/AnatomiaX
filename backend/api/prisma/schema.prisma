@@ -1,9 +1,3 @@
-// AnatomiaX production data model (STEP 8.19.18).
-//
-// Stores ONLY identity, cohorts, learning records, and push subscriptions.
-// Static anatomy content (seed, provenance, relationships), GLBs/meshes,
-// registry/lineage data, and client UI state (camera, hover, layers) are
-// intentionally NOT modeled here and must never be added to this schema.
 
 generator client {
   provider = "prisma-client-js"
@@ -146,10 +140,6 @@ model CohortMember {
   @@map("cohort_members")
 }
 
-// Curriculum module assigned to a cohort (STEP 8.52).
-// moduleKey references the frontend static module registry by anatomy
-// system key (skin, musculoskeletal, …) — static content stays out of this
-// schema per the header rule; only the assignment link is persisted.
 model CohortAssignment {
   id        String   @id @default(uuid())
   moduleKey String
@@ -179,9 +169,6 @@ model QuizAttempt {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Nullable: legacy free-form attempts (static-content quizzes) carry no
-  // bank quiz. Bank-graded attempts always set quizId + questionSnapshot
-  // (immutable per-question copy so later quiz edits never rewrite history).
   quizId           String?
   quiz             Quiz?   @relation(fields: [quizId], references: [id], onDelete: SetNull)
   questionSnapshot Json?
@@ -191,9 +178,6 @@ model QuizAttempt {
   @@map("quiz_attempts")
 }
 
-// Authoritative question bank (server-side grading). Assessment records like
-// QuizAttempt — static anatomy *content* stays out of this schema per the
-// header rule; only the gradable bank structure lives here.
 model Quiz {
   id          String     @id @default(uuid())
   title       String
@@ -231,8 +215,6 @@ model QuizQuestion {
   @@map("quiz_questions")
 }
 
-// Privileged-action ledger. No FK to User (survives account deletion) and
-// NEVER authentication material (see AuditService for the field contract).
 model AuditLog {
   id         String   @id @default(uuid())
   actorId    String

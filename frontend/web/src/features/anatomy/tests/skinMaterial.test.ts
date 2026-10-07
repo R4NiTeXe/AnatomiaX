@@ -22,11 +22,9 @@ function entryFor(material: THREE.Material, skin: boolean): SkinEntryLike {
 
 describe('skinMaterial (8.31)', () => {
   it('identifies only verified skin materials by name', () => {
-    // Shipped GLB skin materials (male + female).
     expect(isSkinMaterial(skinStandard('pasted__Skin_Mat'))).toBe(true);
     expect(isSkinMaterial(skinStandard('Skin_mat'))).toBe(true);
     expect(isSkinMaterial(skinStandard('Skin_mat2'))).toBe(true);
-    // Non-skin materials in the female skin file stay excluded.
     expect(isSkinMaterial(skinStandard('retina_mat3'))).toBe(false);
     expect(isSkinMaterial(skinStandard('Ligament_mat'))).toBe(false);
     expect(isSkinMaterial(skinStandard('BroadLigament_mat'))).toBe(false);
@@ -46,7 +44,6 @@ describe('skinMaterial (8.31)', () => {
     expect(physical.roughness).toBeCloseTo(0.58);
     expect(physical.metalness).toBe(0);
     expect(physical.clearcoat).toBeLessThanOrEqual(0.2);
-    // Opacity pipeline untouched.
     expect(physical.transparent).toBe(true);
     expect(physical.opacity).toBeCloseTo(0.72);
   });
@@ -81,7 +78,6 @@ describe('skinMaterial (8.31)', () => {
     expect(boneEntry.mesh.material).toBe(bone);
     expect(bone.color.getHexString()).toBe('ffffff');
 
-    // Repeated switching keeps identical material objects (no leaks).
     for (const tone of ['light', 'deep', 'mediumDeep', 'mediumLight', 'medium'] as const) {
       applySkinToneToEntries(entries, tone);
       expect(skinEntry.mesh.material).toBe(mounted);

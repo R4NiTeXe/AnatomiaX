@@ -7,7 +7,6 @@ import UsersPage from '../users/page';
 import CohortsPage from '../cohorts/page';
 import CohortDetailPage from '../cohorts/[id]/page';
 
-// Mock next/navigation
 jest.mock('next/navigation', () => ({
   usePathname: () => '/',
   useParams: () => ({ id: 'c1' }),
@@ -178,7 +177,6 @@ describe('admin users', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('admin-user-email')).toHaveTextContent('a@b.c');
     expect(screen.queryByText('passwordHash')).not.toBeInTheDocument();
-    // search
     const input = screen.getByTestId('admin-users-search');
     expect(input).toHaveAttribute('aria-label', 'Search users');
     fireEvent.change(input, { target: { value: 'Ada' } });

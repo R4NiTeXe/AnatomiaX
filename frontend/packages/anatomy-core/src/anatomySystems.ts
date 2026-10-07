@@ -5,8 +5,6 @@ import type {
 } from '@anatomiax/shared-types';
 import { buildAssetUrl, findManifestEntry } from './assetManifest';
 
-// Asset definitions (paths/availability) — serializable and platform-neutral,
-// shared by web. Not part of the backend contract.
 export interface AnatomySystemAsset {
   key: AnatomySystemKey;
   label: string;
@@ -34,9 +32,6 @@ declare const process: { env: Record<string, string | undefined> };
 
 export const ASSET_BASE_URL: string = (() => {
   try {
-    // Plain `process.env.X` literal for Vite static replacement (see
-    // readConfiguredAssetBase) — no `?.`, no cast, no typeof guard.
-    // Empty counts as unset and falls back to local mode.
     const configured = process.env.VITE_ANATOMY_ASSET_BASE_URL;
     return configured && configured.trim() !== '' ? configured : '/models-dev/';
   } catch {
@@ -64,22 +59,12 @@ function defineSystem(
   return { key, label, asset, available: true, displayOrder };
 }
 
-/**
- * Canonical production filename for a body system, from the verified asset
- * manifest. Throws loudly when an entry is missing so a bad manifest fails
- * fast instead of producing a 404 at runtime.
- */
 function manifestFile(bodyModel: AnatomyBodyModelKey, system: AnatomySystemKey): string {
   const entry = findManifestEntry(bodyModel, system);
   if (!entry) throw new Error(`Missing asset manifest entry: ${bodyModel}/${system}`);
   return entry.file;
 }
 
-/**
- * Canonical system metadata — single source of truth.
- * `asset.available` mirrors `available` for consumers that only inspect the asset.
- * All nine male systems are Meshopt-optimized and staged under /models-dev/ for local dev.
- */
 export const ANATOMY_SYSTEM_DEFINITIONS: readonly AnatomySystemDefinition[] = [
   defineSystem('skin', 'Skin', manifestFile('male', 'skin'), 0),
   defineSystem('musculoskeletal', 'Musculoskeletal', manifestFile('male', 'musculoskeletal'), 1),
@@ -106,10 +91,6 @@ export function getAnatomySystemAsset(key: AnatomySystemKey): AnatomySystemAsset
   return ANATOMY_SYSTEMS_BY_KEY[key].asset;
 }
 
-// ---------------------------------------------------------------------------
-// Body-model abstraction — single viewer, no duplicated logic
-// ---------------------------------------------------------------------------
-
 function defineBodySystem(
   bodyModel: AnatomyBodyModelKey,
   key: AnatomySystemKey,
@@ -130,9 +111,6 @@ function defineBodySystem(
 
 const MALE_SYSTEMS = ANATOMY_SYSTEM_DEFINITIONS;
 
-// Female entries resolve through the manifest plus the buildAssetUrl helper:
-// - dev (/models-dev/) → flat with female- prefix (preserves public/models-dev/*.glb)
-// - prod (HTTPS base) → <base>/<bodyModel>/<file> per docs/architecture/asset-hosting.md
 const devFemale = (system: AnatomySystemKey): string => manifestFile('female', system);
 
 const FEMALE_SYSTEMS: readonly AnatomySystemDefinition[] = [
@@ -180,7 +158,6 @@ export const ANATOMY_BODY_MODELS: Readonly<
       AnatomySystemKey,
       AnatomySystemAsset
     >,
-    // Now integrated into live /human UI via body model selector
     available: true,
   },
 };

@@ -19,7 +19,6 @@ describe('LoggingInterceptor', () => {
     };
     interceptor.intercept(contextWith(req), { handle: () => of('ok') }).subscribe(value => {
       expect(value).toBe('ok');
-      // Request object must be unmodified (headers never stripped/logged).
       expect(req.headers).toEqual({
         authorization: 'Bearer secret',
         cookie: 'refresh_token=secret',

@@ -250,13 +250,10 @@ describe('anatomy relationships — panel', () => {
 
   it('recent history resumes a hidden system visibly (8.36)', () => {
     renderWithProvider();
-    // Cardiovascular starts hidden: selecting LV records history but the
-    // selection itself clears (existing hidden-system invariant).
     fireEvent.click(screen.getByTestId('select-lv'));
     expect(screen.getByTestId('dbg-selected')).toHaveTextContent('null');
     expect(screen.getByTestId('anatomy-recent-item-0')).toBeInTheDocument();
     expect(screen.getByTestId('dbg-visible').textContent).not.toContain('"cardiovascular":true');
-    // Resuming from history reveals the system instead of a dead end.
     fireEvent.click(screen.getByTestId('anatomy-recent-item-0'));
     expect(screen.getByTestId('dbg-visible').textContent).toContain('"cardiovascular":true');
     expect(screen.getByTestId('dbg-selected')).toHaveTextContent(
@@ -269,7 +266,6 @@ describe('anatomy relationships — panel', () => {
     fireEvent.click(screen.getByTestId('show-all'));
     fireEvent.click(screen.getByTestId('select-lv'));
     fireEvent.click(screen.getByTestId('anatomy-partof-item-0'));
-    // Heart whole has no mesh; info still renders, no throw
     expect(screen.getByTestId('anatomy-information-panel')).toBeInTheDocument();
     expect(screen.getByTestId('anatomy-information-canonical-name')).toHaveTextContent('Heart');
   });

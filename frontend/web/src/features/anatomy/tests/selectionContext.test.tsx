@@ -98,12 +98,10 @@ describe('selection context (8.40)', () => {
 
   it('navigates the module sequence from the selection (8.50)', () => {
     renderPanel();
-    // Male skin is last of the two skin records: position 2 of 2.
     fireEvent.click(screen.getByTestId('harness-select-skin'));
     expect(screen.getByTestId('session-position')).toHaveTextContent('2 of 2');
     expect(screen.getByTestId('session-next')).toBeDisabled();
     expect(screen.getByTestId('session-prev')).not.toBeDisabled();
-    // Previous moves to the female skin record.
     fireEvent.click(screen.getByTestId('session-prev'));
     expect(screen.getByTestId('session-position')).toHaveTextContent('1 of 2');
     expect(screen.getByTestId('selected-structure-name')).toHaveTextContent('Skin');
@@ -114,7 +112,6 @@ describe('selection context (8.40)', () => {
     fireEvent.click(screen.getByTestId('harness-load-liver'));
     fireEvent.click(screen.getByTestId('harness-toggle-digestive'));
     fireEvent.click(screen.getByTestId('harness-select-liver'));
-    // Liver test mesh has no verified record: no session, but panel stands.
     expect(screen.getByTestId('selection-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('session-navigator')).not.toBeInTheDocument();
   });

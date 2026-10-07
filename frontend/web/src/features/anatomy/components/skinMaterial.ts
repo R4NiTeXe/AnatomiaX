@@ -1,25 +1,10 @@
 import * as THREE from 'three';
 import { getSkinTone, type SkinToneId } from './skinTones';
 
-/**
- * Skin material handling (STEP 8.31).
- *
- * Verified against the shipped GLBs (no guessing):
- * - male `skin-meshopt.glb`: single mesh VH_M_skin → `pasted__Skin_Mat`
- * - female `female-skin-meshopt.glb`: VH_F_skin → `Skin_mat2`,
- *   areola/nipple/tubercles → `Skin_mat`
- * Non-skin materials in the female skin file (`retina_mat3`, `Ligament_mat`,
- * `BroadLigament_mat`, `gland_mat`) never contain "skin" and are excluded.
- * GLBs ship zero textures, so realism comes from PBR properties only —
- * no external assets required (TASK 19 checkpoint: not needed).
- */
-
-/** Name rule cross-checked against mesh semantics in both GLBs. */
 export function isSkinMaterial(material: THREE.Material): boolean {
   return (material.name ?? '').toLowerCase().includes('skin');
 }
 
-/** Restrained realism constants — natural skin, never plastic or waxy. */
 export const SKIN_REALISM = {
   roughness: 0.58,
   metalness: 0,
@@ -41,15 +26,6 @@ function stampOriginals(
   record.__originalDepthWrite = depthWrite;
 }
 
-/**
- * Upgrades one skin material in place where possible.
- * MeshStandardMaterial (what GLTFLoader produces) keeps its identity and
- * gains realistic roughness; where MeshPhysicalMaterial is available it is
- * preferred for its restrained clearcoat/sheen response and returned as a
- * replacement — the caller swaps it into the mesh and disposes the old one.
- * Never touches opacity/transparent/depthWrite: the system-opacity pipeline
- * owns those. Falls back to the input material on any failure.
- */
 export function enhanceSkinMaterial(material: THREE.Material): THREE.Material {
   try {
     const std = material as THREE.MeshStandardMaterial;
@@ -72,10 +48,6 @@ export function enhanceSkinMaterial(material: THREE.Material): THREE.Material {
     if (!(material as { isMeshStandardMaterial?: boolean }).isMeshStandardMaterial) {
       return material;
     }
-    // NOTE: MeshPhysicalMaterial.copy(standard) throws on three r185 (it
-    // blindly copies physical-only internals like clearcoatNormalScale), so
-    // the replacement is constructed with an explicit carried-prop whitelist.
-    // Verified sufficient: shipped GLBs carry color/alpha only, zero maps.
     const physical = new THREE.MeshPhysicalMaterial({
       color: std.color ? std.color.clone() : new THREE.Color('#ffffff'),
       roughness: SKIN_REALISM.roughness,
@@ -118,7 +90,6 @@ export function enhanceSkinMaterial(material: THREE.Material): THREE.Material {
   }
 }
 
-/** Applies the tone's RGB only — alpha/opacity/transparent are preserved. */
 export function applySkinToneColor(material: THREE.Material, tone: SkinToneId): void {
   const std = material as THREE.MeshStandardMaterial;
   if (!std.color) return;
@@ -139,11 +110,6 @@ export interface SkinEntryLike {
   skin: boolean;
 }
 
-/**
- * Upgrades every skin entry once at mount: physical replacement (old clone
- * disposed, never rendered) + initial tone color. Non-skin entries pass
- * through untouched. Creates no per-frame work.
- */
 export function enhanceSkinEntries(entries: SkinEntryLike[], tone: SkinToneId): void {
   for (const entry of entries) {
     if (!entry.skin) continue;
@@ -158,7 +124,6 @@ export function enhanceSkinEntries(entries: SkinEntryLike[], tone: SkinToneId): 
         try {
           current.dispose?.();
         } catch {
-          // ignore dispose errors
         }
       }
       return upgraded;
@@ -174,10 +139,6 @@ export function enhanceSkinEntries(entries: SkinEntryLike[], tone: SkinToneId): 
   }
 }
 
-/**
- * Cheap in-place tone switch: recolors base + currently-mounted materials
- * (covers highlight clones) without allocating, refetching, or remounting.
- */
 export function applySkinToneToEntries(entries: SkinEntryLike[], tone: SkinToneId): void {
   for (const entry of entries) {
     if (!entry.skin) continue;

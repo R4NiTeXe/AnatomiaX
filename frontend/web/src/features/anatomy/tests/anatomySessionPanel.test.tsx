@@ -128,7 +128,7 @@ describe('AnatomySessionPanel', () => {
     fireEvent.click(screen.getByTestId('select-heart'));
     expect(screen.getByTestId('anatomy-session-studied-count')).toHaveTextContent('2');
     const items = screen.getAllByTestId('anatomy-session-studied-item');
-    expect(items[0]).toHaveTextContent('Heart'); // newest first
+    expect(items[0]).toHaveTextContent('Heart');
     expect(items[1]).toHaveTextContent('Brain');
   });
 
@@ -146,7 +146,6 @@ describe('AnatomySessionPanel', () => {
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('select-brain'));
     fireEvent.click(screen.getByTestId('start-quiz'));
-    // Complete 5 questions: answer + next x4 + answer final
     for (let i = 0; i < 5; i++) {
       fireEvent.click(screen.getByTestId('answer-first'));
       if (i < 4) fireEvent.click(screen.getByTestId('next'));
@@ -222,7 +221,6 @@ describe('AnatomySessionPanel', () => {
     renderWithProvider();
     await screen.findByTestId('anatomy-session-synced-quiz', {}, { timeout: 4000 });
     expect(screen.getByTestId('anatomy-session-synced-quiz')).toHaveTextContent('4 / 5');
-    // Local quiz state is untouched: still shows the empty state alongside.
     expect(screen.getByTestId('anatomy-session-quiz-empty')).toBeInTheDocument();
     (global.fetch as jest.Mock).mockRestore?.();
   });

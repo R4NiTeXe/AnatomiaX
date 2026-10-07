@@ -11,8 +11,6 @@ import {
 } from '@anatomiax/anatomy-core';
 import type { AnatomyBodyModelKey, AnatomyStructure, AnatomySystemKey } from './anatomyTypes';
 
-// Pure registry/search/keying logic lives in @anatomiax/anatomy-core (single
-// source). Re-exported here so existing imports keep working.
 export {
   createStructureKey,
   findStructureByOntologyId,
@@ -23,11 +21,6 @@ export {
   searchStructures,
 };
 
-/**
- * Web registry: the pure core registry plus Three.js scene loading.
- * GLB traversal is web-specific; the walker registers plain records via the
- * inherited register().
- */
 export class AnatomyStructureRegistry extends CoreAnatomyStructureRegistry {
   registerSystem(
     systemKey: AnatomySystemKey,
@@ -48,21 +41,13 @@ export class AnatomyStructureRegistry extends CoreAnatomyStructureRegistry {
   }
 }
 
-/** Default singleton for convenience; the React provider owns its own instance. */
 export const globalAnatomyRegistry = new AnatomyStructureRegistry();
 
-/**
- * Walks up the scene graph from `object` looking for a verified ontologyId.
- * Returns the first non-empty value encountered (closest to the clicked mesh)
- * or null when none is present. Handles case-insensitive keys and nested extras.
- */
 export function extractOntologyId(object: THREE.Object3D): string | null {
   let current: THREE.Object3D | null = object;
   while (current) {
     const found = readOntologyCandidate(current.userData);
     if (found) {
-      // If the found value is an IRI, keep it; callers compare exact strings.
-      // Prefer prefixed IDs (contain ':') but accept either — no invention.
       return found;
     }
     current = current.parent;
@@ -79,13 +64,6 @@ export function resolveObjectName(object: THREE.Object3D): string {
   return object.type;
 }
 
-/**
- * Collects AnatomyStructure entries from a loaded GLB scene. Must only be
- * called for systems that are actually loaded (keeps startup cheap).
- * Deduplicates by structureKey — multiple meshes sharing the same ontologyId
- * collapse to one entry (documented, not pretended as distinct structures).
- * Body model prefix ensures male/female do not collide.
- */
 export function collectStructuresFromScene(
   scene: THREE.Object3D,
   systemKey: AnatomySystemKey,

@@ -4,7 +4,6 @@ import type { UserRole } from '@prisma/client';
 import type { SafeUser } from '../../modules/users/users.service';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
-// RBAC foundation: compose AFTER JwtAuthGuard so request.user is populated.
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

@@ -54,9 +54,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 function authedFetch(handler: (url: string) => Promise<Response>) {
-  // No trailing `as typeof fetch`: jest.fn() already returns a Mock for the
-  // Mock-typed slot (same pattern as web queryHooks.test.tsx). Casting to
-  // fetch first strips the mock members and breaks assignment (TS2740).
   (global.fetch as unknown as jest.Mock) = jest.fn((url: string) => {
     const u = String(url);
     if (u.includes('/api/v1/auth/me')) return Promise.resolve(jsonResponse(ADMIN_USER));

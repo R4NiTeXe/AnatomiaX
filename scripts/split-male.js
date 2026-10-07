@@ -21,8 +21,6 @@ async function main() {
 
   fs.mkdirSync(workingDir, { recursive: true });
 
-  // Mapping of asset name to source system node names (verified via inspection)
-  // Root VH_M has 10 children: integumentary, nervous, muscular, male_reproductive, digestive, urinary, circulatory, respiratory, lymphatic, skeletal
   const assets = [
     {
       name: 'skin',
@@ -63,7 +61,6 @@ async function main() {
     const nodeByName = new Map();
     allNodes.forEach(n => nodeByName.set(n.getName(), n));
 
-    // Find the system nodes to keep
     const keepNodes = [];
     const keepNames = new Set();
     for (const name of asset.nodes) {
@@ -74,7 +71,6 @@ async function main() {
       }
       keepNodes.push(node);
       keepNames.add(name);
-      // Also collect all descendants
       const stack = [node];
       while (stack.length) {
         const cur = stack.pop();
@@ -86,26 +82,15 @@ async function main() {
       }
     }
 
-    // Also keep ancestors: VH_M and scene
     const vhM = nodeByName.get('VH_M');
     if (vhM) keepNames.add('VH_M');
 
-    // Build set of node objects to keep (including ancestors)
     const keepSet = new Set(keepNodes);
-    // Add VH_M and its hierarchy ancestors
     if (vhM) keepSet.add(vhM);
-    // For musculoskeletal we have two systems, need to keep both and their children already added
-    // Also need to keep the scene's root children that are ancestors
 
-    // Now remove all top-level system nodes that are NOT in keepNames
-    // The scene has one child VH_M, and VH_M has 10 children (the systems)
-    // We will dispose any child of VH_M that is not in keepNames
     const toRemove = [];
     allNodes.forEach(node => {
       const name = node.getName();
-      // If node is a direct child of VH_M and not in keepNames, mark for removal
-      // Parent lookup is unreliable; check VH_M's children directly instead.
-      // Instead, check if node is in VH_M's children and not kept
       if (vhM && vhM.listChildren().includes(node) && !keepNames.has(name)) {
         toRemove.push(node);
       }
@@ -114,35 +99,24 @@ async function main() {
     console.log(
       `  Keeping ${keepNames.size} named nodes, removing ${toRemove.length} top-level systems`
     );
-    // Also need to handle lymphatic which is not in any of the 8 assets - it will be removed for all 8
-    // For skin, we keep only integumentary, so 9 other systems will be removed
 
-    // Dispose toRemove nodes and their subtrees
     for (const node of toRemove) {
-      // Dispose recursively: need to dispose node and its children
-      // Use dispose on node, but need to ensure we don't dispose nodes that are kept via other branches
-      // Since systems are disjoint, it's safe to dispose the whole subtree
       const disposeRecursively = n => {
-        // First dispose children
         [...n.listChildren()].forEach(child => disposeRecursively(child));
         n.dispose();
       };
       disposeRecursively(node);
     }
 
-    // Prune unreferenced resources (meshes, materials, etc. that are no longer referenced)
-    // Use document transformation: prune
     const { prune } = await import('@gltf-transform/functions');
     await doc.transform(prune());
 
-    // Write to working dir
     const outPath = path.join(workingDir, `${asset.name}.glb`);
     await io.write(outPath, doc);
     const stat = fs.statSync(outPath);
     console.log(
       `  -> Wrote ${outPath} (${(stat.size / 1024 / 1024).toFixed(2)} MB, ${stat.size} bytes)`
     );
-    // Quick inspect
     console.log(
       `  -> Meshes: ${doc.getRoot().listMeshes().length}, Materials: ${doc.getRoot().listMaterials().length}, Nodes: ${doc.getRoot().listNodes().length}`
     );

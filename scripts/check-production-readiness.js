@@ -1,37 +1,3 @@
-/**
- * Lightweight production-readiness checks (STEP 8.20.16, extended 8.20.21).
- * Provider-neutral, no deps, no secrets, no cloud, no deployment.
- *
- * Usage:
- *   node scripts/check-production-readiness.js
- *   node scripts/check-production-readiness.js --api-base https://api.example --asset-base https://assets.example/anatomy/
- *   node scripts/check-production-readiness.js --production --api-base https://api.example --asset-base https://assets.example/anatomy/
- *   node scripts/check-production-readiness.js --health-url http://127.0.0.1:3000
- *   node scripts/check-production-readiness.js --check-builds
- *   node scripts/check-production-readiness.js --strict-env
- *   # Release-day operator smoke (no secrets; URLs only):
- *   node scripts/check-production-readiness.js --production --smoke --site-url https://www.example --web-url https://app.example --admin-url https://admin.example --health-url https://api.example --asset-base https://assets.example/anatomy/ --cors https://app.example,https://admin.example --app-url https://app.example
- *
- * Flags:
- *   --api-base <url>    API origin to validate (or VITE_API_BASE_URL / NEXT_PUBLIC_API_BASE_URL).
- *   --asset-base <url>  Asset base to validate (or VITE_ANATOMY_ASSET_BASE_URL).
- *   --production        Enforce production rules: no localhost, asset base must be HTTPS (not /models-dev/).
- *   --health-url <url>  Live API origin; fetches /api/health + /api/health/db and validates the contract.
- *   --check-builds      Verify expected build outputs exist (dist/.next/_site) — warn-only unless --production.
- *   --strict-env        Alias that enables production env-leakage checks (also on by default).
- *   --timeout <ms>      Per-request timeout for --health-url (default 8000).
- *   --smoke             Operator smoke pass: probe supplied public URLs (web/admin/site, sitemap,
- *                       robots), verify URL consistency (APP_URL vs CORS, api-base vs health-url),
- *                       and check the Google callback route is live without crashing.
- *   --web-url <url>     Deployed web app origin (smoke: GET / must be 200 HTML).
- *   --admin-url <url>   Deployed admin origin (smoke: GET / must be 200 HTML).
- *   --site-url <url>    Marketing origin (smoke: GET /, /sitemap.xml, /robots.txt).
- *   --cors <list>       CORS_ORIGIN value (smoke: consistency vs --app-url, HTTPS in production).
- *   --app-url <url>     APP_URL value (smoke: must match first CORS origin).
- *
- * Exit codes: 0 pass, 1 failure, 2 usage error.
- * Never prints secret values — only variable names and rules.
- */
 
 const fs = require('fs');
 const path = require('path');
@@ -108,7 +74,7 @@ function parseArgs() {
 function isLocalhostUrl(url) {
   if (!url) return false;
   const t = String(url).trim();
-  if (t === '/models-dev/' || t === '/models-dev') return false; // handled separately
+  if (t === '/models-dev/' || t === '/models-dev') return false;
   return /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/.*)?$/i.test(t);
 }
 
@@ -157,7 +123,6 @@ function checkManifest() {
       failures.push(`Bad bytes for ${e.bodyModel}/${e.system}`);
     }
   }
-  // Deterministic production URL layout: <base>/<bodyModel>/<file>
   const sample = entries.slice(0, 2).map(e => `<base>/${e.bodyModel}/${e.file}`);
   console.log(`[readiness] manifest: ${entries.length} entries (e.g. ${sample.join(', ')})`);
   return { failures, entries };
@@ -225,7 +190,6 @@ function checkEnvExamples() {
     }
     console.log(`[readiness] env: ${rel} scanned (no ${prefix} secret leakage)`);
   }
-  // Backend example must document the required server-only contract.
   const backendExample = path.join(ROOT, 'backend', 'api', '.env.example');
   if (!fs.existsSync(backendExample)) {
     failures.push('Missing backend/api/.env.example');
@@ -240,7 +204,6 @@ function checkEnvExamples() {
       '[readiness] env: backend/api/.env.example documents DATABASE_URL/JWT_SECRET/CORS_ORIGIN'
     );
   }
-  // Marketing example must document SITE_URL/CONTACT_EMAIL without a real domain.
   const marketingExample = path.join(ROOT, 'frontend', 'marketing', '.env.example');
   if (!fs.existsSync(marketingExample)) {
     failures.push('Missing frontend/marketing/.env.example');
@@ -278,7 +241,6 @@ function checkPackageScripts() {
     }
   }
   console.log('[readiness] scripts: package.json build/typecheck/test/start contracts present');
-  // Migration command presence: docs reference `prisma migrate deploy`; ensure prisma dep exists.
   const apiPkg = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'backend', 'api', 'package.json'), 'utf8')
   );
@@ -307,8 +269,6 @@ function checkBuildOutputs({ production }) {
     const exists = fs.existsSync(path.join(ROOT, rel));
     console.log(`[readiness] build: ${rel} ${exists ? 'present' : 'absent'} (${label})`);
     if (!exists) {
-      // Warn-only by default; a missing build blocks release under
-      // --production (documented "warn-only unless --production" contract).
       (production ? failures : warnings).push(`Missing ${rel} — run ${label} before release`);
     }
   }
@@ -365,7 +325,6 @@ async function checkHealth(healthUrl, timeout) {
   return { failures };
 }
 
-/** Normalized scheme://host origin, or null when unparseable. */
 function originOf(url) {
   try {
     const u = new URL(String(url).trim());
@@ -379,10 +338,6 @@ function stripTrailingSlash(url) {
   return String(url).trim().replace(/\/+$/, '');
 }
 
-/**
- * 8.20.21 operator smoke: probe deployed public URLs supplied via flags.
- * All probes are plain unauthenticated GETs; no secrets are sent or needed.
- */
 async function checkPublicUrls({ webUrl, adminUrl, siteUrl }, timeout) {
   const failures = [];
   async function probe(label, url, expectHtml) {
@@ -436,11 +391,6 @@ async function checkPublicUrls({ webUrl, adminUrl, siteUrl }, timeout) {
   return { failures };
 }
 
-/**
- * 8.20.21 URL consistency: cross-checks operator-supplied URLs against each
- * other and the production HTTPS/no-localhost rules. Catches misconfiguration
- * (e.g. APP_URL pointing somewhere CORS does not allow) before traffic does.
- */
 function checkUrlConsistency({
   apiBase,
   healthUrl,
@@ -494,12 +444,6 @@ function checkUrlConsistency({
   return { failures };
 }
 
-/**
- * 8.20.21 Google callback liveness: without a real Google session the guard
- * must reject (302 to Google or 401) — never crash (5xx) or 404. The success
- * redirect itself needs a real session, so it stays covered by the
- * AuthController unit test plus the manual release-checklist step.
- */
 async function checkGoogleCallback(apiUrl, timeout) {
   const failures = [];
   if (!apiUrl) return { failures };

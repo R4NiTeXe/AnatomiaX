@@ -93,7 +93,6 @@ describe('HumanDeepLink (/human regression guard)', () => {
 
   it('ignores invalid focus keys', async () => {
     renderDeepLink(['/human?focus=not-a-key']);
-    // Settles back to no selection without crashing.
     await screen.findByTestId('deep-selection');
     expect(screen.getByTestId('deep-selection')).toHaveTextContent('none');
     expect(screen.getByTestId('deep-model')).toHaveTextContent('male');
@@ -106,7 +105,6 @@ describe('HumanDeepLink (/human regression guard)', () => {
   });
 
   it('reveals a hidden target system so the landing selects visibly (8.39)', async () => {
-    // Cardiovascular starts hidden — previously the deep link silently cleared.
     renderDeepLink(['/human?focus=male%3Acardiovascular%3AUBERON%3A0002084']);
     expect(
       await screen.findByText('male:cardiovascular:UBERON:0002084', {}, { timeout: 4000 })
@@ -115,9 +113,6 @@ describe('HumanDeepLink (/human regression guard)', () => {
   });
 
   it('never yanks back a manual model switch after the focus was applied (8.55)', async () => {
-    // Reproduces the deep-link + switch race: with ?focus=male:… applied, a
-    // user switch to female must win. Without the applied-guard the effect
-    // reverts the model to male on its next run.
     renderDeepLink(['/human?focus=male%3Askin%3AUBERON%3A0002097']);
     expect(
       await screen.findByText('male:skin:UBERON:0002097', {}, { timeout: 4000 })
@@ -126,11 +121,8 @@ describe('HumanDeepLink (/human regression guard)', () => {
     await waitFor(() => expect(screen.getByTestId('race-model')).toHaveTextContent('female'), {
       timeout: 4000,
     });
-    // Settle: the deep-link effect runs again on model change — it must not
-    // revert the manual switch.
     await new Promise(resolve => setTimeout(resolve, 300));
     expect(screen.getByTestId('race-model')).toHaveTextContent('female');
-    // And back again — ordering is deterministic both ways.
     fireEvent.click(screen.getByTestId('race-to-male'));
     await waitFor(() => expect(screen.getByTestId('race-model')).toHaveTextContent('male'), {
       timeout: 4000,

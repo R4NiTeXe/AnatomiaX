@@ -4,23 +4,12 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ command, mode }) => {
   if (command === 'build') {
-    // Build-time diagnostic + fail-fast guard: a production bundle without an
-    // API origin would throw at runtime in getApiBaseUrl(), so fail the build
-    // instead of shipping a broken app. Log presence only — never the value.
     const envDir = fileURLToPath(new URL('.', import.meta.url));
     const apiBaseUrlPresent = Boolean(loadEnv(mode, envDir, 'VITE_').VITE_API_BASE_URL);
     console.log('[build] VITE_API_BASE_URL present:', apiBaseUrlPresent);
     if (mode === 'production' && !apiBaseUrlPresent) {
       throw new Error('VITE_API_BASE_URL is missing from the production build environment.');
     }
-    // Anatomy asset base guard (Vercel deployments only): the bundle resolves
-    // GLBs from VITE_ANATOMY_ASSET_BASE_URL, falling back to the gitignored
-    // local /models-dev/ subset when unset. Those dev files can never exist
-    // in a Vercel deployment, so a Vercel build without a real HTTPS static
-    // host bakes in URLs that serve index.html (SPA fallback) instead of
-    // binary — the viewer then fails with "Unexpected token '<'". Fail the
-    // build instead of shipping a model-less app. Scoped to Vercel so local
-    // and CI builds keep working without the variable. Log presence only.
     const assetBase = process.env.VITE_ANATOMY_ASSET_BASE_URL ?? '';
     const assetBasePresent = /^https:\/\//i.test(assetBase.trim());
     console.log('[build] VITE_ANATOMY_ASSET_BASE_URL present:', assetBasePresent);
@@ -36,18 +25,12 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [react()],
     define: {
-      // 8.61: the anatomy asset base must be defined for the client — the
-      // resolver reads this literal chain (Vite replaces it at bundle time).
-      // Unset/empty falls back to local /models-dev/ at runtime.
       'process.env.VITE_ANATOMY_ASSET_BASE_URL': JSON.stringify(
         process.env.VITE_ANATOMY_ASSET_BASE_URL ?? ''
       ),
       'process.env.NODE_ENV': JSON.stringify(
         mode === 'production' ? 'production' : (process.env.NODE_ENV ?? 'development')
       ),
-      // VITE_API_BASE_URL is intentionally not defined here: standard Vite
-      // import.meta.env.VITE_API_BASE_URL picks it up automatically from the
-      // build environment (VITE_-prefixed process.env vars + .env files).
     },
     resolve: {
       alias: {
@@ -57,12 +40,6 @@ export default defineConfig(({ command, mode }) => {
     build: {
       rollupOptions: {
         output: {
-          // STEP 8.20.9: split stable vendor groups for better caching.
-          // Route-level lazy loading is preserved (App.tsx lazy routes).
-          // three-core + three-r3f stay lazy via /human chunk; react/query/ui
-          // vendors are shared. No chunk-limit warning suppression.
-          // STEP 8.23: motion vendor chunk — keeps the Motion foundation out
-          // of the index entry so the entry budget holds.
           manualChunks(id: string): string | undefined {
             if (!id.includes('node_modules')) return undefined;
             if (id.includes('/three/') || id.includes('three-stdlib') || id.includes('meshopt')) {

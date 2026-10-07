@@ -6,7 +6,6 @@ interface RivePlayerProps {
   src: string;
   className?: string;
   artboard?: string;
-  /** Timeline name(s) to play. Only pass values verified against the asset. */
   animations?: string | string[];
   stateMachines?: string | string[];
   autoplay?: boolean;
@@ -16,13 +15,6 @@ interface RivePlayerProps {
   poster?: ReactNode;
 }
 
-/**
- * Lazy Rive wrapper — keeps the WASM runtime out of the main bundle.
- * Reduced-motion and error states fall back to `poster` (or empty).
- * No layout shift: the outer div always reserves `width`/`height`.
- * Rive is purely presentational: callers keep React state authoritative and
- * only pass artboard/stateMachines/animations values verified for the asset.
- */
 const LazyRive = lazy(async () => {
   const mod = await import('@rive-app/react-canvas');
   const Rive =
@@ -37,10 +29,6 @@ const LazyRive = lazy(async () => {
   };
 });
 
-/**
- * Isolates Rive runtime/asset failures to the poster fallback so a broken
- * animation can never crash its host UI (e.g. navigation must keep working).
- */
 class RiveErrorBoundary extends Component<
   { resetKey: string; fallback: ReactNode; children: ReactNode },
   { failed: boolean }

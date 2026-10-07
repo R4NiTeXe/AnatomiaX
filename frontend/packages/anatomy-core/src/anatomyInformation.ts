@@ -5,7 +5,6 @@ import type {
   AnatomySelection,
 } from '@anatomiax/shared-types';
 
-// Re-export for backward compatibility — canonical lives in @anatomiax/shared-types
 export type {
   AnatomyInformation,
   AnatomyInformationProvenance,
@@ -14,12 +13,7 @@ export type {
   AnatomyRelationKind,
 } from '@anatomiax/shared-types';
 
-// ---------------------------------------------------------------------------
-// Local structured source — small verified seed, no network, no GLB
-// ---------------------------------------------------------------------------
-
 const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
-  // Skin — shared, but stored separately per bodyModel
   {
     structureKey: 'male:skin:UBERON:0002097',
     bodyModel: 'male',
@@ -50,7 +44,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Heart
   {
     structureKey: 'male:cardiovascular:UBERON:0000948',
     bodyModel: 'male',
@@ -81,7 +74,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Brain
   {
     structureKey: 'male:nervous:UBERON:0000955',
     bodyModel: 'male',
@@ -114,7 +106,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Liver
   {
     structureKey: 'male:digestive:UBERON:0002107',
     bodyModel: 'male',
@@ -145,7 +136,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Kidney
   {
     structureKey: 'male:urinary:UBERON:0002113',
     bodyModel: 'male',
@@ -176,7 +166,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Ovary — female only
   {
     structureKey: 'female:reproductive:UBERON:0000992',
     bodyModel: 'female',
@@ -195,7 +184,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Uterus — female only
   {
     structureKey: 'female:reproductive:UBERON:0000995',
     bodyModel: 'female',
@@ -211,7 +199,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Cervix — female only
   {
     structureKey: 'female:reproductive:UBERON:0000002',
     bodyModel: 'female',
@@ -229,7 +216,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Spinal cord — shared
   {
     structureKey: 'male:nervous:UBERON:0002240',
     bodyModel: 'male',
@@ -262,7 +248,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Lungs — respiratory, shared
   {
     structureKey: 'male:respiratory:UBERON:0002048',
     bodyModel: 'male',
@@ -291,7 +276,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Stomach — digestive, shared
   {
     structureKey: 'male:digestive:UBERON:0000945',
     bodyModel: 'male',
@@ -322,7 +306,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Urinary bladder — urinary, shared
   {
     structureKey: 'male:urinary:UBERON:0001255',
     bodyModel: 'male',
@@ -349,7 +332,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Femur — musculoskeletal, shared (major long bone)
   {
     structureKey: 'male:musculoskeletal:UBERON:0000981',
     bodyModel: 'male',
@@ -378,7 +360,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Testis — male reproductive only
   {
     structureKey: 'male:reproductive:UBERON:0000473',
     bodyModel: 'male',
@@ -394,7 +375,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Prostate — male reproductive only
   {
     structureKey: 'male:reproductive:UBERON:0002367',
     bodyModel: 'male',
@@ -409,7 +389,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Fallopian tube — female reproductive only
   {
     structureKey: 'female:reproductive:UBERON:0003889',
     bodyModel: 'female',
@@ -429,7 +408,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Ascending aorta — cardiovascular, shared, verified present as VH_M_ascending_aorta UBERON:0001496
   {
     structureKey: 'male:cardiovascular:UBERON:0001496',
     bodyModel: 'male',
@@ -464,7 +442,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Gallbladder — digestive, shared, verified present as VH_M_gallbladder UBERON:0002110
   {
     structureKey: 'male:digestive:UBERON:0002110',
     bodyModel: 'male',
@@ -497,7 +474,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Right ventricle — cardiovascular, shared, verified present as VH_M_heart_right_ventricle UBERON:0002080
   {
     structureKey: 'male:cardiovascular:UBERON:0002080',
     bodyModel: 'male',
@@ -534,7 +510,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Hilum of lung — respiratory, shared, verified present as VH_M_hilum_L UBERON:0004887
   {
     structureKey: 'male:respiratory:UBERON:0004887',
     bodyModel: 'male',
@@ -565,7 +540,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'CC BY 3.0 (Uberon)',
   },
-  // Hilum of spleen — lymphatic, shared, verified present as VH_M_hilum_of_spleen UBERON:0001248
   {
     structureKey: 'male:lymphatic:UBERON:0001248',
     bodyModel: 'male',
@@ -592,7 +566,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Femur with correct FMA — musculoskeletal, shared, verified present as VH_M_femur_R_1 FMA:24474
   {
     structureKey: 'male:musculoskeletal:FMA:24474',
     bodyModel: 'male',
@@ -621,7 +594,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Kidney capsule — verified present as VH_M_kidney_capsule_L UBERON:0002015 (urinary)
   {
     structureKey: 'male:urinary:UBERON:0002015',
     bodyModel: 'male',
@@ -652,7 +624,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Actual ovary — verified present as VH_F_right_ovary FMA:7213 and VH_F_left_ovary FMA:7214
   {
     structureKey: 'female:reproductive:FMA:7213',
     bodyModel: 'female',
@@ -689,7 +660,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Body of uterus — verified present as VH_F_body_of_uterus UBERON:0009853
   {
     structureKey: 'female:reproductive:UBERON:0009853',
     bodyModel: 'female',
@@ -707,7 +677,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 4.0 (HRA)',
   },
-  // Left ventricle — verified present as VH_M_heart_left_ventricle UBERON:0002084
   {
     structureKey: 'male:cardiovascular:UBERON:0002084',
     bodyModel: 'male',
@@ -744,7 +713,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'Public domain (NIH)',
   },
-  // Brain — verified present as Allen_cerebellar_vermis_L UBERON:0004720 (actual present brain substructure)
   {
     structureKey: 'male:nervous:UBERON:0004720',
     bodyModel: 'male',
@@ -777,7 +745,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-09-05',
     license: 'Public domain (NIH)',
   },
-  // Putamen — verified present as Allen_putamen_L UBERON:0008884 and Allen_putamen_R UBERON:0008885
   {
     structureKey: 'male:nervous:UBERON:0008884',
     bodyModel: 'male',
@@ -838,7 +805,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
     lastVerified: '2026-01-15',
     license: 'CC BY 3.0 (Uberon)',
   },
-  // Pineal gland — verified present as Allen_pineal_body_L UBERON:0001905
   {
     structureKey: 'male:nervous:UBERON:0001905',
     bodyModel: 'male',
@@ -869,10 +835,6 @@ const ANATOMY_INFORMATION_SEED: readonly AnatomyInformation[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Repository — pure, no GLB, no registry mutation, no network
-// ---------------------------------------------------------------------------
-
 const byStructureKey = new Map<string, AnatomyInformation>(
   ANATOMY_INFORMATION_SEED.map(entry => [entry.structureKey, entry])
 );
@@ -885,15 +847,6 @@ for (const entry of ANATOMY_INFORMATION_SEED) {
   byOntology.set(entry.ontologyId, list);
 }
 
-/**
- * Returns verified information for an existing selection, or undefined
- * when no verified content exists. Never loads GLBs, never mutates
- * the registry, and never fabricates content.
- *
- * Identity linkage: prefers `bodyModel + structureKey`; ontology is
- * preserved but does not override the bodyModel-qualified key, so
- * male/female with the same ontology remain distinct.
- */
 export function getAnatomyInformation(
   selection: AnatomySelection | null | undefined
 ): AnatomyInformation | undefined {
@@ -901,7 +854,6 @@ export function getAnatomyInformation(
   return byStructureKey.get(selection.structureKey);
 }
 
-/** Lookup by the primary bodyModel-qualified key. */
 export function getAnatomyInformationByStructureKey(
   structureKey: string | null | undefined
 ): AnatomyInformation | undefined {
@@ -909,12 +861,6 @@ export function getAnatomyInformationByStructureKey(
   return byStructureKey.get(structureKey);
 }
 
-/**
- * Lookup by ontologyId.
- * When `bodyModel` is provided, returns the body-specific record.
- * When omitted and the ontology is ambiguous (e.g., skin in both
- * male and female), returns undefined to avoid cross-body collision.
- */
 export function getAnatomyInformationByOntologyId(
   ontologyId: string | null | undefined,
   bodyModel?: AnatomyBodyModelKey
@@ -929,7 +875,6 @@ export function getAnatomyInformationByOntologyId(
   return undefined;
 }
 
-/** Exposed for tests — seed size without leaking mutable map. */
 export function getAnatomyInformationSeed(): readonly AnatomyInformation[] {
   return ANATOMY_INFORMATION_SEED;
 }
@@ -939,12 +884,6 @@ export interface AnatomyRelatedInformation {
   info: AnatomyInformation;
 }
 
-/**
- * Returns verified related records for a structureKey, in declared order.
- * Only same-bodyModel targets that exist in the seed are returned;
- * dangling, cross-body, or self references are skipped. Pure: no GLB,
- * no registry, no network.
- */
 export function getRelatedAnatomyInformation(
   structureKey: string | null | undefined
 ): readonly AnatomyRelatedInformation[] {
@@ -961,7 +900,6 @@ export function getRelatedAnatomyInformation(
   return out;
 }
 
-/** All stored keys — useful for documentation/tests. */
 export function getAnatomyInformationKeys(): readonly string[] {
   return [...byStructureKey.keys()];
 }

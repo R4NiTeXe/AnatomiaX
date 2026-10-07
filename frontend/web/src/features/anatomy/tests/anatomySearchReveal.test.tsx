@@ -30,7 +30,6 @@ function Harness() {
 
 describe('AnatomySearchBox reveal (8.36)', () => {
   beforeEach(() => {
-    // jsdom has no layout engine — stub the active-row scroll helper.
     Element.prototype.scrollIntoView = jest.fn();
   });
   it('selecting a hidden-system result reveals the system', () => {
@@ -39,13 +38,11 @@ describe('AnatomySearchBox reveal (8.36)', () => {
         <Harness />
       </AnatomyStateProvider>
     );
-    // Nervous is registered but hidden; search still finds it (cached registry).
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     expect(screen.getByTestId('dbg-visible').textContent).not.toContain('"nervous":true');
     fireEvent.change(screen.getByTestId('anatomy-search-input'), { target: { value: 'brain' } });
     expect(screen.getByTestId('anatomy-search-results')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('anatomy-search-option-0'));
-    // System revealed and selection sticks instead of silently clearing.
     expect(screen.getByTestId('dbg-visible').textContent).toContain('"nervous":true');
     expect(screen.getByTestId('dbg-selected').textContent).toContain('nervous');
     expect(screen.queryByTestId('anatomy-search-results')).not.toBeInTheDocument();

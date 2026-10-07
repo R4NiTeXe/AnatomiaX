@@ -99,7 +99,6 @@ describe('auth client', () => {
     await expect(fetchMe()).resolves.toBeNull();
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
-    // Tokens cleared: next call goes straight to refresh again, not with old Bearer.
     mockFetch((_url, init) => {
       expect((init?.headers as Record<string, string>).Authorization).toBeUndefined();
       return jsonResponse({ message: 'Unauthorized' }, 401);
@@ -118,7 +117,6 @@ describe('auth client', () => {
     });
     await expect(fetchMe()).resolves.toBeNull();
     expect(listener).not.toHaveBeenCalled();
-    // Session retained: the next attempt still carries the old Bearer token.
     mockFetch((_url, init) => {
       expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer access-1');
       return jsonResponse(USER);
@@ -138,7 +136,6 @@ describe('auth client', () => {
     });
     await logout();
     expect(JSON.parse(logoutBody as string)).toEqual({ refreshToken: 'refresh-1' });
-    // Even a network failure still clears the local session.
     mockFetch(() => Promise.reject(new Error('offline')));
     await logout();
     mockFetch((_url, init) => {

@@ -38,7 +38,6 @@ describe('motion tokens (8.23)', () => {
       expect(variant).toHaveProperty('hidden');
       expect(variant).toHaveProperty('show');
     }
-    // GPU-friendly only: opacity/transform, never width/height/top/left.
     expect(JSON.stringify(fadeUp)).not.toMatch(/width|height|top|left|margin/);
   });
 });
@@ -64,7 +63,6 @@ describe('motion primitives (8.23)', () => {
       </MemoryRouter>
     );
     expect(screen.getByTestId('page-body')).toBeInTheDocument();
-    // No <main> inside <main> — PageTransition is a plain div.
     expect(screen.getByTestId('page-body').closest('main')).toBeInTheDocument();
   });
 

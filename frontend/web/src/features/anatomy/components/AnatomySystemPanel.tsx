@@ -13,10 +13,6 @@ type AnatomySystemPanelProps = {
   onResetCamera: () => void;
 };
 
-// STEP 8.50: derived study-sequence navigator. Position, previous, and next
-// all derive from the module order plus studied keys — no stored session, so
-// refresh, back/forward, and deep-links resolve identically. Order is
-// navigational only, never a medical claim.
 function SessionNavigator({ structureKey }: { structureKey: string }): JSX.Element | null {
   const { selectStructure, visibleSystems, toggleSystem, recentHistory } = useAnatomyState();
   const snapshotQuery = useProgressSnapshot();
@@ -75,9 +71,6 @@ function SessionNavigator({ structureKey }: { structureKey: string }): JSX.Eleme
   );
 }
 
-// STEP 8.40: "have I covered this?" signal from verified studied state —
-// local recent history (immediate) plus the persisted snapshot (same
-// react-query cache as AnatomyProgressSync, so zero extra requests).
 function SelectedStudiedMark({ structureKey }: { structureKey: string }): JSX.Element | null {
   const { recentHistory } = useAnatomyState();
   const snapshotQuery = useProgressSnapshot();
@@ -95,9 +88,6 @@ function SelectedStudiedMark({ structureKey }: { structureKey: string }): JSX.El
   );
 }
 
-// STEP 8.40: verified location context from GLB lineage (same parent rule
-// as the explorer tree). Renders only when it adds information beyond the
-// system line — never invented, never for bare model roots.
 function SelectedParentLine({
   structureKey,
   objectName,
@@ -142,9 +132,6 @@ export default function AnatomySystemPanel({
   const [openOpacityKey, setOpenOpacityKey] = useState<string | null>(null);
 
   const handleRetry = (key: (typeof maleAnatomyAssets)[number]['key']) => {
-    // STEP 8.46: clear the CURRENT model's asset path — the male catalog
-    // path left female failures cached, so retries re-threw instantly.
-    // STEP 8.54: same key the loader uses, via the central resolver.
     useGLTF.clear(resolveAnatomyAssetUrl(selectedBodyModel, key));
     retrySystem(key);
   };
@@ -367,10 +354,6 @@ export default function AnatomySystemPanel({
               type="button"
               data-testid="quiz-this-structure"
               onClick={() => {
-                // STEP 8.37: guided next action — startQuiz already builds
-                // question 1 from the current selection; bring the quiz into
-                // view and focus so keyboard/SR users land in context.
-                // (Global reduced-motion CSS makes the scroll instant.)
                 startQuiz();
                 const quiz = document.querySelector('[data-testid="anatomy-quiz"]');
                 if (quiz instanceof HTMLElement) {
@@ -383,8 +366,6 @@ export default function AnatomySystemPanel({
               Quiz on this structure
             </button>
           ) : (
-            // STEP 8.41: no verified record means startQuiz cannot target
-            // this structure — say so instead of promising a generic quiz.
             <p className="mt-2 text-xs text-slate-500" data-testid="quiz-unavailable-note">
               Quiz isn&apos;t available for this structure yet.
             </p>

@@ -58,13 +58,11 @@ export class AdminService {
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 5,
-        // Narrowed: passwordHash/updatedAt/deletedAt never leave the driver.
         select: { id: true, email: true, name: true, role: true, createdAt: true },
       }),
       this.prisma.cohort.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
-        // Narrowed: inviteCode/updatedAt never leave the driver.
         select: {
           id: true,
           name: true,
@@ -103,10 +101,6 @@ export class AdminService {
     const limit = Math.min(50, Math.max(1, query.limit ?? 20));
     const skip = (page - 1) * limit;
 
-    // Typed where-input (no `as never`): the compiler now rejects unknown
-    // fields/operators. AdminUsersQueryDto already constrains role at the
-    // HTTP boundary; re-check here so direct service callers cannot smuggle
-    // an invalid enum value into Prisma (which would surface as a 500).
     const where: Prisma.UserWhereInput = { deletedAt: null };
     if (query.role && query.role !== 'ALL') {
       if (query.role === 'STUDENT' || query.role === 'TEACHER' || query.role === 'ADMIN') {
@@ -130,7 +124,6 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        // Narrowed: passwordHash/updatedAt/deletedAt never leave the driver.
         select: { id: true, email: true, name: true, role: true, createdAt: true },
       }),
     ]);
@@ -153,8 +146,6 @@ export class AdminService {
     const limit = Math.min(50, Math.max(1, query.limit ?? 20));
     const skip = (page - 1) * limit;
 
-    // Typed where-input (no `as never`): AdminCohortsQueryDto constrains
-    // archived to 'true'|'false'|'all' at the HTTP boundary.
     const where: Prisma.CohortWhereInput = {};
     if (query.search) {
       const s = query.search.trim();
@@ -178,7 +169,6 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        // Narrowed: inviteCode/updatedAt never leave the driver.
         select: {
           id: true,
           name: true,
@@ -206,15 +196,6 @@ export class AdminService {
     return { items, total, page, limit };
   }
 
-  /**
-   * Account lifecycle state machine (deliberate, documented):
-   * active (deletedAt null) ↔ deactivated (deletedAt set) → hard-deleted
-   * (row gone, dependents cascade). Deactivation reuses the existing
-   * soft-delete column — no new account states were invented. All auth
-   * paths already exclude non-null deletedAt, so deactivation takes
-   * effect immediately without touching sessions (existing refresh
-   * tokens fail closed on next use).
-   */
   async getUser(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
@@ -230,12 +211,6 @@ export class AdminService {
     };
   }
 
-  /**
-   * Guards the final administrator: any demote/deactivate/delete that would
-   * leave zero live admins is rejected before any write — including
-   * self-inflicted ones (there is deliberately no self-action ban; the
-   * last-admin rule is the backstop, so every guard below stays reachable).
-   */
   private async requireAnotherAdmin(exceptId: string): Promise<void> {
     const remaining = await this.prisma.user.count({
       where: { role: 'ADMIN', deletedAt: null },
@@ -301,9 +276,6 @@ export class AdminService {
     if (target.role === 'ADMIN') {
       await this.requireAnotherAdmin(id);
     }
-    // Same purge semantics as self-service account deletion: revoke
-    // sessions, drop reset tokens, hard-delete the row (dependents cascade
-    // per schema), all atomically.
     await this.prisma.$transaction(async tx => {
       await tx.refreshToken.updateMany({
         where: { userId: id, revokedAt: null },
@@ -339,7 +311,6 @@ export class AdminService {
   async getCohort(id: string): Promise<(CohortView & { memberCount: number }) | null> {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id },
-      // Narrowed: inviteCode/updatedAt/createdById never leave the driver.
       select: {
         id: true,
         name: true,

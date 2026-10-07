@@ -8,17 +8,8 @@ import { useAnatomyState, type SelectedStructure } from './AnatomyStateContext';
 const STUDIED_SYNC_DEBOUNCE_MS = 1500;
 const MAX_LOCAL_HISTORY = 5;
 
-// Canonical implementation lives in @anatomiax/anatomy-core (single source).
-// Re-exported here so existing imports keep working.
 export { parseStudiedKey };
 
-/**
- * Bridges server progress with local anatomy state. Renders nothing.
- * - On user change: drops cached progress queries and local user-derived
- *   history so accounts can never leak into each other.
- * - On snapshot load: merges persisted keys into local history (capped).
- * - On new selections: debounced additive studied-key updates.
- */
 export default function AnatomyProgressSync(): null {
   const { user, status } = useAuth();
   const queryClient = useQueryClient();
@@ -32,7 +23,6 @@ export default function AnatomyProgressSync(): null {
   const syncedKeys = useRef<Set<string>>(new Set());
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // User switch (login/logout/account change): clear everything user-specific.
   useEffect(() => {
     const userId = user?.id ?? null;
     if (prevUserId.current !== undefined && prevUserId.current !== userId) {
@@ -49,7 +39,6 @@ export default function AnatomyProgressSync(): null {
     prevUserId.current = userId;
   }, [user?.id, queryClient, clearHistory, resetQuiz]);
 
-  // Hydrate once per user from the server snapshot.
   const userId = user?.id;
   const snapshotData = snapshotQuery.data;
   useEffect(() => {
@@ -67,7 +56,6 @@ export default function AnatomyProgressSync(): null {
     }
   }, [status, userId, snapshotData, hydrateHistory]);
 
-  // Debounced additive studied-key sync for new local selections.
   useEffect(() => {
     if (status !== 'authenticated' || !user) return;
     const fresh = recentHistory
@@ -92,11 +80,6 @@ export default function AnatomyProgressSync(): null {
       );
     }, STUDIED_SYNC_DEBOUNCE_MS);
     return () => {
-      // STEP 8.42: leaving /human inside the debounce window previously
-      // dropped the pending marks (timer cleared, history discarded with the
-      // provider). Flush them instead — SPA navigation never aborts the
-      // fetch, so fire-and-forget is safe; failure outcome matches status
-      // quo (a later selection re-derives unsynced keys from the snapshot).
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
         debounceTimer.current = null;
@@ -104,10 +87,7 @@ export default function AnatomyProgressSync(): null {
           .map(item => item.structureKey)
           .filter(key => !syncedKeys.current.has(key));
         if (batch.length > 0) {
-          // Mark upfront: nothing else can send after unmount, and this
-          // prevents a duplicate if the effect re-runs (StrictMode).
           batch.forEach(key => syncedKeys.current.add(key));
-          // Via mutate so the shared onSuccess cache merge applies here too.
           mergeStudiedKeys(
             { keys: batch, bodyModel: selectedBodyModel },
             {

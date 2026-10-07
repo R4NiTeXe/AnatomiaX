@@ -29,8 +29,6 @@ function navLink(
   );
 }
 
-// One link set per mounted nav instance — desktop bar and mobile sheet each
-// get their own pill id because both stay mounted (CSS-hidden switches).
 function NavLinkSet({ pillId }: { pillId: string }): JSX.Element {
   const { user, status } = useAuth();
   return (
@@ -59,7 +57,6 @@ export default function SiteNav(): JSX.Element {
   return (
     <nav
       aria-label="Primary"
-      // STEP 8.23: sticky clinical glass — hairline border, backdrop blur.
       className="sticky top-0 z-40 border-b border-slate-800/60 bg-slate-950/80 text-slate-100 backdrop-blur-md"
       data-testid="site-nav"
     >
@@ -78,14 +75,6 @@ export default function SiteNav(): JSX.Element {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open navigation">
                 <span className="h-5 w-5" aria-hidden="true">
-                  {/* STEP 8.28: React (`mobileOpen`) is the source of truth.
-                      The asset exposes no verifiable state-machine/input
-                      binding (binary inspection only shows unverified
-                      "switch"/"toggleX" strings of unknown type), so no
-                      input is wired. The `key` remount replays the toggle
-                      timeline to mirror the actual nav state; the Lucide
-                      poster is the reduced-motion/failure equivalent and
-                      Rive can never block navigation (see RivePlayer). */}
                   <RivePlayer
                     key={mobileOpen ? 'open' : 'closed'}
                     src={animationSrc('menu-close-toggle')}

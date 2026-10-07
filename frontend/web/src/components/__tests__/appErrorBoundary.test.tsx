@@ -33,10 +33,8 @@ describe('AppErrorBoundary (8.20.6.1)', () => {
     expect(screen.getByTestId('app-error-request-id')).toHaveTextContent('req-abc-123');
     expect(screen.getByTestId('app-error-reload')).toBeInTheDocument();
     expect(screen.getByTestId('app-error-home')).toHaveAttribute('href', '/');
-    // no stack trace in DOM
     expect(screen.queryByText(/at Bomb/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Error: Boom/)).not.toBeInTheDocument();
-    // logs requestId
     const calls = (console.error as jest.Mock).mock.calls.map(
       args => String(args[0]) + args.slice(1).join(' ')
     );

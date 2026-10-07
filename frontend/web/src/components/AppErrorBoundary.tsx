@@ -24,7 +24,6 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: unknown, info: React.ErrorInfo): void {
     const requestId = error instanceof ApiError ? error.requestId : undefined;
-    // Log for owners; never surface stack to users.
     console.error(
       '[AppErrorBoundary]',
       requestId ? `(requestId: ${requestId})` : '',

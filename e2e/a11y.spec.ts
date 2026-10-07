@@ -10,23 +10,18 @@ test.describe('a11y', () => {
       })
     );
     await page.goto('/login');
-    // skip link
     await page.keyboard.press('Tab');
     const skip = page.getByText('Skip to content');
     await expect(skip).toBeFocused();
 
-    // login form labels
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
 
-    // focus visible on submit
     const submit = page.getByTestId('login-submit');
     await submit.focus();
     await expect(submit).toBeFocused();
-    // check focus ring via outline
     await expect(submit).toBeVisible();
 
-    // admin shell navigation keyboard (mock admin)
     await page.route('**/api/v1/auth/me', route =>
       route.fulfill({
         status: 200,
@@ -39,14 +34,11 @@ test.describe('a11y', () => {
         }),
       })
     );
-    // need to test admin shell separately — we will just check web's AppShell nav
     await page.goto('/');
     const nav = page.getByTestId('site-nav');
     await expect(nav).toBeVisible();
-    // tab through nav links
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    // at least one link should be focusable
     await expect(page.getByTestId('nav-home')).toBeVisible();
   });
 
@@ -77,9 +69,7 @@ test.describe('a11y', () => {
         }),
       })
     );
-    // Directly test web's cohort dashboard keyboard as proxy for admin shell
     await page.goto('/cohorts');
-    // mock teacher to get to cohorts list
     await page.route('**/api/v1/auth/me', route =>
       route.fulfill({
         status: 200,
@@ -98,7 +88,6 @@ test.describe('a11y', () => {
     await page.goto('/cohorts');
     const heading = page.getByRole('heading', { name: 'My Cohorts' });
     await expect(heading).toBeVisible();
-    // check overflow
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 5);

@@ -180,8 +180,6 @@ class FakeDb {
       const row = this.users.get(where.id as string);
       if (!row) throw new Error('Record not found');
       this.users.delete(where.id as string);
-      // Real-DB cascades (memberships, attempts, tokens, subscriptions) are
-      // schema-guaranteed; the fake models row removal only.
       return { ...row };
     },
   };
@@ -347,7 +345,6 @@ class FakeDb {
       const orderBy = args?.orderBy;
       const skip = args?.skip;
       const take = args?.take;
-      // The service selects _count inside `select` (not `include`); honor both.
       const withCount = Boolean(args?.include?._count ?? args?.select?._count);
       let rows = [...this.cohorts.values()].filter(c => !where || this.matchCohort(c, where));
       if (orderBy) rows = this.order(rows, orderBy);
@@ -747,21 +744,17 @@ describe('Admin (e2e, no database)', () => {
       .send({ role: 'TEACHER' });
     expect(anonTry.status).toBe(401);
 
-    // Non-admin callers never reach the service (guard first).
     const lastAdmin = await request(app.getHttpServer())
       .patch(`/api/v1/admin/users/${ids['admin@example.com']}/role`)
       .set(auth('teacher@example.com'));
     expect(lastAdmin.status).toBe(403);
 
-    // The sole admin demoting themselves out of the last-admin seat → 409
-    // (the guard counts live admins; self-inflicted removal is covered).
     const soloDemote = await request(app.getHttpServer())
       .patch(`/api/v1/admin/users/${ids['admin@example.com']}/role`)
       .set(auth('admin@example.com'))
       .send({ role: 'STUDENT' });
     expect(soloDemote.status).toBe(409);
 
-    // Still an admin afterwards — the rejected write changed nothing.
     const stillAdmin = await request(app.getHttpServer())
       .get(`/api/v1/admin/users/${ids['admin@example.com']}`)
       .set(auth('admin@example.com'));
@@ -833,7 +826,6 @@ describe('Admin (e2e, no database)', () => {
       .set(auth('teacher@example.com'));
     expect(lastAdminDelete.status).toBe(403);
 
-    // Sole-admin self-delete is refused (would orphan administration).
     const selfDelete = await request(app.getHttpServer())
       .delete(`/api/v1/admin/users/${ids['admin@example.com']}`)
       .set(auth('admin@example.com'));

@@ -4,20 +4,11 @@ import {
 } from '@anatomiax/anatomy-core';
 
 export interface DocumentedCoverage {
-  /** Distinct studied keys that resolve to verified seed records. */
   studied: number;
-  /** Verified seed records for the body model. */
   total: number;
-  /** Whole percent, 0 when there is nothing documented. */
   percent: number;
 }
 
-/**
- * Coverage of studied keys against the verified anatomy information seed.
- * Only keys that resolve to a real seed record for the active body model
- * count — unknown/custom keys never inflate the number, and the denominator
- * is the documented set, labeled as such wherever it is rendered.
- */
 export function documentedCoverage(
   studiedKeys: readonly string[],
   bodyModel: string | null | undefined

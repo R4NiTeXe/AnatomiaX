@@ -23,12 +23,6 @@ function displayNameFor(key: string): string {
   return displayNameForStudiedKey(key);
 }
 
-// STEP 8.28: memoized so the mark never replays on unrelated parent renders
-// (stable row key + stable props keep the mounted instance). React's studied
-// keys are authoritative; the asset's unverified "Bookmark State Machine" /
-// "Marked" strings (unknown type) are not wired. Server/optimistic behavior,
-// button semantics, and labels are unchanged; the index poster is the
-// reduced-motion equivalent.
 const StudiedBookmarkMark = memo(function StudiedBookmarkMark({
   label,
   index,

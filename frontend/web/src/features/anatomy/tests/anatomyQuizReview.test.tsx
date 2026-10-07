@@ -188,7 +188,6 @@ describe('AnatomyQuizReview', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('show-all'));
     completeQuiz(['wrong', 'correct', 'correct', 'correct', 'correct']);
-    // First item is incorrect (Q1 answered wrong) — revisit it
     fireEvent.click(screen.getByTestId('anatomy-quiz-review-structure-0'));
     const expected = screen.getByTestId('dbg-q0-key').textContent;
     expect(screen.getByTestId('dbg-selected')).toHaveTextContent(expected);
@@ -199,12 +198,10 @@ describe('AnatomyQuizReview', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('show-all'));
     completeQuiz(['wrong', 'correct', 'correct', 'correct', 'correct']);
-    // No viewer section in this harness — guarded no-op, selection still set.
     fireEvent.click(screen.getByTestId('anatomy-quiz-review-structure-0'));
     const expected = screen.getByTestId('dbg-q0-key').textContent;
     expect(screen.getByTestId('dbg-selected')).toHaveTextContent(expected);
     expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
-    // With a viewer section present, revisit scrolls back to it.
     const viewer = document.createElement('section');
     viewer.setAttribute('data-testid', 'human-viewer-section');
     document.body.appendChild(viewer);

@@ -19,8 +19,6 @@
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
-  /* STEP 8.24.1 card glow response — transform stays with GSAP hover tweens,
-     so CSS touches border/shadow only (no fight over `transform`). */
   [data-feature-card] {
     transition:
       border-color 0.25s ease,
@@ -33,7 +31,6 @@
       0 0 24px -8px rgb(20 184 166 / 0.25);
   }
 
-  /* STEP 8.24.1 CTA press feedback + primary glow lift on hover. */
   .btn {
     transition:
       transform 0.15s ease,
@@ -48,10 +45,6 @@
     box-shadow: 0 0 28px -6px rgb(20 184 166 / 0.55);
   }
 
-  /* STEP 8.24.2 hero intro start-states — applied pre-paint via the
-     `js-anim` gate in base.njk so the first paint already holds the
-     choreography curtain (no flash of final content, no flicker).
-     GSAP tweens *to* these natural end states; text stays in the DOM. */
   .js-anim [data-hero-animate] {
     opacity: 0;
   }
@@ -75,7 +68,6 @@
     opacity: 0;
     transform: translateY(16px) scale(0.98);
   }
-  /* Masked headline lines — inner spans slide up inside overflow masks. */
   .hero-mask {
     display: block;
     overflow: hidden;
@@ -97,8 +89,6 @@
     transition: none;
     box-shadow: none;
   }
-  /* STEP 8.24.2: reduced motion shows the final hero state immediately —
-     overrides every intro start-state above (safety-critical visibility). */
   .js-anim [data-hero-animate],
   .js-anim [data-hero-rise],
   .js-anim [data-hero-stats] > *,

@@ -17,8 +17,6 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const header = request.headers['authorization'];
-    // Normalize first (array and string forms go through the same Bearer
-    // split — previously an array header was passed verbatim with the scheme).
     const raw = Array.isArray(header) ? header[0] : header;
     const token = raw?.split(' ')[1];
     if (!token) {
@@ -33,7 +31,6 @@ export class JwtAuthGuard implements CanActivate {
     if (!payload?.sub) {
       throw new UnauthorizedException('Invalid or expired token');
     }
-    // Deleted users lose access immediately, even with a valid token.
     const user = await this.users.safeById(payload.sub);
     if (!user) {
       throw new UnauthorizedException('Invalid or expired token');

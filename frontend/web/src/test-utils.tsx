@@ -4,7 +4,6 @@ import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '@/features/auth/components/AuthProvider';
 
-/** Renders UI with an isolated query client, auth provider, and router (anonymous by default in tests). */
 export function renderWithAppProviders(
   ui: ReactElement,
   initialEntries: string[] = ['/']

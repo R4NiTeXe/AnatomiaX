@@ -61,7 +61,6 @@ describe('useMergeStudied snapshot sync (8.43)', () => {
     await waitFor(() => {
       expect(client.getQueryData<ProgressSnapshotRecord>(key)?.studiedKeys).toEqual(['b', 'a']);
     });
-    // No snapshot GET issued — sync came from the merge response alone.
     const gets = (global.fetch as jest.Mock).mock.calls.filter(([url]: [string]) =>
       (url as string).endsWith('/api/v1/progress/snapshot')
     );

@@ -27,11 +27,6 @@ export interface AttemptPayloadInput {
   startedAt: string;
 }
 
-/**
- * Builds a completed quiz-attempt payload for the progress API.
- * Returns null when questions/answers are inconsistent; never throws.
- * Structurally matches the backend submit contract (score/total/answers).
- */
 export function buildAttemptInput(
   questions: AttemptQuestionLike[],
   answers: AttemptAnswerLike[],

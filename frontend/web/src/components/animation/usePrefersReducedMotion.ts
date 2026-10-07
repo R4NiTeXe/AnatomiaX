@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
 
-/**
- * Shared reduced-motion hook for the animation layer (STEP 8.29).
- * Lazy initializer reads the media query synchronously so reduced-motion
- * users never flash the animated path — which would also lazy-load the
- * animation runtime unnecessarily. Guarded for non-DOM environments.
- */
 export default function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState<boolean>(() =>
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'

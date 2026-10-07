@@ -383,7 +383,6 @@ describe('CohortsService', () => {
       prisma.cohortMember.findMany.mockResolvedValue([
         { cohortId: 'c-1', cohort: cohortRow({ id: 'c-1', name: 'Bio 101' }) },
       ]);
-      // The DB `in` clause already scopes rows to member cohorts.
       mockAssignment().cohortAssignment.findMany.mockResolvedValue([
         assignmentRow({ cohortId: 'c-1' }),
       ]);

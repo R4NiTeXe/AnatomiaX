@@ -8,10 +8,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 process.env.JWT_SECRET = 'security-suite-secret-that-is-long-enough-for-hs256';
 
-// Focused API security/regression suite (STEP 8.57): unauthenticated access,
-// wrong-role access, resource ownership, privileged-field injection, malformed
-// IDs, pagination abuse, and token/secret leakage. Deterministic, no database.
-// Complements api-contract.e2e (error shapes) and the per-domain suites.
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   tokens = new Map<string, Record<string, any>>();
@@ -222,7 +218,6 @@ describe('API security (e2e, no database)', () => {
     expect(res.status).toBe(201);
     const user = [...db.users.values()].find(u => u.email === email) as Record<string, any>;
     if (role !== 'STUDENT') user.role = role;
-    // Access tokens embed the role at sign time — re-login after promotion.
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email, password: 'password123' });

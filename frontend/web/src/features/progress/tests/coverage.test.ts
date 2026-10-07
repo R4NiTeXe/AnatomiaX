@@ -33,7 +33,6 @@ describe('documentedCoverage', () => {
     const femaleTotal = getAnatomyInformationSeed().filter(r => r.bodyModel === 'female').length;
     expect(documentedCoverage([], 'male').total).toBe(maleTotal);
     expect(documentedCoverage([], 'female').total).toBe(femaleTotal);
-    // Cross-body keys do not count toward the other model.
     const maleKeys = maleSeedKeys();
     if (maleKeys.length > 0 && femaleTotal > 0) {
       expect(documentedCoverage([maleKeys[0]], 'female').studied).toBe(0);

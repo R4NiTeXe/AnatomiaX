@@ -15,12 +15,6 @@ function intensityForViewport(): number {
   return 1;
 }
 
-/**
- * Static CSS twin of the shader's resting look (STEP 8.30).
- * Used when WebGL is unavailable or fails — same footprint, same layering,
- * zero GPU cost. Approximation is intentional: it preserves hierarchy and
- * readability, not pixel parity.
- */
 function StaticBackdrop({ testId }: { testId?: string }): JSX.Element {
   return (
     <div
@@ -38,13 +32,6 @@ function StaticBackdrop({ testId }: { testId?: string }): JSX.Element {
   );
 }
 
-/**
- * Ambient medical-tech backdrop (STEP 8.30) — decorative only.
- * Placement policy: section-level surfaces only (currently the public
- * homepage hero). Never global, never inside /human, never behind focused
- * task flows like auth forms. The renderer module is dynamically imported
- * so this chunk — and any GPU work — only exists while mounted.
- */
 export default function ShaderBackdrop({ className, testId }: ShaderBackdropProps): JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -86,7 +73,6 @@ export default function ShaderBackdrop({ className, testId }: ShaderBackdropProp
     };
 
     if (reduced) {
-      // Above-the-fold static frame: no scroll gating needed, no loop runs.
       void mount();
     } else if (typeof IntersectionObserver === 'undefined') {
       void mount();

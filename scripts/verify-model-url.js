@@ -1,16 +1,3 @@
-/**
- * Acceptance probe for deployed anatomy GLBs (see docs/architecture/asset-hosting.md).
- * Fetches one model URL and asserts it is REAL GLB binary — not the SPA index.html
- * fallback (the "Unexpected token '<'" failure mode: status 200 + text/html).
- *
- * Checks: HTTP 200, GLB magic bytes (glTF), body larger than 1 KB, no doctype.
- * Content-Type is a WARNING unless HTML (hosts vary: model/gltf-binary preferred).
- *
- * Usage: node scripts/verify-model-url.js <url>
- * Exit codes: 0 model verified, 1 not a valid GLB response, 2 usage/fetch failure.
- * Not wired into CI: there is no live asset host until one is provisioned —
- * run it as the operator acceptance step after provisioning (then it must pass).
- */
 
 async function main() {
   const url = process.argv[2];

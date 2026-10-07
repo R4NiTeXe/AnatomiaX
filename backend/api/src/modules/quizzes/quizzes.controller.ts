@@ -23,12 +23,6 @@ import { SubmitBankAttemptDto } from './dto/submit-bank-attempt.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 
-/**
- * Authoritative quiz bank (approved product scope). All routes require a
- * live user; creation is TEACHER/ADMIN; every other mutation is
- * owner-or-ADMIN inside the service (same single-layer convention as
- * cohorts). Student read/submit paths never expose the answer key.
- */
 @Controller('v1/quizzes')
 @UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class QuizzesController {

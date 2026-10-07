@@ -33,10 +33,6 @@ function statusMessage(status: number | undefined, overrides?: FriendlyErrorOver
   }
 }
 
-/**
- * Maps the canonical ApiError contract to user-facing copy while preserving
- * requestId/details for support/debugging. Never throws.
- */
 export function friendlyAuthError(
   error: unknown,
   opts?: FriendlyErrorOverrides
@@ -44,8 +40,6 @@ export function friendlyAuthError(
   if (error instanceof ApiError) {
     const base = error.message?.trim();
     const mapped = statusMessage(error.status, opts);
-    // Prefer the server message for validation errors (it carries specifics),
-    // otherwise use the friendly mapping so auth failures stay generic.
     const message =
       error.status === 400 && base && base !== 'Validation failed'
         ? base
@@ -70,7 +64,6 @@ export function friendlyAuthMessage(error: unknown, opts?: FriendlyErrorOverride
   return friendlyAuthError(error, opts).message;
 }
 
-/** Cohort-flavoured mapping that preserves status/requestId/details. */
 export function friendlyCohortError(error: unknown): FriendlyAuthError {
   return friendlyAuthError(error, {
     override403: 'Only the cohort owner (or an admin) can do that.',

@@ -6,14 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RegisterSubscriptionDto } from './dto/register-subscription.dto';
 import { NotificationsService } from './notifications.service';
 
-/**
- * 8.19.24 push-subscription endpoints. All routes require a live user and
- * operate strictly on `req.user.id`. No route triggers sending — delivery
- * stays behind the NotificationSender abstraction for future use.
- */
 @Controller('v1/notifications')
-// Shared throttler storage (100/min default) — subscription registration
-// stays bounded per client.
 @UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}

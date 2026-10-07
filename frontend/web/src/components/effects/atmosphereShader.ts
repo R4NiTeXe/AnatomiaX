@@ -1,10 +1,3 @@
-/**
- * STEP 8.30 ambient medical-tech backdrop shaders.
- * Raw WebGL1 + procedural GLSL only — no textures, no postprocessing, no
- * three.js dependency. The fullscreen triangle keeps vertex work trivial;
- * all visuals live in the fragment shader at low alpha so text contrast
- * is never at risk.
- */
 
 export const BACKDROP_VERTEX = `
 attribute vec2 a_position;
@@ -13,13 +6,6 @@ void main() {
 }
 `;
 
-/**
- * Restraint budget (alpha peaks, before the u_intensity scale):
- * - teal glow <= 0.10, violet glow <= 0.08
- * - grid lines 0.05, scan sweep 0.05, grain +/-0.006
- * Movement is low-frequency (slowest period ~14s). Time frozen entirely
- * under reduced motion — the caller renders one static frame instead.
- */
 export const BACKDROP_FRAGMENT = `
 precision mediump float;
 

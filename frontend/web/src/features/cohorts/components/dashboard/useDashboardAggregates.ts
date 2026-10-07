@@ -11,11 +11,6 @@ export interface DashboardAggregates {
   recentAttempts: DashboardRecentAttempt[];
 }
 
-/**
- * Client-side aggregates from server-authorized member progress.
- * Logic moved verbatim from CohortDashboardPage: null progress yields the
- * same '—'/zero/empty fallbacks the page rendered before the split.
- */
 export function useDashboardAggregates(
   progress: CohortMemberProgress[] | null
 ): DashboardAggregates {

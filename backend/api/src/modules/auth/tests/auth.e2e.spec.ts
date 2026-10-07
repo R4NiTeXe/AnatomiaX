@@ -8,14 +8,9 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { PasswordResetDelivery } from '../password-reset-delivery';
 
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
-// Google flow tests run with test credentials so the strategy registers;
-// the unconfigured path is covered by guards.spec.ts instead (ConfigService
-// snapshots env at module init, so per-test toggling is not possible here).
 process.env.GOOGLE_CLIENT_ID = 'e2e-test-google-client-id';
 process.env.GOOGLE_CLIENT_SECRET = 'e2e-test-google-client-secret';
 
-// In-memory Prisma stand-in: no database, no network.
-// Extended for 8.19.23 (password resets, account export/delete).
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   oauth = new Map<string, Record<string, any>>();
@@ -115,9 +110,6 @@ class FakeDb {
       where: Record<string, any>;
       data: Record<string, any>;
     }) => {
-      // Faithful to Prisma: only rows matching the full where clause count.
-      // Supports both the family revocation ({ userId, revokedAt: null }) and
-      // the atomic rotation claim ({ id, revokedAt: null }).
       let count = 0;
       for (const row of this.tokens.values()) {
         if (this.match(row, where)) {
@@ -232,9 +224,6 @@ describe('Auth (e2e, no database)', () => {
       .map(c => c.split(';')[0])
       .join('; ');
 
-  // Fire-and-forget delivery: poll bounded instead of assuming a
-  // single-tick flush, so assertions hold however the transport schedules
-  // the deferred dispatch.
   const waitForDelivery = async (ready: () => boolean): Promise<void> => {
     const deadline = Date.now() + 2000;
     while (!ready()) {
@@ -334,8 +323,6 @@ describe('Auth (e2e, no database)', () => {
   });
 
   it('keeps the non-production SameSite=Lax default (production defaults to None)', async () => {
-    // Locks the split default: test env is same-site-capable, production
-    // cross-site requires None (see AuthController prod-default spec).
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'student@example.com', password: 'password123' });
@@ -380,7 +367,6 @@ describe('Auth (e2e, no database)', () => {
     expect(rotated.status).toBe(200);
     expect(rotated.body.refreshToken).toBeDefined();
     expect(rotated.body.refreshToken).not.toBe(login.body.refreshToken);
-    // Reusing the old (now revoked) token fails and burns the family.
     const reuse = await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
       .set('Cookie', cookie);
@@ -397,7 +383,6 @@ describe('Auth (e2e, no database)', () => {
       .set('Cookie', cookie)
       .set('Origin', 'https://evil.example');
     expect(forged.status).toBe(403);
-    // Guard rejection happens before rotation: the token still works.
     const plain = await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
       .set('Cookie', cookie);
@@ -409,10 +394,6 @@ describe('Auth (e2e, no database)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'student@example.com', password: 'password123' });
     const cookie = refreshCookie(login);
-    // Race two rotations of the same token. Interleaving is scheduler-driven:
-    // either both pre-checks pass (atomic claim decides exactly one winner)
-    // or the second arrives after rotation (reuse path burns the family).
-    // Both end-states are safe; two live sessions never is.
     const [a, b] = await Promise.all([
       request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', cookie),
       request(app.getHttpServer()).post('/api/v1/auth/refresh').set('Cookie', cookie),
@@ -433,7 +414,6 @@ describe('Auth (e2e, no database)', () => {
   });
 
   it('prefers the fresh cookie over a stale body token (multi-tab safety)', async () => {
-    // Self-contained user: other tests' fixtures may be skipped under -t.
     await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({ email: 'multitab@example.com', password: 'password123' });
@@ -441,15 +421,11 @@ describe('Auth (e2e, no database)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'multitab@example.com', password: 'password123' });
     const staleBody = login.body.refreshToken as string;
-    // Tab A rotates: the cookie jar now holds the fresh token.
     const rotated = await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
       .set('Cookie', refreshCookie(login));
     expect(rotated.status).toBe(200);
     const freshCookie = refreshCookie(rotated);
-    // Tab B presents a stale body token alongside the fresh cookie: the
-    // cookie must win, so reuse detection must NOT fire and the family
-    // stays alive.
     const tabB = await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
       .set('Cookie', freshCookie)
@@ -457,7 +433,6 @@ describe('Auth (e2e, no database)', () => {
     expect(tabB.status).toBe(200);
     expect(tabB.body.refreshToken).toBeDefined();
     expect(tabB.body.refreshToken).not.toBe(staleBody);
-    // Family intact: the newest token still refreshes afterwards.
     const again = await request(app.getHttpServer())
       .post('/api/v1/auth/refresh')
       .set('Cookie', refreshCookie(tabB));
@@ -498,8 +473,6 @@ describe('Auth (e2e, no database)', () => {
   });
 
   it('Google entrypoint exists without crashing the app sans credentials', async () => {
-    // No network: without configured credentials Google redirects fail at the
-    // provider step, but route registration itself must not break boot.
     const res = await request(app.getHttpServer()).get('/api/v1/auth/google').redirects(0);
     expect([302, 500]).toContain(res.status);
   });
@@ -537,8 +510,6 @@ describe('Auth (e2e, no database)', () => {
     const nonce = (setCookie.find(c => c.startsWith('oauth_state=')) as string)
       .split(';')[0]
       .split('=')[1];
-    // No Google network: the code exchange itself fails downstream, but the
-    // guard must NOT reject — any failure here is not a state failure.
     const res = await request(app.getHttpServer())
       .get(`/api/v1/auth/google/callback?code=fake&state=${nonce}`)
       .set('Cookie', `oauth_state=${nonce}`);
@@ -612,9 +583,6 @@ describe('Auth (e2e, no database)', () => {
       const req = await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/request')
         .send({ email: 'resetuser@example.com' });
-      // Delivery is fire-and-forget: poll (bounded) instead of assuming a
-      // single-tick flush, so the assertion holds however the transport
-      // schedules the deferred dispatch.
       await waitForDelivery(() => delivered.length === before + 1);
       expect(req.status).toBe(200);
       expect(req.body).toEqual({ status: 'ok' });
@@ -624,13 +592,11 @@ describe('Auth (e2e, no database)', () => {
       const raw = delivered[delivered.length - 1].token;
       expect(raw.length).toBeGreaterThanOrEqual(20);
 
-      // Hashed at rest, never plaintext.
       const expectedHash = createHash('sha256').update(raw).digest('hex');
       const storedHashes = [...db.resets.values()].map(r => r.tokenHash);
       expect(storedHashes).toContain(expectedHash);
       expect(storedHashes).not.toContain(raw);
 
-      // Cannot target another account.
       const cross = await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/confirm')
         .send({ email: 'other@example.com', token: raw, newPassword: 'reset-new-pass-1' });
@@ -652,7 +618,6 @@ describe('Auth (e2e, no database)', () => {
         .send({ email: 'resetuser@example.com', password: 'reset-new-pass-1' });
       expect(newLogin.status).toBe(200);
 
-      // Single-use: replay fails.
       const replay = await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/confirm')
         .send({ email: 'resetuser@example.com', token: raw, newPassword: 'another-pass-12' });
@@ -683,9 +648,6 @@ describe('Auth (e2e, no database)', () => {
       const ghost = await request(app.getHttpServer())
         .post('/api/v1/auth/password-reset/request')
         .send({ email: 'nobody-here-123@example.com' });
-      // Absence cannot poll: flush one macrotask (prior tests already
-      // drained their own dispatches via waitForDelivery), then assert
-      // nothing was dispatched for the ghost account.
       await new Promise(resolve => setImmediate(resolve));
       expect(ghost.status).toBe(200);
       expect(ghost.body).toEqual({ status: 'ok' });

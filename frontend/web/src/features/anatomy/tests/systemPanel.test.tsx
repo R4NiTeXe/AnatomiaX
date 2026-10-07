@@ -60,7 +60,6 @@ describe('AnatomySystemPanel', () => {
     setup();
     fireEvent.click(screen.getByTestId('fail-skin'));
     expect(screen.getByTestId('error-skin')).toHaveTextContent('GLB missing');
-    // Retry resets the system to idle (clearing the error UI) and bumps attempts.
     fireEvent.click(screen.getByTestId('retry-skin'));
     expect(screen.queryByTestId('error-skin')).not.toBeInTheDocument();
   });

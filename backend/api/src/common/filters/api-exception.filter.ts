@@ -38,19 +38,10 @@ function firstString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-/** ThrottlerException embeds its class name; clients only need the reason. */
 function cleanThrottlerMessage(message: string): string {
   return message.replace(/^ThrottlerException:\s*/i, '').trim() || 'Too many requests';
 }
 
-/**
- * Nest's RoutesResolver converts body-parser SyntaxErrors into
- * `BadRequestException(err.message)` before filters run, so the raw
- * `entity.parse.failed` shape never arrives (unlike entity.too.large).
- * Sanitize the known V8/JSON engine syntax messages to the generic
- * validation message instead of echoing parser internals (and request body
- * snippets) to clients. Domain 400 messages never match these patterns.
- */
 const ENGINE_JSON_SYNTAX =
   /^(Unexpected token|Unexpected end of JSON|Expected property name|Unterminated string|.*is not valid JSON)/;
 
@@ -70,16 +61,6 @@ function bodyParserStatus(exception: unknown): { status: number; message: string
   return null;
 }
 
-/**
- * 8.19.25 global API exception layer (non-health routes only).
- *
- * Normalizes every thrown value into the canonical `{ code, message,
- * details?, requestId }` body while preserving HTTP status semantics:
- * 400 validation/authz input, 401 auth, 403 forbidden, 404 hidden-or-missing,
- * 409 conflict, 429 throttled, 500 safe generic. Stack traces, Prisma/SQL
- * internals, tokens, hashes, and secrets never leave the server — 5xx paths
- * always resolve to a generic message (details stay in server logs only).
- */
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger('Api');
@@ -90,12 +71,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const res = ctx.getResponse<HttpResponseLike>();
     const url = firstString(req?.originalUrl) ?? firstString(req?.url) ?? '';
 
-    // Health endpoints keep their legacy behavior exactly.
     if (isHealthPath(url)) {
       throw exception;
     }
 
-    // Prisma/database errors → safe mapped semantics (no internals leaked).
     const prismaCode = prismaCodeFrom(exception);
     if (prismaCode) {
       const mapped = prismaToHttp(prismaCode);
@@ -113,11 +92,6 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    // Express/body-parser errors (oversized or malformed JSON bodies) carry a
-    // numeric status but are not HttpExceptions. Without this branch they
-    // fall through to a misleading 500 (client abuse counted as server
-    // failure, false 5xx alarms). Only the two known-safe body shapes map;
-    // everything else stays a generic 500. Messages are ours, never echoed.
     const bodyError = bodyParserStatus(exception);
     if (bodyError) {
       this.respond(req, res, url, bodyError.status, undefined, {
@@ -153,7 +127,6 @@ export class ApiExceptionFilter implements ExceptionFilter {
       if (typeof response === 'object' && response !== null) {
         const body = response as { message?: unknown; error?: unknown };
         if (Array.isArray(body.message)) {
-          // class-validator failure: consistent validation shape.
           const details = body.message.filter((m): m is string => typeof m === 'string');
           this.respond(req, res, url, status, undefined, {
             code: status === 400 ? 'VALIDATION_ERROR' : codeForStatus(status),
@@ -179,7 +152,6 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    // Anything unexpected → safe 500 (original kept server-side in logs only).
     this.respond(req, res, url, HttpStatus.INTERNAL_SERVER_ERROR, exception, {
       code: 'INTERNAL_ERROR',
       message: GENERIC_SERVER_ERROR_MESSAGE,
@@ -200,7 +172,6 @@ export class ApiExceptionFilter implements ExceptionFilter {
     try {
       res.setHeader?.(REQUEST_ID_HEADER, requestId);
     } catch {
-      // Header failures must never break error handling.
     }
     if (status >= 500) {
       const stack = original instanceof Error ? original.stack : String(original);

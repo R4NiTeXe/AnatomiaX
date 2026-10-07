@@ -5,10 +5,6 @@ import type {
 } from '@anatomiax/shared-types';
 import { getAnatomyInformationByStructureKey } from './anatomyInformation';
 
-/**
- * Maps a persisted body-qualified structureKey back to a selection.
- * Returns null for keys that cannot be understood; never throws.
- */
 export function parseStudiedKey(key: string): SelectedStructure | null {
   if (typeof key !== 'string' || key.length === 0 || key.length > 256) return null;
   const parts = key.split(':');

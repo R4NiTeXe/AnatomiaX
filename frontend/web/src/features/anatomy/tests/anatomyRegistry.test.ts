@@ -332,7 +332,6 @@ describe('body model abstraction', () => {
     expect(registry.size).toBe(2);
     expect(registry.findByStructureKey('male:skin:UBERON:0002097')).toBeDefined();
     expect(registry.findByStructureKey('female:skin:UBERON:0002097')).toBeDefined();
-    // global ontology search returns both
     expect(registry.findStructuresByOntologyId('UBERON:0002097')).toHaveLength(2);
   });
 

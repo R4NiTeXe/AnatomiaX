@@ -70,9 +70,7 @@ describe('auth pages (8.20.2)', () => {
     expect(screen.getByTestId('login-password')).toHaveAttribute('minLength', '8');
     const google = screen.getByTestId('google-signin');
     expect(google).toHaveAttribute('href', expect.stringContaining('/api/v1/auth/google'));
-    // Labels are associated for screen readers.
     expect(document.querySelector('label[for="login-email"]')).toBeInTheDocument();
-    // Responsive container uses mobile-first padding with a constrained width.
     expect(document.querySelector('main')).toBeInTheDocument();
   });
 
@@ -144,7 +142,6 @@ describe('auth pages (8.20.2)', () => {
     fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'a@b.c' } });
     fireEvent.change(screen.getByTestId('login-password'), { target: { value: 'password123' } });
     fireEvent.click(screen.getByTestId('login-submit'));
-    // Returned (database) role decides the landing: TEACHER → /cohorts.
     expect(await screen.findByTestId('cohorts-page', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(seen).toHaveLength(1);
     expect(JSON.parse(seen[0].body)).toMatchObject({ role: 'TEACHER' });

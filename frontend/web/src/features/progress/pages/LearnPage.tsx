@@ -175,7 +175,6 @@ function ContinueSection(): JSX.Element | null {
   }
 
   const keys = snapshotQuery.data?.studiedKeys ?? [];
-  // Curriculum-first Continue: unfinished module content, then recency.
   const target = findContinueTarget(buildLearningModules(), keys);
   const targetName = target ? displayNameForStudiedKey(target.structureKey) : null;
 

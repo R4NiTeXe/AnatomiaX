@@ -4,9 +4,6 @@ import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 
 @Module({
-  // AuthModule for the re-exported ThrottlerModule (rate-limit guard on
-  // /db, which pings the database). No auth guards applied here — health
-  // stays public by design.
   imports: [AuthModule],
   controllers: [HealthController],
   providers: [HealthService],

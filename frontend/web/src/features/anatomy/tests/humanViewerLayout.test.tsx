@@ -3,9 +3,6 @@ import '@testing-library/jest-dom';
 import { renderWithAppProviders as render } from '@/test-utils';
 import HumanPage from '../pages/HumanPage';
 
-// STEP 8.32: the R3F canvas needs no WebGL here — the regression under test
-// is the DOM/stacking contract (viewer section must not collapse), so the
-// viewer itself is stubbed while the real sidebar controls render.
 jest.mock('@/features/anatomy/components/AnatomyViewer', () => ({
   __esModule: true,
   default: () => <div data-testid="viewer-mock" />,
@@ -32,9 +29,6 @@ describe('HumanPage viewer layout (8.32)', () => {
   it('viewer section keeps a non-collapsing min height above the sidebar', () => {
     render(<HumanPage />, ['/human']);
     const section = screen.getByTestId('human-viewer-section');
-    // Regression guard for the mobile hit-testing bug: without min-h the
-    // section collapsed to 0 in the scrollable column and the overflowing
-    // canvas intercepted sidebar taps.
     expect(section.className).toMatch(/min-h-\[55vh\]/);
     expect(section.className).toMatch(/lg:min-h-0/);
   });
@@ -62,28 +56,23 @@ describe('HumanPage viewer layout (8.32)', () => {
     render(<HumanPage />, ['/human']);
     const card = screen.getByTestId('appearance-selector');
     expect(card).toHaveAttribute('aria-label', 'Appearance');
-    // Both controls keep their contracts inside the grouped card.
     expect(card.contains(screen.getByTestId('body-model-male'))).toBe(true);
     expect(card.contains(screen.getByTestId('skin-tone-group'))).toBe(true);
     const status = screen.getByTestId('viewer-status');
     expect(status).toHaveTextContent(/male/i);
     expect(status).toHaveTextContent(/medium/i);
-    // Selecting a tone updates the header context readout.
     fireEvent.click(screen.getByTestId('skin-tone-deep'));
     expect(screen.getByTestId('viewer-status')).toHaveTextContent(/deep/i);
   });
 
   it('model switch resets per-body state synchronously (8.45)', () => {
     render(<HumanPage />, ['/human']);
-    // Hide skin, then switch models: the synchronous reset restores defaults
-    // in the same commit (no stranded hidden/loading leftovers).
     fireEvent.click(screen.getByTestId('toggle-skin'));
     expect(screen.getByTestId('toggle-skin')).toHaveAttribute('aria-checked', 'false');
     fireEvent.click(screen.getByTestId('body-model-female'));
     expect(screen.getByTestId('body-model-female')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('toggle-skin')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('viewer-status')).toHaveTextContent(/female/i);
-    // And back: receipt-guarded provider effect must not clobber.
     fireEvent.click(screen.getByTestId('body-model-male'));
     expect(screen.getByTestId('body-model-male')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('toggle-skin')).toHaveAttribute('aria-checked', 'true');

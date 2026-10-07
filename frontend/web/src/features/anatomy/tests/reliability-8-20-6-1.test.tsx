@@ -1,8 +1,3 @@
-// STEP 8.20.9.1: isolate heavy 3D import that pushes the test over the
-// default 5s timeout under parallel worker contention. Mocking the viewer
-// keeps the DOM assertions (header/nav) intact while making the HumanPage
-// import cheap — no three/R3F parse inside the 5s window. Global
-// ResizeObserver/canvas polyfills live in src/test-setup.ts (setupFiles).
 jest.mock('@/features/anatomy/components/AnatomyViewer', () => ({
   __esModule: true,
   default: () => {
@@ -73,8 +68,6 @@ describe('8.20.6.1 reliability/a11y', () => {
     expect(skip).toBeInTheDocument();
     expect(skip).toHaveAttribute('href', '#main-content');
     expect(skip.className).toContain('sr-only');
-    // main has id and is focusable
-    // LearnPage main appears after navigation
     const mains = await screen.findAllByRole('main', {}, { timeout: 4000 });
     expect(mains.some(m => m.id === 'main-content')).toBe(true);
     expect(mains.find(m => m.id === 'main-content')).toHaveAttribute('tabIndex', '-1');
@@ -82,7 +75,6 @@ describe('8.20.6.1 reliability/a11y', () => {
 
   it('respects prefers-reduced-motion via global CSS', () => {
     const cssPath = path.join(__dirname, '../../index.css');
-    // fallback to known location if __dirname differs in jest
     const altPath =
       'C:\\Users\\ranit\\Desktop\\WebDev\\Coding\\Bankend\\AnatomiaX\\frontend\\web\\src\\index.css';
     let content = '';
@@ -122,16 +114,12 @@ describe('8.20.6.1 reliability/a11y', () => {
       </QueryClientProvider>
     );
     await screen.findByTestId('learn-title', {}, { timeout: 4000 });
-    // wait for initial fetches
     await screen.findByTestId('progress-summary-quizzes', {}, { timeout: 4000 });
     const before = snapshotCalls;
-    // dispatch window focus — should NOT trigger refetch due to refetchOnWindowFocus: false
     fireEvent(window, new Event('focus'));
     fireEvent(window, new Event('visibilitychange'));
-    // give query time
     await new Promise(r => setTimeout(r, 100));
     expect(snapshotCalls).toBe(before);
-    // ensure isolation: different user would have different key
     expect(client.getQueryData(['progress', 'snapshot', 'u-1'])).toBeDefined();
     expect(client.getQueryData(['progress', 'snapshot', 'u-2'])).toBeUndefined();
   });
@@ -147,7 +135,6 @@ describe('8.20.6.1 reliability/a11y', () => {
         </AuthProvider>
       </QueryClientProvider>
     );
-    // header present, viewer not redesigned (viewer is mocked — DOM assertion preserved)
     expect(await screen.findByText('Human anatomy', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByTestId('human-nav')).toBeInTheDocument();
     expect(screen.getByTestId('mock-anatomy-viewer')).toBeInTheDocument();
@@ -167,7 +154,6 @@ describe('8.20.6.1 reliability/a11y', () => {
     expect(await screen.findByTestId('not-found-title', {}, { timeout: 4000 })).toHaveTextContent(
       'Page not found'
     );
-    // skip link resolves on the standalone 404 page
     const skip = await screen.findByText('Skip to content', {}, { timeout: 4000 });
     expect(skip).toHaveAttribute('href', '#main-content');
     const mains = await screen.findAllByRole('main', {}, { timeout: 4000 });

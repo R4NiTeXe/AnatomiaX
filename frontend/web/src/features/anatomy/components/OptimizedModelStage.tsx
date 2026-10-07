@@ -16,16 +16,6 @@ type OptimizedGltfProps = {
   onLoaded?: (info: OptimizedModelInfo) => void;
 };
 
-/**
- * Renders an optimized GLB (EXT_meshopt_compression / KHR_mesh_quantization).
- *
- * Decoder setup (verified against drei's implementation):
- * - `useDraco = false` -> DRACOLoader is never initialized, no CDN involved
- * - `useMeshopt = true` -> loader.setMeshoptDecoder(MeshoptDecoder) using the
- *   decoder bundled locally in three-stdlib (no network dependency)
- *
- * The model itself is rendered unmodified; fitting is handled by <Bounds>.
- */
 function OptimizedGltf({ url, onLoaded }: OptimizedGltfProps): JSX.Element {
   const { scene } = useGLTF(url, false, true);
 
@@ -64,7 +54,6 @@ type FitControllerProps = {
   resetSignal: number;
 };
 
-/** Re-runs fit-to-view whenever resetSignal increments. */
 function FitController({ resetSignal }: FitControllerProps): null {
   const api = useBounds();
   const firstRender = useRef(true);

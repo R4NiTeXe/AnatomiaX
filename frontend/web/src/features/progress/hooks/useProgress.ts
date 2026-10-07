@@ -45,11 +45,6 @@ export function useQuizAttempts() {
   });
 }
 
-/**
- * Full quiz-attempt history for the /learn surface.
- * Reuses listQuizAttempts with a larger limit; keyed per user so
- * accounts can never leak into each other.
- */
 export function useQuizHistory(limit = 100) {
   const { user, status } = useAuth();
   const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.floor(limit), 1), 100) : 100;
@@ -82,9 +77,6 @@ export function useMergeStudied() {
   return useMutation({
     mutationFn: ({ keys, bodyModel }: { keys: string[]; bodyModel?: 'male' | 'female' }) =>
       mergeStudiedKeys(keys, bodyModel),
-    // STEP 8.43: fold the server's authoritative keys into the snapshot
-    // cache so Dashboard/Learn never show stale progress inside staleTime.
-    // No extra fetch in the common path; a missing cache refetches instead.
     onSuccess: data => {
       const key = progressSnapshotKey(user?.id);
       const serverKeys = Array.isArray(data?.studiedKeys) ? data.studiedKeys : [];

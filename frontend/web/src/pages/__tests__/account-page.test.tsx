@@ -60,7 +60,6 @@ function mockAuthenticated(extra?: (url: string, init?: RequestInit) => unknown)
       if (handled !== undefined) return Promise.resolve(handled);
     }
     if (u.endsWith('/api/v1/auth/me')) return Promise.resolve(jsonResponse(USER));
-    // A valid session refreshes cleanly by default; expiry tests override this.
     if (u.endsWith('/api/v1/auth/refresh')) return Promise.resolve(jsonResponse(SESSION));
     if (u.includes('/api/v1/progress/')) return Promise.resolve(jsonResponse([]));
     return Promise.resolve(jsonResponse({}, 404));
@@ -158,7 +157,6 @@ describe('account page (8.20.2)', () => {
     });
     renderAccount();
     await screen.findByTestId('account-delete-submit');
-    // Locked until both the email and the checkbox confirm intent.
     expect(screen.getByTestId('account-delete-submit')).toBeDisabled();
     fireEvent.change(screen.getByTestId('account-delete-email'), { target: { value: 'a@b.c' } });
     expect(screen.getByTestId('account-delete-submit')).toBeDisabled();
@@ -225,7 +223,6 @@ describe('account page (8.20.2)', () => {
   it('sets a visible expired flag when the refresh dies after auth', async () => {
     (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve(jsonResponse(SESSION)));
     await login('a@b.c', 'password123');
-    // Now every authenticated call fails and the cookie refresh fails too.
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       const u = url as string;
       if (u.endsWith('/api/v1/auth/refresh'))
@@ -249,8 +246,6 @@ describe('account page (8.20.2)', () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    // Seed the provider with an authenticated user by pre-setting via login above
-    // is not enough (module state is shared) — mount and reload to sync expiry.
     render(
       <QueryClientProvider client={client}>
         <AuthProvider>
@@ -301,11 +296,9 @@ describe('account page (8.20.2)', () => {
     );
     const loginBtn = await screen.findByTestId('anatomy-account-login');
     const registerBtn = await screen.findByTestId('anatomy-account-register');
-    // Both actions share one validated form — native checks apply to register too.
     expect(loginBtn).toHaveAttribute('type', 'submit');
     expect(registerBtn).toHaveAttribute('type', 'submit');
     expect(registerBtn).toHaveAttribute('data-mode', 'register');
-    // Anonymous embed links out to the full auth surface (manage link is authed-only).
     expect(screen.getByText('Full sign-in')).toHaveAttribute('href', '/login');
   });
 

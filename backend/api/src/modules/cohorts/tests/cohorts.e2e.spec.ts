@@ -8,7 +8,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
 
-// In-memory Prisma stand-in extended for cohorts: no database, no network.
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   oauth = new Map<string, Record<string, any>>();
@@ -22,7 +21,6 @@ class FakeDb {
       if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
         const nested = value as Record<string, any>;
         if ('equals' in nested) return record[key] === nested.equals;
-        // 8.20.22: batched `in` operator for getProgress (userId: { in: ids }).
         if ('in' in nested && Array.isArray(nested.in)) return nested.in.includes(record[key]);
         return false;
       }
@@ -198,7 +196,6 @@ class FakeDb {
     },
   };
 
-  // 8.20.22: learning-record stores for batched getProgress (no database).
   snapshots = new Map<string, Record<string, any>>();
   attempts: Record<string, any>[] = [];
 
@@ -557,14 +554,12 @@ describe('Cohorts (e2e, no database)', () => {
     beforeAll(() => {
       db.users.get(teacherA())!.name = 'Tess Teacher';
       db.users.get(studentB())!.name = 'Sam Student';
-      // Only one member has a snapshot (covers the studiedKeys: [] default).
       db.snapshots.set(studentB(), {
         userId: studentB(),
         studiedKeys: ['male:skin:UBERON:0002097', 'male:nervous:UBERON:0001016'],
         bodyModel: 'male',
         updatedAt: new Date(),
       });
-      // 25 attempts for student-b (covers the latest-20 cap + desc order).
       for (let i = 0; i < 25; i++) {
         db.attempts.push({
           id: `attempt-b-${i}`,
@@ -575,7 +570,6 @@ describe('Cohorts (e2e, no database)', () => {
           completedAt: new Date(Date.now() + i * 3600000),
         });
       }
-      // 2 attempts for the owner; interleaved timestamps prove per-user grouping.
       for (const [i, at] of [10, 30].entries()) {
         db.attempts.push({
           id: `attempt-a-${i}`,
@@ -594,7 +588,6 @@ describe('Cohorts (e2e, no database)', () => {
         .set(auth('teacher-a@example.com'));
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      // Members in joinedAt order: owner seated at creation comes first.
       expect(res.body.map((m: { userId: string }) => m.userId)).toEqual([teacherA(), studentB()]);
       for (const m of res.body as Array<Record<string, unknown>>) {
         expect(Object.keys(m).sort()).toEqual(
@@ -616,7 +609,6 @@ describe('Cohorts (e2e, no database)', () => {
         'male:skin:UBERON:0002097',
         'male:nervous:UBERON:0001016',
       ]);
-      // Latest 20 of 25, newest first.
       expect(student.quizAttempts).toHaveLength(20);
       expect(student.quizAttempts[0].id).toBe('attempt-b-24');
       expect(student.quizAttempts[19].id).toBe('attempt-b-5');
@@ -631,8 +623,6 @@ describe('Cohorts (e2e, no database)', () => {
         .get(`/api/v1/cohorts/${ids.cohort}/progress`)
         .set(auth('teacher-a@example.com'));
       expect(res.status).toBe(200);
-      // One batched snapshots query + one batched attempts query for 2 members
-      // (was 2 sequential queries per member before 8.20.22).
       expect(snapshotSpy).toHaveBeenCalledTimes(1);
       expect(attemptsSpy).toHaveBeenCalledTimes(1);
       expect(attemptsSpy).toHaveBeenCalledWith(
@@ -749,7 +739,6 @@ describe('Cohorts (e2e, no database)', () => {
         .post(`/api/v1/cohorts/${cohortId}/archive`)
         .set(auth('teacher-a@example.com'));
       expect(archived.status).toBe(201);
-      // Reads stay available to viewers (analytics inputs).
       const managerList = await request(app.getHttpServer())
         .get(`/api/v1/cohorts/${cohortId}/assignments`)
         .set(auth('teacher-a@example.com'));
@@ -763,7 +752,6 @@ describe('Cohorts (e2e, no database)', () => {
         .get(`/api/v1/cohorts/${cohortId}/progress`)
         .set(auth('teacher-a@example.com'));
       expect(ownerProgress.status).toBe(200);
-      // Writes are frozen; teacher analytics stay owner-gated.
       const assign = await request(app.getHttpServer())
         .post(`/api/v1/cohorts/${cohortId}/assignments`)
         .set(auth('teacher-a@example.com'))

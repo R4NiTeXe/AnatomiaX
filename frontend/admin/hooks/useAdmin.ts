@@ -58,8 +58,6 @@ export function useAdminOverview() {
     queryKey: ['admin', 'overview'],
     queryFn: () => apiRequest<AdminOverview>('/api/v1/admin/overview'),
     staleTime: 30_000,
-    // Web convention: no silent refires — failures surface to the caller,
-    // which owns retry UI (avoids 4x retry storms on failed queries).
     retry: false,
   });
 }
@@ -83,8 +81,6 @@ export function useAdminUsers(params: {
       return apiRequest<PaginatedUsers>(`/api/v1/admin/users${qs ? `?${qs}` : ''}`);
     },
     staleTime: 15_000,
-    // Web convention: no silent refires — failures surface to the caller,
-    // which owns retry UI (avoids 4x retry storms on failed queries).
     retry: false,
   });
 }
@@ -108,8 +104,6 @@ export function useAdminCohorts(params: {
       return apiRequest<PaginatedCohorts>(`/api/v1/admin/cohorts${qs ? `?${qs}` : ''}`);
     },
     staleTime: 15_000,
-    // Web convention: no silent refires — failures surface to the caller,
-    // which owns retry UI (avoids 4x retry storms on failed queries).
     retry: false,
   });
 }
@@ -241,8 +235,6 @@ export function useAdminCohort(id: string | undefined) {
     queryFn: () => apiRequest<PaginatedCohorts['items'][number]>(`/api/v1/admin/cohorts/${id}`),
     enabled: !!id,
     staleTime: 30_000,
-    // Web convention: no silent refires — failures surface to the caller,
-    // which owns retry UI (avoids 4x retry storms on failed queries).
     retry: false,
   });
 }

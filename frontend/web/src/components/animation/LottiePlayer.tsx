@@ -7,14 +7,12 @@ interface LottiePlayerProps {
   className?: string;
   width?: number | string;
   height?: number | string;
-  /** Default false (STEP 8.29): looping must be explicitly justified. */
   loop?: boolean;
   autoplay?: boolean;
   ariaLabel?: string;
   poster?: ReactNode;
 }
 
-// Lazy dotLottie — keeps the player out of the main bundle.
 const LazyDotLottie = lazy(async () => {
   const mod = await import('@lottiefiles/dotlottie-react');
   const Comp =
@@ -41,10 +39,6 @@ const LazyDotLottie = lazy(async () => {
   return { default: Comp };
 });
 
-/**
- * Isolates Lottie runtime/asset failures to the poster fallback so a broken
- * animation can never crash its host UI.
- */
 class LottieErrorBoundary extends Component<
   { resetKey: string; fallback: ReactNode; children: ReactNode },
   { failed: boolean }

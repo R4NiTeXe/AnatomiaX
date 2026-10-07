@@ -246,7 +246,6 @@ describe('student home/dashboard (8.20.3)', () => {
     renderHome();
     expect(await screen.findByTestId('studied-error', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByTestId('quiz-error')).toBeInTheDocument();
-    // Retry recovers once the backend heals.
     mockBackend({ user: USER_A, snapshotKeys: [KEY_SKIN], attempts: [] });
     fireEvent.click(screen.getByTestId('studied-retry'));
     expect(await screen.findByTestId('studied-count', {}, { timeout: 4000 })).toHaveTextContent(
@@ -306,8 +305,6 @@ describe('student home/dashboard (8.20.3)', () => {
       </QueryClientProvider>
     );
     await screen.findByTestId('home-dashboard', {}, { timeout: 4000 });
-    // Settle in-flight progress fetches first so logout removal cannot be
-    // repopulated by a late resolution.
     await screen.findByTestId('studied-count', {}, { timeout: 4000 });
     fireEvent.click(screen.getByTestId('probe-logout'));
     expect(await screen.findByTestId('home-cta-login', {}, { timeout: 4000 })).toBeInTheDocument();
@@ -361,7 +358,6 @@ describe('learn/progress surface (8.20.3)', () => {
     expect(screen.getAllByTestId('studied-item')).toHaveLength(3);
     expect(screen.getAllByTestId('quiz-item')).toHaveLength(3);
     expect(screen.getAllByTestId('quiz-review')).toHaveLength(2);
-    // Curriculum Continue: skin module leads unfinished content → first unstudied skin record.
     expect(screen.getByTestId('learn-continue-link')).toHaveAttribute(
       'href',
       `/human?focus=${encodeURIComponent('female:skin:UBERON:0002097')}`

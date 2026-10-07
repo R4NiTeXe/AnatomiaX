@@ -1,12 +1,4 @@
 #!/usr/bin/env node
-/**
- * Download NIH/HRA male whole-body GLB from official source.
- * - Uses only the official HRA CDN URL (no mirrors)
- * - Preserves original filename
- * - Creates destination directory if needed
- * - Verifies SHA-256 after download
- * - Skips download if existing file already matches checksum
- */
 
 const fs = require('fs');
 const path = require('path');

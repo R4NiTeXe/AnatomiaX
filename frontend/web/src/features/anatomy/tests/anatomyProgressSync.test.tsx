@@ -154,7 +154,6 @@ describe('AnatomyProgressSync', () => {
     const tree = renderTree();
     await screen.findAllByTestId(/anatomy-recent-item-/, {}, { timeout: 4000 });
     (global.fetch as jest.Mock).mockClear();
-    // New selection starts the 1.5s debounce; unmount immediately after.
     fireEvent.click(screen.getByTestId('select-brain'));
     tree.unmount();
     await Promise.resolve();

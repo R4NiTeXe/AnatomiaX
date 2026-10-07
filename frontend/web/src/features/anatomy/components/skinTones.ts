@@ -1,18 +1,9 @@
-/**
- * Centralized skin-tone configuration (STEP 8.31).
- * Small set of natural, muted presets with neutral descriptive identifiers.
- * Hex colors are sRGB; THREE.ColorManagement converts them to the linear
- * working space when applied to materials.
- */
 export type SkinToneId = 'light' | 'mediumLight' | 'medium' | 'mediumDeep' | 'deep';
 
 export interface SkinTonePreset {
   id: SkinToneId;
-  /** Full descriptive label (accessible names, titles). */
   label: string;
-  /** Compact visible label for the segmented control. */
   shortLabel: string;
-  /** sRGB base color applied to skin material color. */
   color: string;
 }
 

@@ -101,8 +101,6 @@ function renderWithProvider() {
 describe('AnatomyStructureExplorer', () => {
   it('initial shows only loaded Skin or empty', () => {
     renderWithProvider();
-    // Skin is loaded by default? Actually skin is visible but not yet registered until GLB loads.
-    // In test, no GLB, so explorer should show empty
     expect(screen.getByTestId('anatomy-explorer')).toBeInTheDocument();
     expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
     expect(screen.getByTestId('anatomy-explorer-empty')).toHaveTextContent(/No structures loaded/);
@@ -122,10 +120,8 @@ describe('AnatomyStructureExplorer', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
-    // Now displays canonicalName "Brain" where available, not raw VH_M_brain
     expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/Brain/);
     fireEvent.click(screen.getByTestId('switch-female'));
-    // After switch, male structures cleared, explorer should be empty until female load
     expect(screen.getByTestId('anatomy-explorer-empty')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('load-nervous-female'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
@@ -136,7 +132,6 @@ describe('AnatomyStructureExplorer', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
-    // Two structures: brain and spinal cord
     expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(2);
     const input = screen.getByTestId('anatomy-explorer-filter');
     fireEvent.change(input, { target: { value: 'brain' } });
@@ -153,7 +148,6 @@ describe('AnatomyStructureExplorer', () => {
 
   it('system visibility filtering: Hide system → its structures disappear', () => {
     renderWithProvider();
-    // Make nervous visible before loading
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(2);
@@ -177,10 +171,8 @@ describe('AnatomyStructureExplorer', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
-    // Collapse the system branch — options unmount.
     fireEvent.click(screen.getByTestId('anatomy-explorer-system-toggle-nervous'));
     expect(screen.queryByTestId('anatomy-explorer-option-0')).not.toBeInTheDocument();
-    // Canvas-like external selection re-expands and highlights the row.
     fireEvent.click(screen.getByTestId('select-brain-external'));
     const option = screen.getByTestId('anatomy-explorer-option-0');
     expect(option).toHaveTextContent(/brain/i);
@@ -253,13 +245,10 @@ describe('AnatomyStructureExplorer', () => {
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     const input = screen.getByTestId('anatomy-explorer-filter');
-    // Name
     fireEvent.change(input, { target: { value: 'VH_M_brain' } });
     expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
-    // Ontology
     fireEvent.change(input, { target: { value: 'UBERON:0000955' } });
     expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
-    // Case-insensitive
     fireEvent.change(input, { target: { value: 'BRAIN' } });
     expect(screen.getAllByTestId(/anatomy-explorer-option-/).length).toBe(1);
   });
@@ -287,10 +276,7 @@ describe('AnatomyStructureExplorer', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('load-nervous-male'));
-    // VH_M_brain lineage is [VH_M_brain, VH_M_integumentary_system, VH_M] -> parent VH_M_integumentary_system not in nervous
-    // For our test data, brain and spinal cord have different lineages but same system, they share system group
     expect(screen.getByTestId('anatomy-explorer-system-nervous')).toBeInTheDocument();
-    // Check parent groups exist
     const parents = screen.queryAllByTestId(/anatomy-explorer-parent-/);
     expect(parents.length).toBeGreaterThan(0);
   });
@@ -319,8 +305,6 @@ describe('AnatomyStructureExplorer', () => {
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('load-nervous-male'));
     fireEvent.click(screen.getByTestId('load-musculoskeletal-male'));
-    // Need to make musculoskeletal visible
-    // For this test, just filter to brain, which should hide musculoskeletal system group
     const input = screen.getByTestId('anatomy-explorer-filter');
     fireEvent.change(input, { target: { value: 'brain' } });
     expect(screen.queryByTestId('anatomy-explorer-system-musculoskeletal')).not.toBeInTheDocument();
@@ -352,7 +336,6 @@ describe('AnatomyStructureExplorer', () => {
     renderWithProvider();
     fireEvent.click(screen.getByTestId('toggle-nervous'));
     fireEvent.click(screen.getByTestId('load-nervous-male'));
-    // Brain has canonicalName Brain from seed, should display Brain not VH_M_brain
     expect(screen.getByTestId('anatomy-explorer-option-0')).toHaveTextContent(/Brain/);
   });
 

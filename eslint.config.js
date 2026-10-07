@@ -1,11 +1,3 @@
-/**
- * ESLint flat config — verification-loop Phase 3 gate (`npm run lint`,
- * zero warnings via --max-warnings 0).
- *
- * Layers: core recommended + typescript recommended (non-type-checked, fast)
- * everywhere; react-hooks recommended for the React apps; Node script
- * parsing for CommonJS tooling; jest globals for test files.
- */
 const js = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 const reactHooks = require('eslint-plugin-react-hooks');
@@ -31,7 +23,6 @@ module.exports = [
   ...tseslint.configs.recommended,
   {
     files: ['frontend/web/**/*.{ts,tsx}', 'frontend/admin/**/*.{ts,tsx}'],
-    // recommended-latest is the flat-config shape (recommended is legacy).
     ...reactHooks.configs['recommended-latest'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
@@ -44,8 +35,6 @@ module.exports = [
     },
   },
   {
-    // CommonJS tooling: explicit script source (default would parse as ESM).
-    // `require()` is the correct module system here, not a smell.
     files: [
       'scripts/**/*.js',
       'frontend/marketing/*.js',
@@ -65,7 +54,6 @@ module.exports = [
     },
   },
   {
-    // Eleventy data files run in Node at build time (process/module available).
     files: ['frontend/marketing/src/_data/*.js'],
     languageOptions: {
       sourceType: 'script',
@@ -76,7 +64,6 @@ module.exports = [
     },
   },
   {
-    // Browser-only marketing animation source (no build step, runs in page).
     files: ['frontend/marketing/src/scripts/*.js'],
     languageOptions: {
       sourceType: 'script',
@@ -98,8 +85,6 @@ module.exports = [
       globals: { ...globals.jest },
     },
     rules: {
-      // Tests use `any` for fakes/mocks/fixtures (FakeDb, supertest bodies).
-      // tsc strict still type-checks everything else in these files.
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },

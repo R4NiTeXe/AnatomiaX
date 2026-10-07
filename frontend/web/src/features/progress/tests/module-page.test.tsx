@@ -116,7 +116,6 @@ describe('module page (8.49)', () => {
     expect(
       await screen.findByTestId('module-anonymous-note', {}, { timeout: 4000 })
     ).toBeInTheDocument();
-    // Public catalog still browsable without an account.
     expect(
       (await screen.findAllByTestId('module-structure-open', {}, { timeout: 4000 })).length
     ).toBe(12);

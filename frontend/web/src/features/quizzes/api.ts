@@ -1,9 +1,3 @@
-/**
- * Bank quizzes API — thin typed wrappers over the authed request helper.
- * Mirrors GET/POST/PATCH/DELETE /api/v1/quizzes* exactly. The backend grades
- * authoritatively: submissions carry selected indexes only, and question
- * payloads omit correctIndex unless the caller manages the quiz.
- */
 import { authedRequest } from '@/lib/auth';
 import type {
   BankAttemptResultContract,
@@ -14,8 +8,6 @@ import type {
   QuizStatus,
 } from '@anatomiax/shared-types';
 
-// Consumer-facing aliases — canonical shapes live in shared-types so both
-// apps converge on one contract (never Prisma entities).
 export type { QuizStatus };
 export type BankQuestionView = BankQuestionContract;
 export type BankQuizView = BankQuizContract;

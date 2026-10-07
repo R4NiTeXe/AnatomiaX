@@ -1,7 +1,3 @@
-/**
- * @anatomiax/anatomy-core — platform-neutral anatomy logic for web.
- * No React, no Three.js, no DOM. Depends only on @anatomiax/shared-types.
- */
 export * from './anatomyInformation';
 export * from './assetManifest';
 export * from './assetResolver';

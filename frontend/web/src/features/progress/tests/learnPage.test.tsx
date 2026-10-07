@@ -59,8 +59,6 @@ describe('LearnPage assigned modules', () => {
         return Promise.resolve(
           jsonResponse({ userId: 'u1', studiedKeys: [], bodyModel: null, updatedAt: null })
         );
-      // Default 404 (not 401): unmocked endpoints must not trigger the real
-      // refresh-then-logout flow and kill the booted session mid-test.
       return Promise.resolve(jsonResponse({}, 404));
     });
     expect(

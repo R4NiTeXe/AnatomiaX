@@ -64,7 +64,6 @@ describe('validateProductionEnv (8.19.23)', () => {
         validateProductionEnv(configFor({ ...base, COOKIE_SAMESITE: sameSite }))
       ).toThrow('COOKIE_SAMESITE must be none in production');
     }
-    // Unset is fine — code defaults to none in production.
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
   });
 
@@ -216,26 +215,21 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
     } catch (e) {
       message = (e as Error).message;
     }
-    // Only variable names and rules — no credential material.
     expect(message).not.toMatch(/postgres:.+@/);
   });
 
   it('requires SMTP in production but rejects partial SMTP config (Brevo SMTP)', () => {
-    // Outside production the stub stays optional (validator returns early).
     process.env.NODE_ENV = 'test';
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
     process.env.NODE_ENV = 'production';
-    // Absent SMTP_HOST in production fails: reset requests promise delivery.
     expect(() =>
       validateProductionEnv(configFor({ ...base, SMTP_HOST: undefined, SMTP_FROM: undefined }))
     ).toThrow('SMTP_HOST is required in production for password-reset delivery');
-    // Host without sender fails clearly.
     expect(() =>
       validateProductionEnv(
         configFor({ ...base, SMTP_HOST: 'smtp-relay.brevo.com', SMTP_FROM: undefined })
       )
     ).toThrow('SMTP_FROM');
-    // Brevo host without user/password credentials fails clearly.
     expect(() =>
       validateProductionEnv(
         configFor({
@@ -245,13 +239,11 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
         })
       )
     ).toThrow('SMTP_USER');
-    // Orphaned sender-side values without a host fail clearly.
     expect(() =>
       validateProductionEnv(
         configFor({ ...base, SMTP_HOST: undefined, SMTP_FROM: 'noreply@example.com' })
       )
     ).toThrow('SMTP_HOST');
-    // Split credentials fail clearly.
     expect(() =>
       validateProductionEnv(
         configFor({
@@ -270,7 +262,6 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
         configFor({ ...base, SMTP_HOST: 'h', SMTP_FROM: 'f', SMTP_SECURE: 'sometimes' })
       )
     ).toThrow('SMTP_SECURE');
-    // Complete Brevo SMTP config passes.
     expect(() =>
       validateProductionEnv(
         configFor({
@@ -301,17 +292,13 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
 
   it('keeps Firebase push optional but rejects partial Firebase config in production', () => {
     process.env.NODE_ENV = 'production';
-    // Absent Firebase config keeps safe stub — no failure.
     expect(() => validateProductionEnv(configFor(base))).not.toThrow();
-    // Project ID alone fails clearly.
     expect(() =>
       validateProductionEnv(configFor({ ...base, FIREBASE_PROJECT_ID: 'my-project' }))
     ).toThrow('FIREBASE_CLIENT_EMAIL');
-    // Email alone fails clearly.
     expect(() =>
       validateProductionEnv(configFor({ ...base, FIREBASE_CLIENT_EMAIL: 'email@example.com' }))
     ).toThrow('FIREBASE_PROJECT_ID');
-    // Complete direct credentials pass.
     expect(() =>
       validateProductionEnv(
         configFor({
@@ -322,7 +309,6 @@ describe('validateProductionEnv (8.20.16 deployment readiness)', () => {
         })
       )
     ).not.toThrow();
-    // Service account JSON passes.
     expect(() =>
       validateProductionEnv(
         configFor({

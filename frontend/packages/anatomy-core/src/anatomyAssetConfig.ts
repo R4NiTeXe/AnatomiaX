@@ -1,7 +1,3 @@
-/**
- * @deprecated Import from '@anatomiax/anatomy-core' directly.
- * Kept for backward compatibility — canonical definitions live in `anatomySystems.ts`.
- */
 import { ANATOMY_SYSTEM_DEFINITIONS } from './anatomySystems';
 import type { AnatomySystemAsset } from './anatomySystems';
 import type { AnatomySystemKey } from '@anatomiax/shared-types';

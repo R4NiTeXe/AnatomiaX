@@ -46,8 +46,6 @@ describe('asset resolver (8.54)', () => {
   });
 
   it('reads the configured base from process.env when no explicit base is given (8.61)', () => {
-    // This is the runtime CDN path: Vite's define replaces the literal chain
-    // at bundle time; Jest sees the real process.env instead.
     process.env[ENV_KEY] = 'https://cdn.example/a/';
     expect(resolveAnatomyAssetUrl('male', 'skin')).toBe(
       'https://cdn.example/a/male/skin-meshopt.glb'

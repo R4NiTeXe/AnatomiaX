@@ -20,7 +20,6 @@ export default function AnatomySearchBox(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  // Reactive to registry size — search only loaded structures
   const registrySize = registry.size;
 
   const results = useMemo(() => {
@@ -33,7 +32,6 @@ export default function AnatomySearchBox(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- registrySize intentionally invalidates on content changes
   }, [registry, query, selectedBodyModel, registrySize]);
 
-  // Reset active index when results change
   useEffect(() => {
     setActiveIndex(results.length > 0 ? 0 : -1);
   }, [results]);
@@ -41,9 +39,6 @@ export default function AnatomySearchBox(): JSX.Element {
   const handleSelect = useCallback(
     (result: AnatomySearchResult, e?: React.MouseEvent) => {
       const isShift = (e as unknown as { shiftKey?: boolean })?.shiftKey;
-      // STEP 8.36: the registry keeps cached hidden-system entries, so a
-      // result may live in a hidden system — reveal it, never a dead end.
-      // Compare (shift) previews against the current view and stays as-is.
       if (!isShift && !visibleSystems[result.systemKey as never]) {
         toggleSystem(result.systemKey as never);
       }
@@ -84,7 +79,6 @@ export default function AnatomySearchBox(): JSX.Element {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (!isOpen && results.length > 0) setIsOpen(true);
-        // Guard: x % 0 is NaN and would poison activeIndex on an empty list.
         if (results.length === 0) return;
         setActiveIndex(prev => (prev + 1) % results.length);
       } else if (e.key === 'ArrowUp') {
@@ -110,14 +104,12 @@ export default function AnatomySearchBox(): JSX.Element {
     [isOpen, results, activeIndex, handleSelect, handleClear]
   );
 
-  // Close on body model switch — no stale selection
   useEffect(() => {
     setQuery('');
     setIsOpen(false);
     setActiveIndex(-1);
   }, [selectedBodyModel]);
 
-  // Ensure active item is visible in list
   useEffect(() => {
     if (activeIndex >= 0 && listRef.current) {
       const el = listRef.current.children[activeIndex] as HTMLElement | undefined;
@@ -130,12 +122,6 @@ export default function AnatomySearchBox(): JSX.Element {
       <p className="mb-1 px-1 text-xs text-slate-500">Search all anatomy</p>
       <div className="relative">
         <div className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2">
-          {/* STEP 8.28: decorative only — the input owns search state.
-              Binary inspection shows an unverified "State Machine 1" /
-              "ifActive" pair of unknown type, so no input is wired. The
-              `key` follows the real dropdown state (`isOpen`); Rive never
-              drives logic, adds no delays, and the poster is the
-              reduced-motion equivalent. Keyboard/focus behavior unchanged. */}
           <RivePlayer
             key={isOpen ? 'active' : 'idle'}
             src={animationSrc('search-interaction')}

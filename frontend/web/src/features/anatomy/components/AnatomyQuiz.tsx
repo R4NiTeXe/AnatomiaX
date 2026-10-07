@@ -12,12 +12,6 @@ import {
 export type { AttemptAnswerLike, AttemptQuestionLike };
 export { buildAttemptInput };
 
-// STEP 8.28: memoized one-shot mark, mounted only on the real all-correct
-// completion transition (see usage below). The asset exposes an unverified
-// "State Machine 1" with no verifiable inputs, so nothing is wired — it
-// autoplays once on mount and never replays on unrelated renders (no `key`,
-// stable props). Subordinate 28px mark beside the result text; the ✓ poster
-// is the reduced-motion equivalent and result rendering never waits on Rive.
 const QuizSuccessMark = memo(function QuizSuccessMark(): JSX.Element {
   return (
     <RivePlayer
@@ -64,9 +58,6 @@ export default function AnatomyQuiz(): JSX.Element {
     setShowIncorrectOnly(false);
   }, [quizQuestions]);
 
-  // Ownership of the question set: only quizzes started under the current
-  // session may be submitted. An anonymously started quiz is never silently
-  // attributed to an account created or logged into afterwards.
   const quizOwnerRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (quizQuestions.length === 0) {
@@ -77,9 +68,6 @@ export default function AnatomyQuiz(): JSX.Element {
     }
   }, [quizQuestions, status, user?.id]);
 
-  // Persist completed attempts exactly once per quiz (authenticated owner only).
-  // The key derives from the question set + user, so rerenders, retries of
-  // the effect, and new quizzes can never duplicate a submission.
   useEffect(() => {
     setSyncNote(null);
     if (!isLast || status !== 'authenticated' || !user) return;
@@ -174,9 +162,6 @@ export default function AnatomyQuiz(): JSX.Element {
                     }`}
                     data-testid={`anatomy-quiz-choice-${idx}`}
                   >
-                    {/* No aria-label: the wrapping <label> names this input
-                        from the choice text beside it. An explicit label
-                        would mask the answer text from screen readers. */}
                     <input
                       type="radio"
                       name="quiz-choice"
@@ -305,8 +290,6 @@ export default function AnatomyQuiz(): JSX.Element {
                     if (!q) return null;
                     const isCorrect = answer.selectedChoice === answer.correctIndex;
                     const handleRevisit = () => {
-                      // STEP 8.36: quiz questions may span hidden systems —
-                      // reveal the target so review lands on something visible.
                       if (!visibleSystems[q.systemKey]) toggleSystem(q.systemKey);
                       selectStructure({
                         structureKey: q.structureKey,
@@ -316,9 +299,6 @@ export default function AnatomyQuiz(): JSX.Element {
                         bodyModel: q.bodyModel,
                         ontologyId: q.ontologyId,
                       });
-                      // STEP 8.38: return leg of the loop — bring the viewer
-                      // back into view (mirrors the scroll-to-quiz on start;
-                      // no-op on wide layouts and under reduced motion).
                       const viewer = document.querySelector('[data-testid="human-viewer-section"]');
                       if (viewer instanceof HTMLElement) {
                         viewer.scrollIntoView?.({ behavior: 'smooth', block: 'start' });

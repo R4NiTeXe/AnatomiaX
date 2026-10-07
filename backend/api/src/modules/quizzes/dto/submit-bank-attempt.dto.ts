@@ -20,12 +20,6 @@ export class BankAnswerDto {
   selectedIndex!: number;
 }
 
-/**
- * Bank-graded submission. Deliberately carries NO score/total/correct
- * fields: the client can never submit authoritative grading — the backend
- * computes everything from the stored bank. Unanswered questions count as
- * incorrect (documented); at least one answer is required.
- */
 export class SubmitBankAttemptDto {
   @IsArray()
   @ArrayMinSize(1)

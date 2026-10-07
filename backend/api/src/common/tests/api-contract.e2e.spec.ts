@@ -10,7 +10,6 @@ process.env.JWT_SECRET = 'e2e-test-secret-that-is-long-enough-for-hs256';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-// In-memory Prisma stand-in for identity + push subscriptions: no database, no network.
 class FakeDb {
   users = new Map<string, Record<string, any>>();
   oauth = new Map<string, Record<string, any>>();
@@ -278,7 +277,6 @@ describe('API contract (e2e, 8.19.25)', () => {
     }
   });
 
-  // Runs last: exhausts the login-route throttle budget for this file on purpose.
   it('standardizes throttled responses with RATE_LIMITED', async () => {
     const statuses: number[] = [];
     let last: request.Response | undefined;

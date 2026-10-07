@@ -17,12 +17,6 @@ const BRAND_POINTS = [
   { title: 'Built for learning', body: 'Cohorts, dashboards, and guided review.' },
 ];
 
-/**
- * STEP 8.24 shared auth composition — responsive split: a clinical brand
- * panel on large screens, a compact brand mark above a focused form column
- * on small screens. Same title/subtitle/children/footer contract, so all
- * five auth pages inherit the redesign with zero behavior change.
- */
 export default function AuthLayout({
   title,
   subtitle,
@@ -32,8 +26,6 @@ export default function AuthLayout({
   return (
     <main className="ax-app-bg flex min-h-screen flex-col text-slate-100">
       <div className="mx-auto grid w-full max-w-5xl flex-1 items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:py-16">
-        {/* Brand panel — large screens only; complementary copy, hidden from AT
-            because the form column carries the real title/subtitle. */}
         <div className="hidden lg:block" aria-hidden="true">
           <Stagger>
             <StaggerItem>
@@ -72,7 +64,6 @@ export default function AuthLayout({
           </Stagger>
         </div>
 
-        {/* Form column — identical contract: brand, h1, subtitle, card, footer. */}
         <div className="mx-auto w-full max-w-md">
           <motion.p
             initial={{ opacity: 0, y: 8 }}

@@ -1,13 +1,5 @@
-// Global jsdom polyfills for deterministic parallel execution.
-// STEP 8.20.9.1: Canvas/ResizeObserver contention under parallel workers
-// caused the /human dynamic import to exceed the 5s timeout. This setup
-// runs before every test file (setupFiles) so heavy three/R3F imports do
-// not race the per-test timeout window and jsdom missing APIs do not hang.
 
 if (typeof window !== 'undefined') {
-  // ResizeObserver — required by @react-three/fiber <Canvas> and drei <Bounds>
-  // Original reliability test set this in beforeAll; moving to setup makes it
-  // deterministic regardless of test order / worker reuse.
   if (!(window as unknown as { ResizeObserver?: unknown }).ResizeObserver) {
     class RO {
       observe(): void {}
@@ -23,10 +15,6 @@ if (typeof window !== 'undefined') {
     ).ResizeObserver;
   }
 
-  // jsdom: HTMLCanvasElement.getContext is "Not implemented" and throws.
-  // R3F/Canvas and drei probe it synchronously during import; throwing
-  // inside ts-jest transform under parallel load amplified the timeout.
-  // Provide a minimal stub that never throws.
   const canvasProto = (
     globalThis as unknown as { HTMLCanvasElement?: { prototype: { getContext?: unknown } } }
   ).HTMLCanvasElement?.prototype as unknown as Record<string, unknown> | undefined;
@@ -38,10 +26,8 @@ if (typeof window !== 'undefined') {
           const result = (original as (...a: unknown[]) => unknown).apply(this, args);
           if (result) return result;
         } catch {
-          // fall through to stub
         }
       }
-      // Minimal WebGL-like stub — enough for fiber/drei import to succeed.
       return {
         canvas: this,
         getExtension: () => null,
@@ -52,7 +38,6 @@ if (typeof window !== 'undefined') {
     } as unknown as typeof canvasProto.getContext;
   }
 
-  // matchMedia — used by some UI libs; jsdom lacks it.
   if (!(window as unknown as { matchMedia?: unknown }).matchMedia) {
     (window as unknown as Record<string, unknown>).matchMedia = (query: string) => ({
       matches: false,
@@ -66,7 +51,6 @@ if (typeof window !== 'undefined') {
     });
   }
 
-  // IntersectionObserver — used by drei/Bounds; stub to avoid ReferenceError.
   if (!(window as unknown as { IntersectionObserver?: unknown }).IntersectionObserver) {
     class IO {
       observe(): void {}
