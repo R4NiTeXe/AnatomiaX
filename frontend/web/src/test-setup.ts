@@ -1,4 +1,3 @@
-
 if (typeof window !== 'undefined') {
   if (!(window as unknown as { ResizeObserver?: unknown }).ResizeObserver) {
     class RO {
@@ -26,6 +25,7 @@ if (typeof window !== 'undefined') {
           const result = (original as (...a: unknown[]) => unknown).apply(this, args);
           if (result) return result;
         } catch {
+          // best-effort: fall through to the stub context below
         }
       }
       return {

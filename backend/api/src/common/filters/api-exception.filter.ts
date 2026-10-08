@@ -172,6 +172,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     try {
       res.setHeader?.(REQUEST_ID_HEADER, requestId);
     } catch {
+      // best-effort: response header is non-critical
     }
     if (status >= 500) {
       const stack = original instanceof Error ? original.stack : String(original);

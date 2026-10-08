@@ -36,6 +36,7 @@ function emitUnauthenticated(): void {
     try {
       listener();
     } catch {
+      // best-effort: one failing listener must not break the rest
     }
   });
 }
@@ -150,6 +151,7 @@ export async function logout(): Promise<void> {
       body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
     });
   } catch {
+    // best-effort: logout request failure still clears local session
   } finally {
     accessToken = null;
     refreshToken = null;

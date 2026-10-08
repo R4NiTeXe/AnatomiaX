@@ -1,4 +1,3 @@
-
 import { readViteApiBaseUrl } from '@/lib/env';
 
 export function getApiBaseUrl(): string {
@@ -106,6 +105,7 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     try {
       detail = await response.text();
     } catch {
+      // best-effort: error body text is non-critical
     }
     const contract = parseErrorBody(detail);
     const headerRequestId = response.headers?.get?.('x-request-id') ?? undefined;

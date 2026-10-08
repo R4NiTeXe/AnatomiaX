@@ -1,4 +1,3 @@
-
 export interface FocusVec3 {
   x: number;
   y: number;

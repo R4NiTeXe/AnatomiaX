@@ -68,6 +68,7 @@ function disposeMaterial(material: THREE.Material | THREE.Material[]): void {
     try {
       m.dispose?.();
     } catch {
+      // best-effort: material dispose is non-critical
     }
   }
 }
@@ -211,6 +212,7 @@ function AnatomyGltf({ asset }: AnatomyGltfProps): JSX.Element {
             try {
               m.dispose?.();
             } catch {
+              // best-effort: material dispose is non-critical
             }
           }
         }

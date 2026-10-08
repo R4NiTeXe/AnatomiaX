@@ -23,6 +23,7 @@ async function bootstrap() {
       server.set('trust proxy', 1);
     }
   } catch {
+    // best-effort: trust-proxy setting is non-critical
   }
 
   app.setGlobalPrefix('api');

@@ -1,4 +1,3 @@
-
 export type AnimationType = 'rive' | 'lottie';
 
 export interface AnimationAsset {

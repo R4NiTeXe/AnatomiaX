@@ -97,8 +97,7 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  googleLogin(): void {
-  }
+  googleLogin(): void {}
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)

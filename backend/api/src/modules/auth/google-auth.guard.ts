@@ -111,6 +111,7 @@ export class GoogleAuthGuard extends AuthGuard('google') {
       try {
         res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
       } catch {
+        // best-effort: stale OAuth cookie cleanup is non-critical
       }
       if (!presented || !expected || !safeEqual(presented, expected)) {
         throw new UnauthorizedException('Invalid OAuth state');

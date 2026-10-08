@@ -69,7 +69,7 @@ export function moduleProgress(
   return { studied, total, percent, status };
 }
 
- export function findContinueTarget(
+export function findContinueTarget(
   modules: readonly LearningModule[],
   studiedKeys: readonly string[]
 ): ContinueTarget | null {

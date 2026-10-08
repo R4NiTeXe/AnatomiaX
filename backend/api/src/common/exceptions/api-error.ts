@@ -1,4 +1,3 @@
-
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'BAD_REQUEST'

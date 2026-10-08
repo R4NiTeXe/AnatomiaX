@@ -13,8 +13,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async ping(): Promise<boolean> {
     try {
-      await this.$queryRaw`SELECT 1`;
-      return true;
+      // Bound the probe so /health/db degrades fast when no DB is configured
+      // (e.g. CI/e2e without DATABASE_URL) instead of hanging past test timeouts.
+      const probe = this.$queryRaw`SELECT 1`.then(
+        () => true,
+        () => false
+      );
+      const timeout = new Promise<boolean>(resolve => {
+        setTimeout(() => resolve(false), 1500);
+      });
+      return await Promise.race([probe, timeout]);
     } catch {
       return false;
     }

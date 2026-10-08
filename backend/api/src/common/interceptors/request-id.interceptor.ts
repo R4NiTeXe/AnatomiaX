@@ -19,6 +19,7 @@ export class RequestIdInterceptor implements NestInterceptor {
     try {
       res.setHeader?.(REQUEST_ID_HEADER, id);
     } catch {
+      // best-effort: response header is non-critical
     }
     return next.handle();
   }

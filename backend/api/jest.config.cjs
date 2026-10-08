@@ -10,12 +10,7 @@ module.exports = {
     '^.+\\.tsx?$': [tsJestPath, { diagnostics: false }],
   },
   coverageDirectory: '<rootDir>/coverage',
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/**/*.e2e.spec.ts',
-    '!src/main.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/*.e2e.spec.ts', '!src/main.ts'],
   coverageReporters: ['text', 'lcov'],
   coverageThreshold: {
     global: {

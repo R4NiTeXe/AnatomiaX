@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const path = require('path');
 const nodeCrypto = require('node:crypto');
@@ -39,6 +38,7 @@ function parseArgs() {
         if (m) out.base = m[1].trim().replace(/^["']|["']$/g, '');
       }
     } catch {
+      // best-effort: fall back to env/default base below
     }
     if (!out.base) out.base = process.env.VITE_ANATOMY_ASSET_BASE_URL || '/models-dev/';
   }
@@ -146,8 +146,6 @@ async function checkHttp(entries, base, verify, origin, timeout) {
     if (origin) headers.Origin = origin;
     const method = verify ? 'GET' : 'HEAD';
     if (verify) headers.Range = undefined;
-    else if (!verify) {
-    }
     try {
       let res = await fetchWithTimeout(url, { method, headers }, timeout);
       if (!res.ok && method === 'HEAD' && (res.status === 403 || res.status === 405)) {
@@ -209,7 +207,6 @@ async function checkHttp(entries, base, verify, origin, timeout) {
           );
           if (!ok) failures++;
         }
-      } else if (verify === false) {
       }
     } catch (err) {
       console.log(`  ERROR ${e.bodyModel}/${e.system}: ${url} -> ${err.message}`);

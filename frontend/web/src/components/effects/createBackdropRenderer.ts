@@ -155,6 +155,7 @@ export function createBackdropRenderer(
         const lose = context.getExtension('WEBGL_lose_context');
         lose?.loseContext();
       } catch {
+        // best-effort: WebGL context loss is non-critical on dispose
       }
     },
   };

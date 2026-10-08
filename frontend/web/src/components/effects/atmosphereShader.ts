@@ -1,4 +1,3 @@
-
 export const BACKDROP_VERTEX = `
 attribute vec2 a_position;
 void main() {

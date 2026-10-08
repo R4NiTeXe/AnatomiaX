@@ -1,4 +1,3 @@
-
 async function main() {
   const url = process.argv[2];
   if (!url) {

@@ -1,4 +1,3 @@
-
 export type AnatomySystemKey =
   | 'skin'
   | 'musculoskeletal'

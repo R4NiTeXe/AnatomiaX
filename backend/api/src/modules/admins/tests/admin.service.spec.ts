@@ -34,9 +34,7 @@ describe('AdminService', () => {
         .mockResolvedValueOnce(6)
         .mockResolvedValueOnce(3)
         .mockResolvedValueOnce(1);
-      prisma.cohort.count
-        .mockResolvedValueOnce(4)
-        .mockResolvedValueOnce(1);
+      prisma.cohort.count.mockResolvedValueOnce(4).mockResolvedValueOnce(1);
       prisma.user.findMany.mockResolvedValue([
         {
           id: 'u1',

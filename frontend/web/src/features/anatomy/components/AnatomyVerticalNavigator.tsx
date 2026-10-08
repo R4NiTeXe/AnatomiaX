@@ -57,6 +57,7 @@ export default function AnatomyVerticalNavigator({
     try {
       (e.currentTarget as Element).releasePointerCapture(e.pointerId);
     } catch {
+      // best-effort: pointer capture release is non-critical
     }
     draggingRef.current = false;
     setIsDragging(false);
@@ -68,6 +69,7 @@ export default function AnatomyVerticalNavigator({
     try {
       (e.currentTarget as Element).releasePointerCapture(e.pointerId);
     } catch {
+      // best-effort: pointer capture release is non-critical
     }
     draggingRef.current = false;
     setIsDragging(false);

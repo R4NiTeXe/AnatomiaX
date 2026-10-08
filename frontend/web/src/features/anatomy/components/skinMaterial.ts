@@ -124,6 +124,7 @@ export function enhanceSkinEntries(entries: SkinEntryLike[], tone: SkinToneId): 
         try {
           current.dispose?.();
         } catch {
+          // best-effort: material dispose is non-critical
         }
       }
       return upgraded;
