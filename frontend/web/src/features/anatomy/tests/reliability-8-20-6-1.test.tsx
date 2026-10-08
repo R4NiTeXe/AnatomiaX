@@ -74,15 +74,8 @@ describe('8.20.6.1 reliability/a11y', () => {
   });
 
   it('respects prefers-reduced-motion via global CSS', () => {
-    const cssPath = path.join(__dirname, '../../index.css');
-    const altPath =
-      'C:\\Users\\ranit\\Desktop\\WebDev\\Coding\\Bankend\\AnatomiaX\\frontend\\web\\src\\index.css';
-    let content = '';
-    try {
-      content = fs.readFileSync(cssPath, 'utf8');
-    } catch {
-      content = fs.readFileSync(altPath, 'utf8');
-    }
+    const cssPath = path.resolve(__dirname, '../../../index.css');
+    const content = fs.readFileSync(cssPath, 'utf8');
     expect(content).toContain('@media (prefers-reduced-motion: reduce)');
     expect(content).toContain('animation-duration: 0.01ms');
     expect(content).toContain('transition-duration: 0.01ms');
